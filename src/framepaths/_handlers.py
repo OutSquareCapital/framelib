@@ -19,7 +19,18 @@ class Handler(_Schema):
     @classmethod
     def path(cls, make_dir: bool = False, format: Formatting | None = None) -> _Path:
         """
-        Returns the full path to the file for this schema, optionally creating parent directories.
+        Returns the full path to the file for this schema, with optional directory creation and name formatting.
+
+        Example:
+            >>> class X(Handler):
+            ...     __directory__ = 'foo'
+            ...     __ext__ = '.csv'
+            >>> X.path()
+            PosixPath('foo/x.csv')
+            >>> X.path(format="upper")
+            PosixPath('foo/X.CSV')
+            >>> X.path(format="title")
+            PosixPath('foo/X.Csv')
         """
         name = cls.__name__
         match format:

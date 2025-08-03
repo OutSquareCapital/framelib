@@ -23,6 +23,12 @@ uv add git+https://github.com/OutSquareCapital/framepaths.git
 
 Define your data schemas by inheriting from the base classes provided by framepaths, then group them into a collection. Each schema corresponds to a file (CSV, Parquet, etc.) in the specified directory.
 
+### File Path Formatting
+
+You can customize the file name formatting when retrieving the path for a schema using the `format` argument in the `path` method.
+
+Supported values are `"upper"`, `"lower"`, and `"title"`.
+
 ### Example
 
 ```python
