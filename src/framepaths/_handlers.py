@@ -1,8 +1,11 @@
 from pathlib import Path as _Path
+from typing import Literal
 
 from dataframely import Schema as _Schema
 
 from ._tree import TreeDisplay
+
+Formatting = Literal["upper", "lower", "title"]
 
 
 class Handler(_Schema):
@@ -14,11 +17,21 @@ class Handler(_Schema):
     __ext__: str = ""
 
     @classmethod
-    def path(cls, make_dir: bool = False) -> _Path:
+    def path(cls, make_dir: bool = False, format: Formatting | None = None) -> _Path:
         """
         Returns the full path to the file for this schema, optionally creating parent directories.
         """
-        path = _Path(cls.__directory__).joinpath(f"{cls.__name__.lower()}{cls.__ext__}")
+        name = cls.__name__
+        match format:
+            case "upper":
+                name = name.upper()
+            case "lower":
+                name = name.lower()
+            case "title":
+                name = name.title()
+            case _:
+                pass
+        path = _Path(cls.__directory__).joinpath(f"{name}{cls.__ext__}")
         if make_dir:
             path.parent.mkdir(parents=True, exist_ok=True)
         return path
