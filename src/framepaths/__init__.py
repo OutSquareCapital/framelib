@@ -1,7 +1,6 @@
-from ._handlers import CSV, NDJSON, Parquet
+from ._handlers import Extension, Schema
 
 __all__ = [
-    "CSV",
-    "NDJSON",
-    "Parquet",
+    "Schema",
+    "Extension",
 ]

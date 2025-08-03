@@ -1,3 +1,4 @@
+from enum import StrEnum
 from pathlib import Path as _Path
 from typing import Literal
 
@@ -8,29 +9,24 @@ from ._tree import TreeDisplay
 Formatting = Literal["upper", "lower", "title"]
 
 
-class Handler(_Schema):
+class Extension(StrEnum):
+    CSV = ".csv"
+    PARQUET = ".parquet"
+    NDJSON = ".ndjson"
+
+
+class Schema(_Schema):
     """
-    Base handler for file-based schemas, providing path and tree display utilities.
+    Base schema for file-based schemas, providing path and tree display utilities.
     """
 
-    __directory__: str | _Path = ""
-    __ext__: str = ""
+    __directory__: str | _Path
+    __ext__: str | Extension
 
     @classmethod
     def path(cls, make_dir: bool = False, format: Formatting | None = None) -> _Path:
         """
         Returns the full path to the file for this schema, with optional directory creation and name formatting.
-
-        Example:
-            >>> class X(Handler):
-            ...     __directory__ = 'foo'
-            ...     __ext__ = '.csv'
-            >>> X.path()
-            PosixPath('foo/x.csv')
-            >>> X.path(format="upper")
-            PosixPath('foo/X.CSV')
-            >>> X.path(format="title")
-            PosixPath('foo/X.Csv')
         """
         name = cls.__name__
         match format:
@@ -42,6 +38,10 @@ class Handler(_Schema):
                 name = name.title()
             case _:
                 pass
+        if not cls.__directory__:
+            raise ValueError("Schema must have a __directory__ attribute set.")
+        if not cls.__ext__:
+            raise ValueError("Schema must have a __ext__ attribute set.")
         path = _Path(cls.__directory__).joinpath(f"{name}{cls.__ext__}")
         if make_dir:
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -54,27 +54,3 @@ class Handler(_Schema):
         """
         root_dir = _Path(cls.path().parent)
         return TreeDisplay(root=root_dir, title=cls.__name__)
-
-
-class CSV(Handler):
-    """
-    Handler for CSV file schemas.
-    """
-
-    __ext__ = ".csv"
-
-
-class Parquet(Handler):
-    """
-    Handler for Parquet file schemas.
-    """
-
-    __ext__ = ".parquet"
-
-
-class NDJSON(Handler):
-    """
-    Handler for NDJSON file schemas.
-    """
-
-    __ext__ = ".ndjson"

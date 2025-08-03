@@ -12,31 +12,15 @@ You can find more infos about dataframely here:
 uv add git+https://github.com/OutSquareCapital/framepaths.git
 ```
 
-## Main Concepts
-
-- **CSV, Parquet, etc.**: The base classes (`fp.CSV`, `fp.Parquet`, etc.) represent typed data files. They are used as a foundation for defining data schemas.
-- **Schema**: A schema is a class inheriting from a file format (e.g., `fp.CSV`) and describes columns and their types using dataframely attributes (`dy.String`, `dy.UInt8`, etc.).
-- **Collection**: A collection groups several schemas (tables) into a typed structure, making grouped access and manipulation easy.
-- **`__directory__`**: Special attribute to indicate the root folder where files associated with the schema are stored.
-
-## Usage
-
-Define your data schemas by inheriting from the base classes provided by framepaths, then group them into a collection. Each schema corresponds to a file (CSV, Parquet, etc.) in the specified directory.
-
-### File Path Formatting
-
-You can customize the file name formatting when retrieving the path for a schema using the `format` argument in the `path` method.
-
-Supported values are `"upper"`, `"lower"`, and `"title"`.
-
 ### Example
 
 ```python
 import framepaths as fp
 import dataframely as dy
 
-class BaseSchema(fp.CSV):
+class BaseSchema(fp.Schema):
     __directory__ = "bookshop"
+    __ext__ = fp.Extension.CSV
 
 
 class Users(BaseSchema):
@@ -74,7 +58,7 @@ class BookShop(dy.Collection):
 
 ### Explanations
 
-- `BaseSchema` sets the root directory (`bookshop`) for all CSV files.
+- `BaseSchema` sets the root directory (`bookshop`), as well as the extension type.
 - `Users`, `Articles`, `Books`, `VideoGames` are typed schemas for each table/file.
 - `Books` and `VideoGames` inherit from `Articles` to factor out common columns.
 - `BookShop` groups the different tables into a typed collection, each attribute being a `dy.LazyFrame` of the corresponding schema.
