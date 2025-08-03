@@ -1,0 +1,16 @@
+[project]
+name = "framepaths"
+version = "0.1.0"
+description = "dataframely plugin"
+readme = "README.md"
+authors = [
+    { name = "OutSquareCapital", email = "166045166+OutSquareCapital@users.noreply.github.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "dataframely>=1.7.6",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
