@@ -1,9 +1,8 @@
-from ._columns import Categorical
-from ._handlers import CSVSchema, Extension, NDJSONSchema, ParquetSchema, Schema
+from ._lib import Categorical, CSVSchema, NDJSONSchema, ParquetSchema
+from ._schemas import Schema
 
 __all__ = [
     "Schema",
-    "Extension",
     "Categorical",
     "CSVSchema",
     "ParquetSchema",

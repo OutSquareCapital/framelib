@@ -4,12 +4,6 @@ from typing import Literal
 Formatting = Literal["upper", "lower", "title"]
 
 
-class Extension(StrEnum):
-    CSV = ".csv"
-    PARQUET = ".parquet"
-    NDJSON = ".ndjson"
-
-
 class Tree(StrEnum):
     NODE = "├── "
     LAST_NODE = "└── "

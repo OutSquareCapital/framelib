@@ -1,12 +1,13 @@
-from abc import ABC, abstractmethod
-from functools import partial
+import functools
+from abc import ABC
+from collections.abc import Callable
 from pathlib import Path as _Path
+from typing import Concatenate, overload
 
-import polars as pl
 from dataframely import Schema as _Schema
 
 from ._tree import TreeDisplay
-from ._types import Extension, Formatting
+from ._types import Formatting
 
 
 class Schema(_Schema, ABC):
@@ -17,7 +18,7 @@ class Schema(_Schema, ABC):
     """
 
     __directory__: str | _Path
-    __ext__: str | Extension
+    __ext__: str
 
     @classmethod
     def path(cls, make_dir: bool = False, format: Formatting | None = None) -> _Path:
@@ -51,48 +52,23 @@ class Schema(_Schema, ABC):
         root_dir = _Path(cls.path().parent)
         return TreeDisplay(root=root_dir, title=cls.__name__)
 
-    @classmethod
-    @abstractmethod
-    def read(cls) -> partial[pl.DataFrame]:
-        raise NotImplementedError
 
-    @classmethod
-    @abstractmethod
-    def scan(cls) -> partial[pl.LazyFrame]:
-        raise NotImplementedError
+class IODescriptor[**P, T]:
+    __slots__ = ("func", "public_name")
 
+    def __init__(self, func: Callable[Concatenate[_Path, P], T]) -> None:
+        self.func = func
+        self.public_name: str | None = None
 
-class CSVSchema(Schema):
-    __ext__ = Extension.CSV
+    def __set_name__(self, owner: type, name: str) -> None:
+        self.public_name = name
+        functools.update_wrapper(self.__class__, self.func)
 
-    @classmethod
-    def read(cls):
-        return partial(pl.read_csv, source=cls.path())
+    @overload
+    def __get__(self, instance: None, owner: type[Schema]) -> Callable[P, T]: ...
 
-    @classmethod
-    def scan(cls):
-        return partial(pl.scan_csv, source=cls.path())
+    @overload
+    def __get__(self, instance: Schema, owner: type[Schema]) -> Callable[P, T]: ...
 
-
-class ParquetSchema(Schema):
-    __ext__ = Extension.PARQUET
-
-    @classmethod
-    def read(cls):
-        return partial(pl.read_parquet, source=cls.path())
-
-    @classmethod
-    def scan(cls):
-        return partial(pl.scan_parquet, source=cls.path())
-
-
-class NDJSONSchema(Schema):
-    __ext__ = Extension.NDJSON
-
-    @classmethod
-    def read(cls):
-        return partial(pl.read_ndjson, source=cls.path())
-
-    @classmethod
-    def scan(cls):
-        return partial(pl.scan_ndjson, source=cls.path())
+    def __get__(self, instance: Schema | None, owner: type[Schema]) -> Callable[P, T]:
+        return functools.partial(self.func, owner.path())
