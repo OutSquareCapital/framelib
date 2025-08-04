@@ -15,12 +15,13 @@ uv add git+https://github.com/OutSquareCapital/framepaths.git
 ### Example
 
 ```python
-import framepaths as fp
 import dataframely as dy
 
-class BaseSchema(fp.Schema):
+import framepaths as fp
+
+
+class BaseSchema(fp.CSVSchema):
     __directory__ = "bookshop"
-    __ext__ = fp.Extension.CSV
 
 
 class Users(BaseSchema):
@@ -54,11 +55,12 @@ class BookShop(dy.Collection):
     users: dy.LazyFrame[Users]
     books: dy.LazyFrame[Books]
     video_games: dy.LazyFrame[VideoGames]
+
 ```
 
 ### Explanations
 
-- `BaseSchema` sets the root directory (`bookshop`), as well as the extension type.
+- `BaseSchema` sets the root directory (`bookshop`), as well as the extension type via CSVSchema.
 - `Users`, `Articles`, `Books`, `VideoGames` are typed schemas for each table/file.
 - `Books` and `VideoGames` inherit from `Articles` to factor out common columns.
 - `BookShop` groups the different tables into a typed collection, each attribute being a `dy.LazyFrame` of the corresponding schema.

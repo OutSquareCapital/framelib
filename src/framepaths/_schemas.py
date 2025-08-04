@@ -54,15 +54,9 @@ class Schema(_Schema, ABC):
 
 
 class IODescriptor[**P, T]:
-    __slots__ = ("func", "public_name")
-
     def __init__(self, func: Callable[Concatenate[_Path, P], T]) -> None:
         self.func = func
-        self.public_name: str | None = None
-
-    def __set_name__(self, owner: type, name: str) -> None:
-        self.public_name = name
-        functools.update_wrapper(self.__class__, self.func)
+        functools.update_wrapper(self, self.func)  # type: ignore[call-arg]
 
     @overload
     def __get__(self, instance: None, owner: type[Schema]) -> Callable[P, T]: ...
