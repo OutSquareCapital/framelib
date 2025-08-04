@@ -1,7 +1,9 @@
 from enum import StrEnum
+from functools import partial
 from pathlib import Path as _Path
 from typing import Literal
 
+import polars as pl
 from dataframely import Schema as _Schema
 
 from ._tree import TreeDisplay
@@ -54,3 +56,33 @@ class Schema(_Schema):
         """
         root_dir = _Path(cls.path().parent)
         return TreeDisplay(root=root_dir, title=cls.__name__)
+
+
+class CSVSchema(Schema):
+    __ext__ = Extension.CSV
+
+    def read(self):
+        return partial(pl.read_csv, source=self.path())
+
+    def scan(self):
+        return partial(pl.scan_csv, source=self.path())
+
+
+class ParquetSchema(Schema):
+    __ext__ = Extension.PARQUET
+
+    def read(self):
+        return partial(pl.read_parquet, source=self.path())
+
+    def scan(self):
+        return partial(pl.scan_parquet, source=self.path())
+
+
+class NDJSONSchema(Schema):
+    __ext__ = Extension.NDJSON
+
+    def read(self):
+        return partial(pl.read_ndjson, source=self.path())
+
+    def scan(self):
+        return partial(pl.scan_ndjson, source=self.path())
