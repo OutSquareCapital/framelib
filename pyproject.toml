@@ -1,6 +1,6 @@
 [project]
 name = "framepaths"
-version = "0.1.22"
+version = "0.1.23"
 description = "dataframely plugin"
 readme = "README.md"
 authors = [
