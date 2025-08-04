@@ -1,20 +1,11 @@
-from enum import StrEnum
 from functools import partial
 from pathlib import Path as _Path
-from typing import Literal
 
 import polars as pl
 from dataframely import Schema as _Schema
 
 from ._tree import TreeDisplay
-
-Formatting = Literal["upper", "lower", "title"]
-
-
-class Extension(StrEnum):
-    CSV = ".csv"
-    PARQUET = ".parquet"
-    NDJSON = ".ndjson"
+from ._types import Extension, Formatting
 
 
 class Schema(_Schema):

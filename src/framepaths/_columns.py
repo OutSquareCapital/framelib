@@ -9,7 +9,7 @@ from dataframely.random import Generator
 class Categorical(dy.Column):
     @property
     def dtype(self) -> pl.DataType:
-        return pl.Categorical  # type: ignore
+        return pl.Categorical()
 
     def sqlalchemy_dtype(self, dialect: Any): ...
     @property
