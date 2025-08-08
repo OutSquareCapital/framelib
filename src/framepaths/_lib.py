@@ -4,6 +4,7 @@ from typing import Any
 import dataframely as dy
 import polars as pl
 import pyarrow as pa
+from dataframely.columns._registry import register
 from dataframely.random import Generator
 
 from ._schemas import IODescriptor, Schema
@@ -27,6 +28,7 @@ class NDJSONSchema(Schema):
     scan = IODescriptor(pl.scan_ndjson)
 
 
+@register
 class Categorical(dy.Column):
     @property
     def dtype(self) -> pl.DataType:
