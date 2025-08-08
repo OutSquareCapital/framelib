@@ -1,11 +1,6 @@
 from enum import StrEnum
-from typing import Any
 
-import dataframely as dy
 import polars as pl
-import pyarrow as pa
-from dataframely.columns._registry import register
-from dataframely.random import Generator
 
 from ._schemas import IODescriptor, Schema
 
@@ -26,21 +21,6 @@ class NDJSONSchema(Schema):
     __ext__ = ".ndjson"
     read = IODescriptor(pl.read_ndjson)
     scan = IODescriptor(pl.scan_ndjson)
-
-
-@register
-class Categorical(dy.Column):
-    @property
-    def dtype(self) -> pl.DataType:
-        return pl.Categorical()
-
-    def sqlalchemy_dtype(self, dialect: Any): ...
-    @property
-    def pyarrow_dtype(self) -> pa.DataType:
-        return pa.dictionary(pa.int32(), pa.string())
-
-    def _sample_unchecked(self, generator: Generator, n: int) -> pl.Series:
-        raise NotImplementedError
 
 
 class PolarsEnum(StrEnum):

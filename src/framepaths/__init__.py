@@ -1,9 +1,8 @@
-from ._lib import Categorical, CSVSchema, NDJSONSchema, ParquetSchema, PolarsEnum
+from ._lib import CSVSchema, NDJSONSchema, ParquetSchema, PolarsEnum
 from ._schemas import Schema
 
 __all__ = [
     "Schema",
-    "Categorical",
     "CSVSchema",
     "ParquetSchema",
     "NDJSONSchema",
