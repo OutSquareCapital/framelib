@@ -1,3 +1,4 @@
+from enum import StrEnum
 from typing import Any
 
 import dataframely as dy
@@ -33,5 +34,18 @@ class Categorical(dy.Column):
 
     def sqlalchemy_dtype(self, dialect: Any): ...
     @property
-    def pyarrow_dtype(self) -> pa.DataType: ...
-    def _sample_unchecked(self, generator: Generator, n: int) -> pl.Series: ...
+    def pyarrow_dtype(self) -> pa.DataType:
+        return pa.dictionary(pa.int32(), pa.string())
+
+    def _sample_unchecked(self, generator: Generator, n: int) -> pl.Series:
+        raise NotImplementedError
+
+
+class PolarsEnum(StrEnum):
+    @classmethod
+    def to_list(cls) -> list[str]:
+        return [member.value for member in cls]
+
+    @classmethod
+    def to_pl(cls) -> pl.Enum:
+        return pl.Enum(cls)
