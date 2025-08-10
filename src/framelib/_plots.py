@@ -39,13 +39,10 @@ class RGBColor:
 
 
 def generate_palette(n_colors: int, *base_palette: HexColor) -> Palette:
-    if n_colors <= 0:
-        raise ValueError("At least one color is required.")
+    palette_len = len(base_palette)
+    n_colors = max(palette_len, n_colors)
 
-    if n_colors <= len(base_palette):
-        return list(base_palette)[:n_colors]
-
-    segments: int = len(base_palette) - 1
+    segments: int = palette_len - 1
 
     if segments == 0:
         return [base_palette[0]] * n_colors
@@ -57,7 +54,7 @@ def generate_palette(n_colors: int, *base_palette: HexColor) -> Palette:
         index: int = math.floor(pos)
         factor: float = pos - index
 
-        c2_hex = base_palette[min(index + 1, len(base_palette) - 1)]
+        c2_hex = base_palette[min(index + 1, segments)]
 
         result.append(
             RGBColor.from_hex(base_palette[index])
