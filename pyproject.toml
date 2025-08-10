@@ -1,7 +1,7 @@
 [project]
-name = "framepaths"
-version = "0.1.26"
-description = "dataframely plugin"
+name = "framelib"
+version = "0.1.27"
+description = "polars and dataframely plugin"
 readme = "README.md"
 authors = [
     { name = "OutSquareCapital", email = "166045166+OutSquareCapital@users.noreply.github.com" }
@@ -9,9 +9,7 @@ authors = [
 requires-python = ">=3.13"
 dependencies = [
     "dataframely>=1.7.6",
+    "plotly>=6.2.0",
+    "plotly-stubs @ git+https://github.com/OutSquareCapital/plotly-stubs.git@improve-express-stubs",
     "pyarrow-stubs>=20.0.0.20250716",
 ]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
