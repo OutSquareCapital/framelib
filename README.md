@@ -1,70 +1,19 @@
-# Dataframely plugin for path files management
+# framelib: Helpers for Polars, Plotly, and Dataframely Paths
 
-This plugin makes it easy to manage structured data files (CSV, Parquet, etc.) using typed Python schemas, leveraging the dataframely library.
+This package provides utilities to simplify structured data workflows in Python:
 
-You can find more infos about dataframely here:
+- Helpers for using Python Enums with Polars
+- Plotting utilities based on Plotly (express and graph_objects) for polars.
+- Path management helpers for Dataframely schemas and collections
+
+The goal is to make it easier to work with typed data, advanced plotting, and file organization in modern data projects.
+
+More information about Dataframely:
 
 <https://github.com/Quantco/dataframely>
 
 ## Installation
 
 ```bash
-uv add git+https://github.com/OutSquareCapital/framepaths.git
+uv add git+https://github.com/OutSquareCapital/framelib.git
 ```
-
-### Example
-
-```python
-import dataframely as dy
-
-import framepaths as fp
-
-
-class BaseSchema(fp.CSVSchema):
-    __directory__ = "bookshop"
-
-
-class Users(BaseSchema):
-    name = dy.String(nullable=False, min_length=3)
-    age = dy.UInt8(nullable=False)
-    email = dy.String(nullable=False)
-
-
-class Articles(BaseSchema):
-    title = dy.String(nullable=False, min_length=3)
-
-
-class Books(Articles):
-    chapters = dy.List(dy.String(nullable=False), nullable=False)
-    metadata = dy.Struct(
-        {
-            "pages": dy.UInt16(nullable=False),
-            "isbn": dy.String(nullable=False, min_length=10),
-        },
-        nullable=False,
-    )
-
-
-class VideoGames(Articles):
-    platform = dy.String(nullable=False, min_length=2)
-    release_date = dy.Date(nullable=False)
-    rating = dy.Float32(nullable=True, min=0.0, max=10.0)
-
-
-class BookShop(dy.Collection):
-    users: dy.LazyFrame[Users]
-    books: dy.LazyFrame[Books]
-    video_games: dy.LazyFrame[VideoGames]
-
-```
-
-### Explanations
-
-- `BaseSchema` sets the root directory (`bookshop`), as well as the extension type via CSVSchema.
-- `Users`, `Articles`, `Books`, `VideoGames` are typed schemas for each table/file.
-- `Books` and `VideoGames` inherit from `Articles` to factor out common columns.
-- `BookShop` groups the different tables into a typed collection, each attribute being a `dy.LazyFrame` of the corresponding schema.
-
-### File Organization
-
-CSV files will automatically be read from/written to the `bookshop/` directory, with filenames matching the class names (e.g., `users.csv`, `books.csv`, etc.).
