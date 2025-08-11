@@ -2,12 +2,13 @@ import functools
 from abc import ABC
 from collections.abc import Callable
 from pathlib import Path as _Path
-from typing import Concatenate, overload
+from typing import Concatenate, Literal, overload
 
 from dataframely import Schema as _Schema
 
 from ._tree import TreeDisplay
-from ._types import Formatting
+
+Formatting = Literal["upper", "lower", "title"]
 
 
 class Schema(_Schema, ABC):
