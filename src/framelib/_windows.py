@@ -40,7 +40,7 @@ class WindowManager:
 
     @property
     def group_by_arg(self) -> str:
-        return f"{self.window_size}{self.every}"
+        return f"{self.each}{self.every}"
 
     @property
     def annualization_factor(self) -> float:
