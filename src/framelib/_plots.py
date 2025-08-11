@@ -40,17 +40,16 @@ class RGBColor:
 
 def generate_palette(n_colors: int, *base_palette: HexColor) -> Palette:
     palette_len = len(base_palette)
-    n_colors = max(palette_len, n_colors)
 
     segments: int = palette_len - 1
 
-    if segments == 0:
+    if segments < 1:
         return [base_palette[0]] * n_colors
 
     result: list[HexColor] = []
-    total_interval: int = n_colors - 1
+    total_interval: int = (n_colors - 1) if n_colors > 1 else 1
     for i in range(n_colors):
-        pos: float = i / total_interval * segments
+        pos: float = (i / total_interval) * segments if total_interval > 0 else 0.0
         index: int = math.floor(pos)
         factor: float = pos - index
 
