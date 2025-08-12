@@ -1,9 +1,22 @@
 # TODO
 import math
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Literal, TypedDict
 
+import polars as pl
+
 TimeDelta = Literal["ns", "us", "ms", "s", "m", "h", "d", "w", "mo", "q", "y", "i"]
+
+
+class PolarsEnum(StrEnum):
+    @classmethod
+    def to_list(cls) -> list[str]:
+        return [member.value for member in cls]
+
+    @classmethod
+    def to_pl(cls) -> pl.Enum:
+        return pl.Enum(cls)
 
 
 class WindowArgs(TypedDict):

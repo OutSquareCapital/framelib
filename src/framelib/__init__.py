@@ -1,11 +1,9 @@
-from . import schemas, stats
-from ._lib import PolarsEnum, Style
-from ._windows import WindowManager
+from . import graphs, schemas, stats
+from ._misc import PolarsEnum
 
 __all__ = [
     "stats",
-    "Style",
+    "graphs",
     "schemas",
     "PolarsEnum",
-    "WindowManager",
 ]

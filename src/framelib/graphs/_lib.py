@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from enum import StrEnum
 from typing import Self
 
 import plotly.express as px
@@ -13,16 +12,6 @@ from ._plots import (
     generate_palette,
 )
 from ._types import ColorMap, Turbo
-
-
-class PolarsEnum(StrEnum):
-    @classmethod
-    def to_list(cls) -> list[str]:
-        return [member.value for member in cls]
-
-    @classmethod
-    def to_pl(cls) -> pl.Enum:
-        return pl.Enum(cls)
 
 
 @dataclass(slots=True)

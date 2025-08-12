@@ -1,4 +1,4 @@
-from ._main import (
+from ._lib import (
     drawdown,
     rolling_midpoint,
     rolling_normalization,
