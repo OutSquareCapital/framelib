@@ -5,13 +5,13 @@ import plotly.express as px
 import polars as pl
 
 from ._plots import (
+    ColorMap,
     GraphArgs,
     Palette,
     PlotlyTemplate,
     create_plot_function,
     generate_palette,
 )
-from ._types import ColorMap, Turbo
 
 
 @dataclass(slots=True)
@@ -25,7 +25,7 @@ class Style:
         cls,
         df: pl.DataFrame,
         group: str,
-        base_palette: Palette = Turbo,
+        base_palette: Palette = px.colors.sequential.Turbo,
         template: PlotlyTemplate = "plotly_dark",
     ) -> Self:
         keys = df.get_column(group).to_list()
@@ -78,3 +78,15 @@ class Style:
     @property
     def violin(self):
         return create_plot_function(px.violin, self._arguments)
+
+    @property
+    def treemap(self):
+        return create_plot_function(px.treemap, self._arguments)
+
+    @property
+    def icicle(self):
+        return create_plot_function(px.icicle, self._arguments)
+
+    @property
+    def sunburst(self):
+        return create_plot_function(px.sunburst, self._arguments)

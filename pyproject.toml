@@ -10,6 +10,6 @@ requires-python = ">=3.13"
 dependencies = [
     "dataframely>=1.7.6",
     "plotly>=6.2.0",
-    "plotly-stubs @ git+https://github.com/OutSquareCapital/plotly-stubs.git@improve-express-stubs",
+    "plotly-stubs @ git+https://github.com/OutSquareCapital/plotly-stubs.git@add-colors-namespace",
     "pyarrow-stubs>=20.0.0.20250716",
 ]

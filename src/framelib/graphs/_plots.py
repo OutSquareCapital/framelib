@@ -2,11 +2,28 @@ import math
 from collections.abc import Callable
 from dataclasses import dataclass
 from functools import wraps
-from typing import Self, TypedDict
+from typing import Literal, Self, TypedDict
 
 import plotly.graph_objects as go
 
-from ._types import ColorMap, HexColor, Palette, PlotlyTemplate
+type HexColor = str
+type Palette = list[HexColor]
+type ColorMap = dict[str | int, HexColor]
+
+
+PlotlyTemplate = Literal[
+    "ggplot2",
+    "seaborn",
+    "simple_white",
+    "plotly",
+    "plotly_white",
+    "plotly_dark",
+    "presentation",
+    "xgridoff",
+    "ygridoff",
+    "gridon",
+    "none",
+]
 
 
 class GraphArgs(TypedDict):
