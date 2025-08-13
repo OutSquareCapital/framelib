@@ -1,6 +1,6 @@
 [project]
 name = "framelib"
-version = "0.1.27"
+version = "0.1.28"
 description = "polars and dataframely plugin"
 readme = "README.md"
 authors = [
