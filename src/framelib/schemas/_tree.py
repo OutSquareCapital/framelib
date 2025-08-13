@@ -73,17 +73,14 @@ def _get_items(directory: Path) -> list[Path]:
 @dataclass(slots=True, repr=False)
 class TreeDisplay:
     root: Path
-    title: str
     css: str = CSS.STYLE
 
     def __repr__(self) -> str:
-        header: str = f"{self.title}(directory='{self.root}')\n"
+        header: str = f"{self.root}\n"
         tree_lines: list[str] = _build_tree(self.root)
         return header + "\n".join(tree_lines)
 
     def _repr_html_(self) -> str:
-        header: str = (
-            f"<strong>{self.title}</strong>(directory='<code>{self.root}</code>')"
-        )
+        header: str = f"'<code>{self.root}</code>'"
         html_tree: str = _build_html_tree(self.root)
         return f'<div class="tree">{self.css}{header}{html_tree}</div>'

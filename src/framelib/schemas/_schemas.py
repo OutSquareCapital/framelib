@@ -22,7 +22,7 @@ class Schema(_Schema, ABC):
     __ext__: str
 
     @classmethod
-    def path(cls, make_dir: bool = False, format: Formatting | None = None) -> _Path:
+    def path(cls, make_dir: bool = True, format: Formatting | None = None) -> _Path:
         """
         Returns the full path to the file for this schema, with optional directory creation and name formatting.
         """
@@ -51,7 +51,7 @@ class Schema(_Schema, ABC):
         Returns a TreeDisplay object for the directory containing this schema's file.
         """
         root_dir = _Path(cls.path().parent)
-        return TreeDisplay(root=root_dir, title=cls.__name__)
+        return TreeDisplay(root=root_dir)
 
 
 class IODescriptor[**P, T]:

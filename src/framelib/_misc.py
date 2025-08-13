@@ -10,12 +10,21 @@ TimeDelta = Literal["ns", "us", "ms", "s", "m", "h", "d", "w", "mo", "q", "y", "
 
 
 class PolarsEnum(StrEnum):
+    """
+    PolarsEnum is a custom enumeration class that extends StrEnum.
+
+    It provides additional functionality for working with enumerations in the context of
+    Polars.
+    """
+
     @classmethod
     def to_list(cls) -> list[str]:
+        """Converts the enumeration members to a list of their string values."""
         return [member.value for member in cls]
 
     @classmethod
     def to_pl(cls) -> pl.Enum:
+        """Converts the enumeration class to a Polars Enum type."""
         return pl.Enum(cls)
 
 
