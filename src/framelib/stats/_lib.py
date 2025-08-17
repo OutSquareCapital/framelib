@@ -61,3 +61,7 @@ def rolling_scaling(expr: pl.Expr, window_size: int, min_samples: int) -> pl.Exp
 
 def drawdown(expr: pl.Expr) -> pl.Expr:
     return expr.truediv(expr.cum_max()).sub(1)
+
+
+def price_to_log_price(expr: pl.Expr) -> pl.Expr:
+    return expr.log().sub(expr.log().first()).add(1)

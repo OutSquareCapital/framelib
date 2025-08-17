@@ -1,5 +1,6 @@
 from ._lib import (
     drawdown,
+    price_to_log_price,
     rolling_midpoint,
     rolling_normalization,
     rolling_perf_factor,
@@ -16,4 +17,5 @@ __all__ = [
     "rolling_sharpe",
     "rolling_z_score",
     "drawdown",
+    "price_to_log_price",
 ]
