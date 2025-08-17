@@ -1,7 +1,9 @@
 from dataclasses import dataclass
+from types import ModuleType
 from typing import Self
 
 import plotly.express as px
+import plotly.graph_objects as go
 import polars as pl
 
 from ._plots import (
@@ -14,6 +16,14 @@ from ._plots import (
 )
 
 
+def extract_color_scales(module: ModuleType) -> dict[str, list[str]]:
+    return {
+        key: value
+        for key, value in module.__dict__.items()
+        if isinstance(value, list) and not key.startswith("_")
+    }
+
+
 @dataclass(slots=True)
 class Style:
     template: PlotlyTemplate
@@ -21,20 +31,17 @@ class Style:
     color_discrete_map: ColorMap
 
     @classmethod
-    def from_df(
+    def from_series(
         cls,
-        df: pl.DataFrame,
-        group: str,
+        keys: pl.Series,
         base_palette: Palette = px.colors.sequential.Turbo,
         template: PlotlyTemplate = "plotly_dark",
     ) -> Self:
-        keys = df.get_column(group).to_list()
-        n_colors: int = len(keys)
-        colors: Palette = generate_palette(n_colors, *base_palette)
-
         return cls(
-            color=group,
-            color_discrete_map=dict(zip(keys, colors)),
+            color=keys.name,
+            color_discrete_map=dict(
+                zip(keys.to_list(), generate_palette(keys.len(), *base_palette))
+            ),
             template=template,
         )
 
@@ -50,6 +57,16 @@ class Style:
         if key in self.color_discrete_map:
             self.color_discrete_map[key] = value
         return self
+
+    def show_colors_scale(self) -> go.Figure:
+        return px.colors.sequential.swatches().update_layout(
+            template=self.template,
+            title=None,
+            height=550,
+            width=400,
+            margin={"l": 0, "r": 0, "t": 0, "b": 0},
+            paper_bgcolor="#181c1a",
+        )
 
     @property
     def scatter(self):

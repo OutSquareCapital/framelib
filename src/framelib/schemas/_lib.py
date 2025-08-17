@@ -8,8 +8,10 @@ class CSV(Schema):
     Schema for CSV files, providing methods to read and scan using polars.
 
     Example:
-        >>> class MyFile(CSV):
-        ...     __directory__ = "tests/data_csv"
+        >>> from framelib.schemas._schemas import directory
+        >>> @directory("tests", "data_csv")
+        ... class MyFile(CSV):
+        ...     pass
         ...
         >>> MyFile.path().touch()
         >>> MyFile.show_tree()
@@ -27,9 +29,10 @@ class Parquet(Schema):
     Schema for Parquet files, providing methods to read and scan using polars.
 
     Example:
-        >>> class MyFile(Parquet):
-        ...     __directory__ = "tests/data_parquet"
-        ...
+        >>> from framelib.schemas._schemas import directory
+        >>> @directory("tests", "data_parquet")
+        ... class MyFile(Parquet):
+        ...     pass
         >>> MyFile.path().touch()
         >>> MyFile.show_tree()
         tests\\data_parquet
@@ -46,8 +49,10 @@ class NDJSON(Schema):
     Schema for NDJSON files, providing methods to read and scan using polars.
 
     Example:
-        >>> class MyFile(NDJSON):
-        ...     __directory__ = "tests/data_ndjson"
+        >>> from framelib.schemas._schemas import directory
+        >>> @directory("tests", "data_ndjson")
+        ... class MyFile(NDJSON):
+        ...     pass
         ...
         >>> MyFile.path().touch()
         >>> MyFile.show_tree()

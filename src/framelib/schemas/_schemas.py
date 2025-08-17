@@ -1,46 +1,43 @@
 import functools
+import pathlib
 from abc import ABC
 from collections.abc import Callable
-from pathlib import Path as _Path
-from typing import Concatenate, Literal, overload
+from typing import Concatenate, overload
 
-from dataframely import Schema as _Schema
+import dataframely as dy
 
 from ._tree import TreeDisplay
 
-Formatting = Literal["upper", "lower", "title"]
 
-
-class Schema(_Schema, ABC):
+class Schema(dy.Schema, ABC):
     """
     Base schema for file-based schemas, providing path and tree display utilities.
+
+    Example:
+        >>> from framelib.schemas._schemas import Schema, directory
+        >>> @directory("tests", "data_schema")
+        ... class MyFile(Schema):
+        ...     __ext__ = ".dat"
+        ...
+        >>> MyFile.path().touch()
+        >>> MyFile.show_tree()
+        tests\\data_schema
+        └── MyFile.dat
 
     Subclasses should define the `__ext__` attribute, as well as implement the `read` and `scan` methods.
     """
 
-    __directory__: str | _Path
+    __directory__: pathlib.Path
     __ext__: str
 
     @classmethod
-    def path(cls, make_dir: bool = True, format: Formatting | None = None) -> _Path:
+    def path(cls, make_dir: bool = True) -> pathlib.Path:
         """
         Returns the full path to the file for this schema, with optional directory creation and name formatting.
         """
-        name = cls.__name__
-        match format:
-            case "upper":
-                name = name.upper()
-            case "lower":
-                name = name.lower()
-            case "title":
-                name = name.title()
-            case _:
-                pass
-        if not cls.__directory__:
-            raise ValueError("Schema must have a __directory__ attribute set.")
         if not cls.__ext__:
             raise ValueError("Schema must have a __ext__ attribute set.")
-        path = _Path(cls.__directory__).joinpath(f"{name}{cls.__ext__}")
+        path = cls.__directory__.joinpath(f"{cls.__name__}{cls.__ext__}")
         if make_dir:
             path.parent.mkdir(parents=True, exist_ok=True)
         return path
@@ -50,12 +47,11 @@ class Schema(_Schema, ABC):
         """
         Returns a TreeDisplay object for the directory containing this schema's file.
         """
-        root_dir = _Path(cls.path().parent)
-        return TreeDisplay(root=root_dir)
+        return TreeDisplay(root=cls.path().parent)
 
 
 class IODescriptor[**P, T]:
-    def __init__(self, func: Callable[Concatenate[_Path, P], T]) -> None:
+    def __init__(self, func: Callable[Concatenate[pathlib.Path, P], T]) -> None:
         self.func = func
         functools.update_wrapper(self, self.func)  # type: ignore[call-arg]
 
@@ -67,3 +63,19 @@ class IODescriptor[**P, T]:
 
     def __get__(self, instance: Schema | None, owner: type[Schema]) -> Callable[P, T]:
         return functools.partial(self.func, owner.path())
+
+
+def directory(*parts: str | pathlib.Path):
+    """
+    Decorator to set __directory__ on a Schema subclass, with a relative path.
+    If parts are provided, adds them to the path (e.g. Path("tests", "data_schema")).
+    """
+
+    def _set_dir(cls: type[Schema]) -> type[Schema]:
+        if parts:
+            cls.__directory__ = pathlib.Path(*parts)
+        else:
+            cls.__directory__ = pathlib.Path()
+        return cls
+
+    return _set_dir
