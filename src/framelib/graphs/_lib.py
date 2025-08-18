@@ -24,18 +24,28 @@ def extract_color_scales(module: ModuleType) -> dict[str, list[str]]:
     }
 
 
+def combine_palettes(*palettes: Palette) -> Palette:
+    return [color for palette in palettes for color in palette]
+
+
 @dataclass(slots=True)
-class Style:
+class Displayer:
     template: PlotlyTemplate
     color: str
     color_discrete_map: ColorMap
 
     @classmethod
-    def from_df(cls, df: pl.LazyFrame, col: str) -> Self:
+    def from_df(
+        cls,
+        df: pl.LazyFrame,
+        col: str,
+        base_palette: Palette = px.colors.sequential.Turbo,
+        template: PlotlyTemplate = "plotly_dark",
+    ) -> Self:
         keys: pl.Series = (
             df.select(pl.col(col)).unique().sort(pl.col(col)).collect().get_column(col)
         )
-        return cls.from_series(keys)
+        return cls.from_series(keys, base_palette=base_palette, template=template)
 
     @classmethod
     def from_series(
