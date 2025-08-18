@@ -1,40 +1,6 @@
-from collections.abc import Sequence
-from enum import StrEnum
-
 import polars as pl
 
 from ._schemas import IODescriptor, Schema
-
-
-class Enum(StrEnum):
-    @classmethod
-    def to_list(cls) -> list[str]:
-        return [member.value for member in cls]
-
-    @classmethod
-    def to_dtype(cls) -> pl.Enum:
-        return pl.Enum(cls)
-
-    @classmethod
-    def from_df(cls, data: pl.DataFrame | pl.LazyFrame, col: str) -> "Enum":
-        return Enum(
-            col,
-            data.lazy()
-            .select(pl.col(col))
-            .unique()
-            .sort(col)
-            .cast(pl.String)
-            .collect()
-            .get_column(col)
-            .to_list(),
-        )
-
-    @classmethod
-    def from_sequence(cls, data: pl.Series | Sequence[str]) -> "Enum":
-        if not isinstance(data, pl.Series):
-            data = pl.Series("FrameEnum", data)
-
-        return Enum(data.name, data.unique().sort().cast(pl.String).to_list())
 
 
 class CSV(Schema):
