@@ -1,4 +1,3 @@
-from collections.abc import Sequence
 from enum import StrEnum
 
 import polars as pl
@@ -64,21 +63,17 @@ class Enum(StrEnum):
             .select(pl.col(name))
             .unique()
             .sort(name)
-            .cast(pl.String)
             .collect()
             .get_column(name)
             .to_list(),
         )
 
     @classmethod
-    def from_sequence(cls, data: pl.Series | Sequence[str], name: str) -> "Enum":
-        """Create a dynamic Enum from a sequence or Series.
+    def from_series(cls, data: pl.Series) -> "Enum":
+        """Create a dynamic Enum from a Series.
 
         Example:
-            >>> Enum.from_sequence(["value3", "value1", "value2", "value1"], name="X").to_list()
+            >>> Enum.from_series(pl.Series(["value3", "value1", "value2", "value1"])).to_list()
             ['value1', 'value2', 'value3']
         """
-        if not isinstance(data, pl.Series):
-            data = pl.Series(name, data)
-
-        return Enum(name, data.unique().sort().cast(pl.String).to_list())
+        return Enum(data.name, data.unique().sort().to_list())

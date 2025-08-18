@@ -31,16 +31,23 @@ class Style:
     color_discrete_map: ColorMap
 
     @classmethod
+    def from_df(cls, df: pl.LazyFrame, col: str) -> Self:
+        keys: pl.Series = (
+            df.select(pl.col(col)).unique().sort(pl.col(col)).collect().get_column(col)
+        )
+        return cls.from_series(keys)
+
+    @classmethod
     def from_series(
         cls,
-        keys: pl.Series,
+        serie: pl.Series,
         base_palette: Palette = px.colors.sequential.Turbo,
         template: PlotlyTemplate = "plotly_dark",
     ) -> Self:
         return cls(
-            color=keys.name,
+            color=serie.name,
             color_discrete_map=dict(
-                zip(keys.to_list(), generate_palette(keys.len(), *base_palette))
+                zip(serie.to_list(), generate_palette(serie.len(), *base_palette))
             ),
             template=template,
         )
