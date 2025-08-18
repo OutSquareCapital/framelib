@@ -2,7 +2,7 @@ import math
 from collections.abc import Callable
 from dataclasses import dataclass
 from functools import wraps
-from typing import Literal, Self, TypedDict
+from typing import Literal, Self, TypedDict, get_args
 
 import plotly.graph_objects as go
 
@@ -11,7 +11,7 @@ type Palette = list[HexColor]
 type ColorMap = dict[str | int, HexColor]
 
 
-PlotlyTemplate = Literal[
+Templates = Literal[
     "ggplot2",
     "seaborn",
     "simple_white",
@@ -25,9 +25,11 @@ PlotlyTemplate = Literal[
     "none",
 ]
 
+TemplatesValues: tuple[str, ...] = get_args(Templates)
+
 
 class GraphArgs(TypedDict):
-    template: PlotlyTemplate
+    template: Templates
     color: str
     color_discrete_map: ColorMap
 

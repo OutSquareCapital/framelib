@@ -10,7 +10,7 @@ from ._plots import (
     ColorMap,
     GraphArgs,
     Palette,
-    PlotlyTemplate,
+    Templates,
     create_plot_function,
     generate_palette,
 )
@@ -30,7 +30,7 @@ def combine_palettes(*palettes: Palette) -> Palette:
 
 @dataclass(slots=True)
 class Displayer:
-    template: PlotlyTemplate
+    template: Templates
     color: str
     color_discrete_map: ColorMap
 
@@ -40,7 +40,7 @@ class Displayer:
         df: pl.LazyFrame,
         col: str,
         base_palette: Palette = px.colors.sequential.Turbo,
-        template: PlotlyTemplate = "plotly_dark",
+        template: Templates = "plotly_dark",
     ) -> Self:
         keys: pl.Series = (
             df.select(pl.col(col)).unique().sort(pl.col(col)).collect().get_column(col)
@@ -52,7 +52,7 @@ class Displayer:
         cls,
         serie: pl.Series,
         base_palette: Palette = px.colors.sequential.Turbo,
-        template: PlotlyTemplate = "plotly_dark",
+        template: Templates = "plotly_dark",
     ) -> Self:
         return cls(
             color=serie.name,
