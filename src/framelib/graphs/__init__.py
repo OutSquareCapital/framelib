@@ -1,3 +1,5 @@
-from ._lib import Style, extract_color_scales
+import plotly.express.colors as colors
 
-__all__ = ["Style", "extract_color_scales"]
+from ._lib import PlotlyTemplate, Style, extract_color_scales
+
+__all__ = ["Style", "extract_color_scales", "colors", "PlotlyTemplate"]
