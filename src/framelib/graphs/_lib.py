@@ -30,10 +30,16 @@ class Displayer:
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> go.Figure:
+        """
+        Execute the provided plotting function using the stored DataFrame and default plotting arguments.
+        """
         return func(self.data_frame, *args, **self._kw_args, **kwargs)
 
     @property
     def _kw_args(self) -> GraphArgs:
+        """
+        Returns the default plotting GraphArgs constructed from the Displayer attributes.
+        """
         return GraphArgs(
             x=self.x,
             y=self.y,
@@ -52,6 +58,9 @@ class Displayer:
         base_palette: Palette = px.colors.sequential.Turbo,
         template: Templates = "plotly_dark",
     ) -> Self:
+        """
+        Construct a Displayer from a Polars LazyFrame by collecting and building a color map.
+        """
         discrete_map: ColorMap = get_color_map(_get_keys(df, col), base_palette)
         return cls(
             data_frame=df.collect(),
@@ -68,6 +77,9 @@ class Displayer:
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> Self:
+        """
+        Append a generated Plotly figure to the internal graphs list and return self for chaining.
+        """
         self.graphs.append(self._plot_fn(func, *args, **kwargs))
         return self
 
@@ -77,26 +89,44 @@ class Displayer:
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> go.Figure:
+        """
+        Build and return a Plotly figure using the provided function and stored data.
+        """
         return self._plot_fn(func, *args, **kwargs)
 
     def update_color(self, key: str, value: str) -> Self:
+        """
+        Update a color in the discrete color map if the key exists and return self.
+        """
         if key in self.color_discrete_map:
             self.color_discrete_map[key] = value
         return self
 
     def set_x(self, x: str) -> Self:
+        """
+        Set the x attribute and return self.
+        """
         self.x = x
         return self
 
     def set_y(self, y: str) -> Self:
+        """
+        Set the y attribute and return self.
+        """
         self.y = y
         return self
 
     def set_data(self, data: DataFrameCompatible) -> Self:
+        """
+        Replace the stored data_frame and return self.
+        """
         self.data_frame = data
         return self
 
     def show_colors_scale(self) -> go.Figure:
+        """
+        Return a Plotly figure showing the color swatches.
+        """
         return px.colors.sequential.swatches().update_layout(
             template=self.template,
             title=None,
