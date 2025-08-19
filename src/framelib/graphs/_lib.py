@@ -33,7 +33,8 @@ class Displayer:
         """
         Execute the provided plotting function using the stored DataFrame and default plotting arguments.
         """
-        return func(self.data_frame, *args, **self._kw_args, **kwargs)
+        merged = {**self._kw_args, **kwargs}
+        return func(self.data_frame, *args, **merged)  # type: ignore
 
     @property
     def _kw_args(self) -> GraphArgs:
