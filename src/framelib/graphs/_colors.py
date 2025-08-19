@@ -1,37 +1,11 @@
 import math
-from collections.abc import Callable
 from dataclasses import dataclass
-from functools import wraps
-from typing import Literal, Self, TypedDict, get_args
+from types import ModuleType
+from typing import Self
 
-import plotly.graph_objects as go
+import polars as pl
 
-type HexColor = str
-type Palette = list[HexColor]
-type ColorMap = dict[str | int, HexColor]
-
-
-Templates = Literal[
-    "ggplot2",
-    "seaborn",
-    "simple_white",
-    "plotly",
-    "plotly_white",
-    "plotly_dark",
-    "presentation",
-    "xgridoff",
-    "ygridoff",
-    "gridon",
-    "none",
-]
-
-TemplatesValues: tuple[str, ...] = get_args(Templates)
-
-
-class GraphArgs(TypedDict):
-    template: Templates
-    color: str
-    color_discrete_map: ColorMap
+from ._types import ColorMap, HexColor, Palette
 
 
 @dataclass(slots=True)
@@ -83,12 +57,17 @@ def generate_palette(n_colors: int, *base_palette: HexColor) -> Palette:
     return result
 
 
-def create_plot_function[**P](
-    func: Callable[P, go.Figure], arguments: GraphArgs
-) -> Callable[P, go.Figure]:
-    @wraps(func)
-    def wrapper(*args: P.args, **kwargs: P.kwargs) -> go.Figure:
-        merged_kwargs = {**arguments, **kwargs}
-        return func(*args, **merged_kwargs)  # type: ignore[return-value]
+def extract_color_scales(module: ModuleType) -> dict[str, list[str]]:
+    return {
+        key: value
+        for key, value in module.__dict__.items()
+        if isinstance(value, list) and not key.startswith("_")
+    }
 
-    return wrapper
+
+def combine_palettes(*palettes: Palette) -> Palette:
+    return [color for palette in palettes for color in palette]
+
+
+def get_color_map(serie: pl.Series, base_palette: Palette) -> ColorMap:
+    return dict(zip(serie.to_list(), generate_palette(serie.len(), *base_palette)))
