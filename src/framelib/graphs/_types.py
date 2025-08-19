@@ -34,8 +34,8 @@ TemplatesValues: tuple[str, ...] = get_args(Templates)
 
 
 class GraphArgs(TypedDict):
-    x: str
-    y: str
+    x: str | None
+    y: str | None
     template: Templates
     color: str
     color_discrete_map: ColorMap

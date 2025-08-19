@@ -17,11 +17,11 @@ def _get_keys(df: pl.LazyFrame, col: str) -> pl.Series:
 @dataclass(slots=True)
 class Displayer:
     data_frame: DataFrameCompatible
-    x: str
-    y: str
     template: Templates
     color: str
     color_discrete_map: ColorMap
+    x: str | None = None
+    y: str | None = None
     graphs: list[go.Figure] = field(default_factory=list[go.Figure])
 
     def _plot_fn[**P](
@@ -53,8 +53,8 @@ class Displayer:
         cls,
         df: pl.LazyFrame,
         col: str,
-        x: str,
-        y: str,
+        x: str | None = None,
+        y: str | None = None,
         base_palette: Palette = px.colors.sequential.Turbo,
         template: Templates = "plotly_dark",
     ) -> Self:
@@ -102,14 +102,14 @@ class Displayer:
             self.color_discrete_map[key] = value
         return self
 
-    def set_x(self, x: str) -> Self:
+    def set_x(self, x: str | None) -> Self:
         """
         Set the x attribute and return self.
         """
         self.x = x
         return self
 
-    def set_y(self, y: str) -> Self:
+    def set_y(self, y: str | None) -> Self:
         """
         Set the y attribute and return self.
         """
@@ -121,6 +121,13 @@ class Displayer:
         Replace the stored data_frame and return self.
         """
         self.data_frame = data
+        return self
+
+    def set_template(self, template: Templates) -> Self:
+        """
+        Set the template for the graphs and return self.
+        """
+        self.template = template
         return self
 
     def show_colors_scale(self) -> go.Figure:
