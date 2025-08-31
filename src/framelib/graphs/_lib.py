@@ -25,6 +25,14 @@ class Displayer:
     y: str | None = None
     graphs: list[go.Figure] = field(default_factory=list[go.Figure])
 
+    def pipe[**P, R](
+        self, func: Callable[Concatenate[Self, P], R], *args: P.args, **kwargs: P.kwargs
+    ) -> R:
+        """
+        Pass the Displayer instance and additional arguments to a function and return the result.
+        """
+        return func(self, *args, **kwargs)
+
     def _plot_fn[**P](
         self,
         func: Callable[Concatenate[DataFrameCompatible, P], go.Figure],
