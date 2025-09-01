@@ -11,7 +11,7 @@ def rolling_perf_factor(
         )
         .mul(
             other=expr.cum_count()
-            .clip(upper_bound=window_size, lower_bound=min_samples)
+            .clip(upper_bound=window_size, lower_bound=1 or min_samples)
             .log1p()
         )
     )
