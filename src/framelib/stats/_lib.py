@@ -1,7 +1,9 @@
 import polars as pl
 
 
-def rolling_perf_factor(expr: pl.Expr, window_size: int, min_samples: int) -> pl.Expr:
+def rolling_perf_factor(
+    expr: pl.Expr, window_size: int, min_samples: int | None = None
+) -> pl.Expr:
     return (
         expr.rolling_mean(window_size=window_size, min_samples=min_samples)
         .truediv(
@@ -15,7 +17,9 @@ def rolling_perf_factor(expr: pl.Expr, window_size: int, min_samples: int) -> pl
     )
 
 
-def rolling_midpoint(expr: pl.Expr, window_size: int, min_samples: int) -> pl.Expr:
+def rolling_midpoint(
+    expr: pl.Expr, window_size: int, min_samples: int | None = None
+) -> pl.Expr:
     return (
         expr.rolling_max(window_size=window_size, min_samples=min_samples).add(
             other=expr.rolling_min(window_size=window_size, min_samples=min_samples)
@@ -23,19 +27,25 @@ def rolling_midpoint(expr: pl.Expr, window_size: int, min_samples: int) -> pl.Ex
     ).truediv(other=2.0)
 
 
-def rolling_z_score(expr: pl.Expr, window_size: int, min_samples: int) -> pl.Expr:
+def rolling_z_score(
+    expr: pl.Expr, window_size: int, min_samples: int | None = None
+) -> pl.Expr:
     return expr.sub(
         expr.rolling_mean(window_size=window_size, min_samples=min_samples)
     ).truediv(other=expr.rolling_std(window_size=window_size, min_samples=min_samples))
 
 
-def rolling_sharpe(expr: pl.Expr, window_size: int, min_samples: int) -> pl.Expr:
+def rolling_sharpe(
+    expr: pl.Expr, window_size: int, min_samples: int | None = None
+) -> pl.Expr:
     return expr.rolling_mean(window_size=window_size, min_samples=min_samples).truediv(
         other=expr.rolling_std(window_size=window_size, min_samples=min_samples)
     )
 
 
-def rolling_normalization(expr: pl.Expr, window_size: int, min_samples: int) -> pl.Expr:
+def rolling_normalization(
+    expr: pl.Expr, window_size: int, min_samples: int | None = None
+) -> pl.Expr:
     return (
         expr.rolling_median(window_size=window_size, min_samples=min_samples)
         .truediv(
@@ -49,7 +59,9 @@ def rolling_normalization(expr: pl.Expr, window_size: int, min_samples: int) -> 
     )
 
 
-def rolling_scaling(expr: pl.Expr, window_size: int, min_samples: int) -> pl.Expr:
+def rolling_scaling(
+    expr: pl.Expr, window_size: int, min_samples: int | None = None
+) -> pl.Expr:
     return expr.mul(
         pl.lit(value=1, dtype=pl.Float32).truediv(
             other=expr.abs().rolling_median(
