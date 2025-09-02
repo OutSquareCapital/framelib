@@ -60,9 +60,7 @@ class Enum(StrEnum):
         return Enum(
             name,
             data.lazy()
-            .select(pl.col(name))
-            .unique()
-            .sort(name)
+            .select(pl.col(name).unique().sort())
             .collect()
             .get_column(name)
             .to_list(),

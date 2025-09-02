@@ -12,7 +12,7 @@ from ._types import ColorMap, DataFrameCompatible, GraphArgs, Palette, Templates
 
 
 def _get_keys(df: pl.LazyFrame, col: str) -> pl.Series:
-    return df.select(pl.col(col)).unique().sort(pl.col(col)).collect().get_column(col)
+    return df.select(pl.col(col).unique().sort()).collect().get_column(col)
 
 
 @dataclass(slots=True)

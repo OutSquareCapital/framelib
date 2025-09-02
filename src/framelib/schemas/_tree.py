@@ -80,6 +80,8 @@ class TreeDisplay:
         return header + "\n".join(tree_lines)
 
     def _repr_html_(self) -> str:
-        header: str = f"'<code>{self.root}</code>'"
-        html_tree: str = _build_html_tree(self.root)
-        return f'<div class="tree">{CSS.STYLE}{header}{html_tree}</div>'
+        return f'<div class="tree">{CSS.STYLE}{self._header}{_build_html_tree(self.root)}</div>'
+
+    @property
+    def _header(self) -> str:
+        return f"'<code>{self.root}</code>'"
