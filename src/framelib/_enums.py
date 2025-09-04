@@ -1,12 +1,14 @@
 from enum import StrEnum
-from typing import Self
+from typing import Literal, Self
 
 import polars as pl
+
+Kind = Literal["name", "value"]
 
 
 class Enum(StrEnum):
     @classmethod
-    def to_series(cls) -> pl.Series:
+    def to_series(cls, kind: Kind = "value") -> pl.Series:
         """Convert the Enum members to a Polars Series.
 
         Example:
@@ -17,10 +19,11 @@ class Enum(StrEnum):
             >>> MyEnum.to_series().to_list()
             ['value1', 'value2', 'value3']
         """
-        return pl.Series(cls.__name__, cls.to_list(), dtype=cls.to_dtype())
+        values: list[str] = cls.to_list(kind)
+        return pl.Series(cls.__name__, values, dtype=pl.Enum(values))
 
     @classmethod
-    def to_list(cls) -> list[str]:
+    def to_list(cls, kind: Kind = "value") -> list[str]:
         """Return the Enum members as a plain Python list.
 
         Example:
@@ -31,10 +34,14 @@ class Enum(StrEnum):
             >>> MyEnum.to_list()
             ['value1', 'value2', 'value3']
         """
-        return [member.value for member in cls]
+        match kind:
+            case "value":
+                return [member.value for member in cls]
+            case "name":
+                return [member.name for member in cls]
 
     @classmethod
-    def to_dtype(cls) -> pl.Enum:
+    def to_dtype(cls, kind: Kind = "value") -> pl.Enum:
         """Return a Polars Enum dtype for this Enum.
 
         Example:
@@ -44,7 +51,7 @@ class Enum(StrEnum):
             >>> MyEnum.to_dtype()
             Enum(categories=['a', 'b'])
         """
-        return pl.Enum(cls)
+        return pl.Enum(cls.to_list(kind))
 
     @classmethod
     def from_df(cls, data: pl.DataFrame | pl.LazyFrame, name: str) -> Self:
