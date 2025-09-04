@@ -8,7 +8,13 @@ import plotly.graph_objects as go
 import polars as pl
 
 from ._colors import get_color_map
-from ._types import ColorMap, DataFrameCompatible, GraphArgs, Palette, Templates
+from ._types import (
+    ColorMap,
+    DataFrameCompatible,
+    FigureFunc,
+    GraphArgs,
+    Templates,
+)
 
 
 def _get_keys(df: pl.LazyFrame, col: str) -> pl.Series:
@@ -35,7 +41,7 @@ class Displayer:
 
     def _plot_fn[**P](
         self,
-        func: Callable[Concatenate[DataFrameCompatible, P], go.Figure],
+        func: FigureFunc[P],
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> go.Figure:
@@ -65,7 +71,7 @@ class Displayer:
         col: str,
         x: str | None = None,
         y: str | None = None,
-        base_palette: Palette = px.colors.sequential.Turbo,
+        base_palette: list[str] = px.colors.sequential.Turbo,
         template: Templates = "plotly_dark",
     ) -> Self:
         """
@@ -83,7 +89,7 @@ class Displayer:
 
     def add_graph[**P](
         self,
-        func: Callable[Concatenate[DataFrameCompatible, P], go.Figure],
+        func: FigureFunc[P],
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> Self:
@@ -95,7 +101,7 @@ class Displayer:
 
     def plot[**P](
         self,
-        func: Callable[Concatenate[DataFrameCompatible, P], go.Figure],
+        func: FigureFunc[P],
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> go.Figure:

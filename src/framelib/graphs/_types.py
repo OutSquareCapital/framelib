@@ -1,6 +1,7 @@
-from collections.abc import Sequence
-from typing import Any, Literal, Protocol, TypedDict, get_args
+from collections.abc import Callable, Sequence
+from typing import Any, Concatenate, Literal, Protocol, TypedDict, get_args
 
+import plotly.graph_objects as go
 import polars as pl
 
 
@@ -11,10 +12,8 @@ class DataFrameCompatible(Protocol):
 
 type ArrayLike = Sequence[Any] | pl.Series
 type FrameOrDict = DataFrameCompatible | dict[str, ArrayLike] | Sequence[dict[str, Any]]
-type HexColor = str
-type Palette = list[HexColor]
-type ColorMap = dict[str | int, HexColor]
-
+type ColorMap = dict[str | int, str]
+type FigureFunc[**P] = Callable[Concatenate[FrameOrDict, P], go.Figure]
 
 Templates = Literal[
     "ggplot2",

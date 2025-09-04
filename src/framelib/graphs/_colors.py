@@ -7,7 +7,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import polars as pl
 
-from ._types import ColorMap, HexColor, Palette
+from ._types import ColorMap
 
 
 @dataclass(slots=True)
@@ -17,12 +17,12 @@ class RGBColor:
     b: int
 
     @classmethod
-    def from_hex(cls, hex_color: HexColor) -> Self:
+    def from_hex(cls, hex_color: str) -> Self:
         hex_color = hex_color.lstrip("#")
         result = tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
         return cls(*result)
 
-    def to_hex(self) -> HexColor:
+    def to_hex(self) -> str:
         return f"#{self.r:02x}{self.g:02x}{self.b:02x}"
 
     def interpolate(self, other: Self, factor: float) -> "RGBColor":
@@ -33,7 +33,7 @@ class RGBColor:
         )
 
 
-def generate_palette(n_colors: int, *base_palette: HexColor) -> Palette:
+def generate_palette(n_colors: int, *base_palette: str) -> list[str]:
     palette_len = len(base_palette)
 
     segments: int = palette_len - 1
@@ -41,7 +41,7 @@ def generate_palette(n_colors: int, *base_palette: HexColor) -> Palette:
     if segments < 1:
         return [base_palette[0]] * n_colors
 
-    result: list[HexColor] = []
+    result: list[str] = []
     total_interval: int = (n_colors - 1) if n_colors > 1 else 1
     for i in range(n_colors):
         pos: float = (i / total_interval) * segments if total_interval > 0 else 0.0
@@ -67,11 +67,11 @@ def extract_color_scales(module: ModuleType) -> dict[str, list[str]]:
     }
 
 
-def combine_palettes(*palettes: Palette) -> Palette:
+def combine_palettes(*palettes: list[str]) -> list[str]:
     return [color for palette in palettes for color in palette]
 
 
-def get_color_map(serie: pl.Series, base_palette: Palette) -> ColorMap:
+def get_color_map(serie: pl.Series, base_palette: list[str]) -> ColorMap:
     return dict(zip(serie.to_list(), generate_palette(serie.len(), *base_palette)))
 
 
