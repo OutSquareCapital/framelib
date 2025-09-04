@@ -35,14 +35,14 @@ def run_all_doctests(package: str, verbose: bool = False) -> None:
 
 
 def find_package_name(src_path: str) -> str:
-    src = Path(src_path)
-    for child in src.iterdir():
+    for child in Path(src_path).iterdir():
         if (
             child.is_dir()
-            and (child / "__init__.py").exists()
-            or (child / "__init__.pyi").exists()
+            and (child.joinpath("__init__.py")).exists()
+            or (child.joinpath("__init__.pyi")).exists()
         ):
             return child.name
+
     raise RuntimeError("No package found in src")
 
 
