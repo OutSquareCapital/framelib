@@ -143,19 +143,6 @@ class Displayer:
         self.template = template
         return self
 
-    def show_colors_scale(self) -> go.Figure:
-        """
-        Return a Plotly figure showing the color swatches.
-        """
-        return px.colors.sequential.swatches().update_layout(
-            template=self.template,
-            title=None,
-            height=550,
-            width=400,
-            margin={"l": 0, "r": 0, "t": 0, "b": 0},
-            paper_bgcolor="#181c1a",
-        )
-
     def clear(self) -> Self:
         self.graphs.clear()
         return self

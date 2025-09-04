@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from types import ModuleType
 from typing import Self
 
+import plotly.express as px
+import plotly.graph_objects as go
 import polars as pl
 
 from ._types import ColorMap, HexColor, Palette
@@ -71,3 +73,16 @@ def combine_palettes(*palettes: Palette) -> Palette:
 
 def get_color_map(serie: pl.Series, base_palette: Palette) -> ColorMap:
     return dict(zip(serie.to_list(), generate_palette(serie.len(), *base_palette)))
+
+
+def show_colors_scale() -> go.Figure:
+    """
+    Return a Plotly figure showing the color swatches.
+    """
+    return px.colors.sequential.swatches().update_layout(
+        title=None,
+        height=550,
+        width=400,
+        margin={"l": 0, "r": 0, "t": 0, "b": 0},
+        paper_bgcolor="#181c1a",
+    )
