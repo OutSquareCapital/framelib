@@ -1,3 +1,4 @@
-from . import graphs, schemas, stats
+from . import graphs, schemas
+from ._enums import Enum
 
-__all__ = ["stats", "graphs", "schemas"]
+__all__ = ["graphs", "schemas", "Enum"]

@@ -1,4 +1,5 @@
 from enum import StrEnum
+from typing import Self
 
 import polars as pl
 
@@ -16,9 +17,7 @@ class Enum(StrEnum):
             >>> MyEnum.to_series().to_list()
             ['value1', 'value2', 'value3']
         """
-        return pl.Series(
-            cls.__name__, [member.value for member in cls], dtype=cls.to_dtype()
-        )
+        return pl.Series(cls.__name__, cls.to_list(), dtype=cls.to_dtype())
 
     @classmethod
     def to_list(cls) -> list[str]:
@@ -48,7 +47,7 @@ class Enum(StrEnum):
         return pl.Enum(cls)
 
     @classmethod
-    def from_df(cls, data: pl.DataFrame | pl.LazyFrame, name: str) -> "Enum":
+    def from_df(cls, data: pl.DataFrame | pl.LazyFrame, name: str) -> Self:
         """Create a dynamic Enum from values present in a DataFrame column.
 
         Example:
@@ -57,7 +56,7 @@ class Enum(StrEnum):
             >>> Enum.from_df(df, "col").to_list()
             ['a', 'b', 'c']
         """
-        return Enum(
+        return cls(
             name,
             data.lazy()
             .select(pl.col(name).unique().sort())
@@ -67,11 +66,11 @@ class Enum(StrEnum):
         )
 
     @classmethod
-    def from_series(cls, data: pl.Series) -> "Enum":
+    def from_series(cls, data: pl.Series) -> Self:
         """Create a dynamic Enum from a Series.
 
         Example:
             >>> Enum.from_series(pl.Series(["value3", "value1", "value2", "value1"])).to_list()
             ['value1', 'value2', 'value3']
         """
-        return Enum(data.name, data.unique().sort().to_list())
+        return cls(data.name, data.unique().sort().to_list())
