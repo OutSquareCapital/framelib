@@ -13,7 +13,7 @@ class DataFrameCompatible(Protocol):
 type ArrayLike = Sequence[Any] | pl.Series
 type FrameOrDict = DataFrameCompatible | dict[str, ArrayLike] | Sequence[dict[str, Any]]
 type ColorMap = dict[str | int, str]
-type FigureFunc[**P] = Callable[Concatenate[FrameOrDict, P], go.Figure]
+type FigureFunc[**P] = Callable[Concatenate[DataFrameCompatible, P], go.Figure]
 
 Templates = Literal[
     "ggplot2",
