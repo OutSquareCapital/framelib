@@ -40,34 +40,46 @@ class CSS(StrEnum):
 
 def _build_tree(directory: Path, prefix: str = "") -> list[str]:
     lines: list[str] = []
-    items: list[Path] = _get_items(directory)
+    items: list[Path] = _paths(directory)
     for i, item in enumerate(items):
         is_last: bool = i == (len(items) - 1)
-        connector = Tree.LAST_NODE if is_last else Tree.NODE
-        lines.append(f"{prefix}{connector}{item.name}")
+        lines.append(f"{prefix}{_connector(is_last)}{item.name}")
         if item.is_dir():
-            new_prefix: str = prefix + (Tree.SPACE if is_last else Tree.BRANCH)
-            lines.extend(_build_tree(item, new_prefix))
+            lines.extend(_build_tree(item, prefix + _continuation(is_last)))
     return lines
 
 
 def _build_html_tree(directory: Path) -> str:
     html = "<ul>"
-    items: list[Path] = _get_items(directory)
-    for item in items:
-        css_class = CSS.DIR if item.is_dir() else CSS.FILE
-        html += f'<li class="{css_class}">{escape(item.name)}'
-        if item.is_dir():
-            html += _build_html_tree(item)
-        html += "</li>"
+    for item in _paths(directory):
+        _map_paths(html, item)
     html += "</ul>"
     return html
 
 
-def _get_items(directory: Path) -> list[Path]:
+def _map_paths(html: str, path: Path) -> None:
+    html += f'<li class="{_class(path)}">{escape(path.name)}'
+    if path.is_dir():
+        html += _build_html_tree(path)
+    html += "</li>"
+
+
+def _paths(directory: Path) -> list[Path]:
     return sorted(
         list(directory.iterdir()), key=lambda p: (p.is_file(), p.name.lower())
     )
+
+
+def _class(item: Path) -> CSS:
+    return CSS.DIR if item.is_dir() else CSS.FILE
+
+
+def _connector(is_last: bool) -> Tree:
+    return Tree.LAST_NODE if is_last else Tree.NODE
+
+
+def _continuation(is_last: bool) -> Tree:
+    return Tree.SPACE if is_last else Tree.BRANCH
 
 
 @dataclass(slots=True, repr=False)
@@ -75,13 +87,11 @@ class TreeDisplay:
     root: Path
 
     def __repr__(self) -> str:
-        header: str = f"{self.root}\n"
-        tree_lines: list[str] = _build_tree(self.root)
-        return header + "\n".join(tree_lines)
+        return f"{self.root}\n" + "\n".join(_build_tree(self.root))
 
     def _repr_html_(self) -> str:
-        return f'<div class="tree">{CSS.STYLE}{self._header}{_build_html_tree(self.root)}</div>'
+        return f'<div class="tree">{CSS.STYLE}{self._html_header}{_build_html_tree(self.root)}</div>'
 
     @property
-    def _header(self) -> str:
+    def _html_header(self) -> str:
         return f"'<code>{self.root}</code>'"
