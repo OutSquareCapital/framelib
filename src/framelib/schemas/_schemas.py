@@ -5,6 +5,8 @@ from collections.abc import Callable
 from typing import Concatenate, overload
 
 import dataframely as dy
+import polars as pl
+import pychain as pc
 
 from ._tree import TreeDisplay
 
@@ -48,6 +50,22 @@ class Schema(dy.Schema, ABC):
         Returns a TreeDisplay object for the directory containing this schema's file.
         """
         return TreeDisplay(root=cls.path().parent)
+
+    @classmethod
+    def iter_names(cls) -> pc.Iter[str]:
+        return pc.Iter(cls.column_names())
+
+    @classmethod
+    def iter_exprs(cls) -> pc.Iter[pl.Expr]:
+        return cls.iter_columns().map(lambda expr: expr.col)
+
+    @classmethod
+    def iter_columns(cls) -> pc.Iter[dy.Column]:
+        return pc.Iter(cls.columns().values())
+
+    @classmethod
+    def map_columns(cls) -> pc.Dict[str, dy.Column]:
+        return pc.Dict(cls.columns())
 
 
 class IODescriptor[**P, T]:
