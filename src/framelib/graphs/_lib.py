@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Concatenate, Self
+from typing import Any, Concatenate, Self
 
 import marimo as mo
 import plotly.express as px
@@ -17,8 +17,8 @@ from ._types import (
 )
 
 
-def _get_keys(df: pl.LazyFrame, col: str) -> pl.Series:
-    return df.select(pl.col(col).unique().sort()).collect().get_column(col)
+def _get_keys(df: pl.LazyFrame, col: str) -> list[Any]:
+    return df.select(pl.col(col).unique().sort()).collect().get_column(col).to_list()
 
 
 @dataclass(slots=True)

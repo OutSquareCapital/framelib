@@ -3,6 +3,8 @@ from enum import StrEnum, auto
 from html import escape
 from pathlib import Path
 
+import pychain as pc
+
 
 class Tree(StrEnum):
     NODE = "├── "
@@ -40,9 +42,11 @@ class CSS(StrEnum):
 
 def _build_tree(directory: Path, prefix: str = "") -> list[str]:
     lines: list[str] = []
-    items: list[Path] = _paths(directory)
-    for i, item in enumerate(items):
-        is_last: bool = i == (len(items) - 1)
+    items: pc.Iter[Path] = _paths(directory)
+    items_length = items.agg.length()
+
+    for i, item in items.enumerate().unwrap():
+        is_last: bool = i == (items_length - 1)
         lines.append(f"{prefix}{_connector(is_last)}{item.name}")
         if item.is_dir():
             lines.extend(_build_tree(item, prefix + _continuation(is_last)))
@@ -51,8 +55,7 @@ def _build_tree(directory: Path, prefix: str = "") -> list[str]:
 
 def _build_html_tree(directory: Path) -> str:
     html = "<ul>"
-    for item in _paths(directory):
-        _map_paths(html, item)
+    _paths(directory).map(lambda path: _map_paths(html, path))
     html += "</ul>"
     return html
 
@@ -64,9 +67,9 @@ def _map_paths(html: str, path: Path) -> None:
     html += "</li>"
 
 
-def _paths(directory: Path) -> list[Path]:
-    return sorted(
-        list(directory.iterdir()), key=lambda p: (p.is_file(), p.name.lower())
+def _paths(directory: Path) -> pc.Iter[Path]:
+    return pc.Iter(directory.iterdir()).into(
+        sorted, key=lambda p: (p.is_file(), p.name.lower())
     )
 
 

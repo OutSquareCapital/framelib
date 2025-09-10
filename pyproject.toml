@@ -14,7 +14,11 @@ dependencies = [
     "plotly-stubs @ git+https://github.com/OutSquareCapital/plotly-stubs.git@add-colors-namespace",
     "polars>=1.33.0",
     "pyarrow-stubs>=20.0.0.20250716",
+    "pychain",
 ]
 [build-system]
 requires = ["uv_build>=0.8.15,<0.9.0"]
 build-backend = "uv_build"
+
+[tool.uv.sources]
+pychain = { git = "https://github.com/OutSquareCapital/pychain.git" }

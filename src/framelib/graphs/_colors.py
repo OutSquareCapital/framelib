@@ -1,11 +1,12 @@
 import math
+from collections.abc import Iterable
 from dataclasses import dataclass
 from types import ModuleType
-from typing import Self
+from typing import Any, Self
 
 import plotly.express as px
 import plotly.graph_objects as go
-import polars as pl
+import pychain as pc
 
 from ._types import ColorMap
 
@@ -19,60 +20,76 @@ class RGBColor:
     @classmethod
     def from_hex(cls, hex_color: str) -> Self:
         hex_color = hex_color.lstrip("#")
-        result = tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
+        result = (
+            pc.Iter.from_elements(0, 2, 4)
+            .map(lambda i: int(hex_color[i : i + 2], 16))
+            .into(tuple)
+            .unwrap()
+        )
         return cls(*result)
 
     def to_hex(self) -> str:
         return f"#{self.r:02x}{self.g:02x}{self.b:02x}"
 
-    def interpolate(self, other: Self, factor: float) -> "RGBColor":
-        return RGBColor(
-            r=math.floor(self.r + (other.r - self.r) * factor),
-            g=math.floor(self.g + (other.g - self.g) * factor),
-            b=math.floor(self.b + (other.b - self.b) * factor),
+    def interpolate(self, other: Self, factor: float) -> Self:
+        return self.__class__(
+            r=_join_rgb(self.r, other.r, factor),
+            g=_join_rgb(self.g, other.g, factor),
+            b=_join_rgb(self.b, other.b, factor),
         )
 
 
-def generate_palette(n_colors: int, *base_palette: str) -> list[str]:
-    palette_len = len(base_palette)
+def _join_rgb(left: int, right: int, factor: float) -> int:
+    return math.floor(left + (right - left) * factor)
 
-    segments: int = palette_len - 1
+
+def generate_palette(n_colors: int, base_palette: Iterable[str]) -> list[str]:
+    base = pc.Iter(base_palette)
+    segments: int = base.agg.length() - 1
 
     if segments < 1:
-        return [base_palette[0]] * n_colors
+        return base.head(1).repeat(n_colors).flatten().into_list().unwrap()
 
-    result: list[str] = []
     total_interval: int = (n_colors - 1) if n_colors > 1 else 1
+    result: list[str] = []
     for i in range(n_colors):
-        pos: float = (i / total_interval) * segments if total_interval > 0 else 0.0
+        pos: float = _position(i, total_interval, segments)
         index: int = math.floor(pos)
-        factor: float = pos - index
-
-        c2_hex = base_palette[min(index + 1, segments)]
-
         result.append(
-            RGBColor.from_hex(base_palette[index])
-            .interpolate(RGBColor.from_hex(c2_hex), factor)
+            RGBColor.from_hex(base.agg.at_index(index))
+            .interpolate(
+                RGBColor.from_hex(base.agg.at_index(min(index + 1, segments))),
+                pos - index,
+            )
             .to_hex()
         )
 
     return result
 
 
+def _position(i: int, total_interval: int, segments: int) -> float:
+    return (i / total_interval) * segments if total_interval > 0 else 0.0
+
+
 def extract_color_scales(module: ModuleType) -> dict[str, list[str]]:
-    return {
-        key: value
-        for key, value in module.__dict__.items()
-        if isinstance(value, list) and not key.startswith("_")
-    }
+    return (
+        pc.Dict(module.__dict__)
+        .filter_items(
+            lambda item: isinstance(item[1], list) and not item[0].startswith("_")
+        )
+        .unwrap()
+    )
 
 
-def combine_palettes(*palettes: list[str]) -> list[str]:
-    return [color for palette in palettes for color in palette]
+def combine_palettes(*palettes: Iterable[str]) -> list[str]:
+    return pc.Iter.from_elements(*palettes).flatten().into_list().unwrap()
 
 
-def get_color_map(serie: pl.Series, base_palette: list[str]) -> ColorMap:
-    return dict(zip(serie.to_list(), generate_palette(serie.len(), *base_palette)))
+def get_color_map(keys: list[Any], base_palette: list[str]) -> ColorMap:
+    iter_keys = pc.Iter(keys)
+    return dict(
+        iter_keys.zip(generate_palette(iter_keys.agg.length(), base_palette)).unwrap()
+    )
 
 
 def show_colors_scale() -> go.Figure:
