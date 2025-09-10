@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     { name = "OutSquareCapital", email = "166045166+OutSquareCapital@users.noreply.github.com" }
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
     "dataframely>=1.7.6",
     "marimo>=0.15.2",
