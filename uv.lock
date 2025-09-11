@@ -459,8 +459,8 @@ wheels = [
 
 [[package]]
 name = "pychain"
-version = "0.3.96"
-source = { git = "https://github.com/OutSquareCapital/pychain.git#afb698f015e24f62082c9f5349a78821d97dcd48" }
+version = "0.3.97"
+source = { git = "https://github.com/OutSquareCapital/pychain.git#e75df8eb1da6ccd82554569b3bc1ea769836bac2" }
 dependencies = [
     { name = "cytoolz" },
     { name = "numbagg" },

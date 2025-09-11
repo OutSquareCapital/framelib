@@ -43,7 +43,7 @@ class CSS(StrEnum):
 def _build_tree(directory: Path, prefix: str = "") -> list[str]:
     lines: list[str] = []
     items: pc.Iter[Path] = _paths(directory)
-    items_length = items.agg.length()
+    items_length = items.length()
 
     for i, item in items.enumerate().unwrap():
         is_last: bool = i == (items_length - 1)
@@ -68,8 +68,8 @@ def _map_paths(html: str, path: Path) -> None:
 
 
 def _paths(directory: Path) -> pc.Iter[Path]:
-    return pc.Iter(directory.iterdir()).into(
-        sorted, key=lambda p: (p.is_file(), p.name.lower())
+    return pc.Iter(directory.iterdir()).sort(
+        key=lambda p: (p.is_file(), p.name.lower())
     )
 
 

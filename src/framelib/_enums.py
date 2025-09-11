@@ -47,7 +47,7 @@ class Enum(StrEnum):
             ['a', 'b', 'c']
         """
 
-        return cls(name, sorted(pc.Iter(data).unique().into_list().unwrap()))
+        return cls(name, pc.Iter(data).unique().sort().to_obj(list))
 
     @classmethod
     def to_series(cls, kind: Kind = "value") -> pl.Series:
@@ -61,7 +61,7 @@ class Enum(StrEnum):
             >>> MyEnum.to_series().to_list()
             ['value1', 'value2', 'value3']
         """
-        values = cls.to_list(kind).unwrap()
+        values = cls.to_iter().to_obj(list)
         return pl.Series(cls.__name__, values, dtype=pl.Enum(values))
 
     @classmethod
@@ -83,12 +83,12 @@ class Enum(StrEnum):
                 return pc.Iter(member.name for member in cls)
 
     @classmethod
-    def to_list(cls, kind: Kind = "value") -> pc.List[str]:
-        """Return the Enum members as a pychain List.
+    def to_list(cls, kind: Kind = "value") -> pc.Seq[str]:
+        """Return the Enum members as a pychain Seq.
 
-        Syntactic sugar for `to_iter().into_list()`.
+        Syntactic sugar for `to_iter().to_seq()`.
         """
-        return cls.to_iter(kind).into_list()
+        return cls.to_iter(kind).to_list()
 
     @classmethod
     def to_dtype(cls, kind: Kind = "value") -> pl.Enum:

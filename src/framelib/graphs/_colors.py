@@ -23,8 +23,7 @@ class RGBColor:
         result = (
             pc.Iter.from_elements(0, 2, 4)
             .map(lambda i: int(hex_color[i : i + 2], 16))
-            .into(tuple)
-            .unwrap()
+            .to_obj(tuple)
         )
         return cls(*result)
 
@@ -43,12 +42,12 @@ def _join_rgb(left: int, right: int, factor: float) -> int:
     return math.floor(left + (right - left) * factor)
 
 
-def generate_palette(n_colors: int, base_palette: Iterable[str]) -> list[str]:
+def generate_palette(n_colors: int, base_palette: Iterable[str]):
     base = pc.Iter(base_palette)
-    segments: int = base.agg.length() - 1
+    segments: int = base.length() - 1
 
     if segments < 1:
-        return base.head(1).repeat(n_colors).flatten().into_list().unwrap()
+        return base.head(1).repeat(n_colors).flatten().to_obj(list)
 
     total_interval: int = (n_colors - 1) if n_colors > 1 else 1
     result: list[str] = []
@@ -56,9 +55,9 @@ def generate_palette(n_colors: int, base_palette: Iterable[str]) -> list[str]:
         pos: float = _position(i, total_interval, segments)
         index: int = math.floor(pos)
         result.append(
-            RGBColor.from_hex(base.agg.at_index(index))
+            RGBColor.from_hex(base.item(index))
             .interpolate(
-                RGBColor.from_hex(base.agg.at_index(min(index + 1, segments))),
+                RGBColor.from_hex(base.item(min(index + 1, segments))),
                 pos - index,
             )
             .to_hex()
@@ -82,13 +81,13 @@ def extract_color_scales(module: ModuleType) -> dict[str, list[str]]:
 
 
 def combine_palettes(*palettes: Iterable[str]) -> list[str]:
-    return pc.Iter.from_elements(*palettes).flatten().into_list().unwrap()
+    return pc.Iter.from_elements(*palettes).flatten().to_obj(list)
 
 
 def get_color_map(keys: list[Any], base_palette: list[str]) -> ColorMap:
     iter_keys = pc.Iter(keys)
-    return dict(
-        iter_keys.zip(generate_palette(iter_keys.agg.length(), base_palette)).unwrap()
+    return iter_keys.zip(generate_palette(iter_keys.length(), base_palette)).to_obj(
+        dict
     )
 
 
