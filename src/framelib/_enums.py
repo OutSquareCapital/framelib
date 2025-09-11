@@ -61,7 +61,7 @@ class Enum(StrEnum):
             >>> MyEnum.to_series().to_list()
             ['value1', 'value2', 'value3']
         """
-        values = cls.to_iter().to_obj(list)
+        values = cls.to_iter(kind).to_obj(list)
         return pl.Series(cls.__name__, values, dtype=pl.Enum(values))
 
     @classmethod
