@@ -4,7 +4,6 @@ from typing import Literal, Self
 
 import polars as pl
 import pychain as pc
-from dataframely import Enum as EnumCol
 
 Kind = Literal["name", "value"]
 
@@ -102,7 +101,3 @@ class Enum(StrEnum):
             Enum(categories=['a', 'b'])
         """
         return pl.Enum(cls.to_iter(kind).unwrap())
-
-    @classmethod
-    def to_schema(cls, kind: Kind = "value") -> EnumCol:
-        return EnumCol(cls.to_iter(kind).unwrap())

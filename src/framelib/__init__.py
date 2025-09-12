@@ -27,9 +27,10 @@ from dataframely import (
     UInt64,
     rule,
 )
+from dataframely import Enum as EnumCol
 
 from . import graphs
-from ._enums import Enum, EnumCol
+from ._enums import Enum
 from ._lib import CSV, NDJSON, Parquet
 from ._schemas import Schema, directory
 
