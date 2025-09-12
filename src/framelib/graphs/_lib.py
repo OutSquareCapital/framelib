@@ -17,8 +17,14 @@ from ._types import (
 )
 
 
-def _get_keys(df: pl.LazyFrame, col: str) -> list[Any]:
-    return df.select(pl.col(col).unique().sort()).collect().get_column(col).to_list()
+def _get_keys(df: pl.LazyFrame | pl.DataFrame, group: str) -> list[Any]:
+    return (
+        df.lazy()
+        .select(pl.col(group).unique().sort())
+        .collect()
+        .get_column(group)
+        .to_list()
+    )
 
 
 @dataclass(slots=True)
@@ -67,8 +73,8 @@ class Displayer:
     @classmethod
     def from_df(
         cls,
-        df: pl.LazyFrame,
-        col: str,
+        df: pl.LazyFrame | pl.DataFrame,
+        group: str,
         x: str | None = None,
         y: str | None = None,
         base_palette: list[str] = px.colors.sequential.Turbo,
@@ -77,12 +83,12 @@ class Displayer:
         """
         Construct a Displayer from a Polars LazyFrame by collecting and building a color map.
         """
-        discrete_map: ColorMap = get_color_map(_get_keys(df, col), base_palette)
+        discrete_map: ColorMap = get_color_map(_get_keys(df, group), base_palette)
         return cls(
-            data_frame=df.collect(),
+            data_frame=df.lazy().collect(),
             x=x,
             y=y,
-            color=col,
+            color=group,
             color_discrete_map=discrete_map,
             template=template,
         )

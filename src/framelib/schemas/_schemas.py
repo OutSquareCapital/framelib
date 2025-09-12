@@ -1,6 +1,5 @@
 import functools
 import pathlib
-from abc import ABC
 from collections.abc import Callable
 from typing import Concatenate, overload
 
@@ -11,7 +10,7 @@ import pychain as pc
 from ._tree import TreeDisplay
 
 
-class Schema(dy.Schema, ABC):
+class Schema(dy.Schema):
     """
     Base schema for file-based schemas, providing path and tree display utilities.
 

@@ -42,8 +42,8 @@ def _join_rgb(left: int, right: int, factor: float) -> int:
     return math.floor(left + (right - left) * factor)
 
 
-def generate_palette(n_colors: int, base_palette: Iterable[str]):
-    base = pc.Iter(base_palette)
+def generate_palette(n_colors: int, base_palette: Iterable[str]) -> list[str]:
+    base: pc.Iter[str] = pc.Iter(base_palette)
     segments: int = base.length() - 1
 
     if segments < 1:

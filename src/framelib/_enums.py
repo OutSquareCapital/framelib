@@ -5,6 +5,8 @@ from typing import Literal, Self
 import polars as pl
 import pychain as pc
 
+from .schemas import EnumCol
+
 Kind = Literal["name", "value"]
 
 
@@ -16,7 +18,7 @@ class Enum(StrEnum):
         Example:
             >>> import polars as pl
             >>> df = pl.DataFrame({"col": ["b", "a", "b", "c"]})
-            >>> Enum.from_df(df, "col").to_list()
+            >>> Enum.from_df("col", df).to_list()
             ['a', 'b', 'c']
         """
         return cls(
@@ -101,3 +103,7 @@ class Enum(StrEnum):
             Enum(categories=['a', 'b'])
         """
         return pl.Enum(cls.to_iter(kind).unwrap())
+
+    @classmethod
+    def to_schema(cls, kind: Kind = "value") -> EnumCol:
+        return EnumCol(cls.to_iter(kind).unwrap())
