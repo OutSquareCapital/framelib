@@ -10,7 +10,7 @@ Kind = Literal["name", "value"]
 
 class Enum(StrEnum):
     @classmethod
-    def from_df(cls, data: pl.DataFrame | pl.LazyFrame, name: str) -> Self:
+    def from_df(cls, name: str, data: pl.DataFrame | pl.LazyFrame) -> Self:
         """Create a dynamic Enum from values present in a DataFrame column.
 
         Example:
@@ -39,14 +39,13 @@ class Enum(StrEnum):
         return cls(data.name, data.unique().sort().to_list())
 
     @classmethod
-    def from_iter(cls, data: Iterable[str], name: str) -> Self:
+    def from_iter(cls, name: str, data: Iterable[str]) -> Self:
         """Create a dynamic Enum from an iterable of strings.
 
         Example:
             >>> Enum.from_iter(data=["a", 'a', "b", "c"], name="foo").to_list()
             ['a', 'b', 'c']
         """
-
         return cls(name, pc.Iter(data).unique().sort().to_obj(list))
 
     @classmethod
