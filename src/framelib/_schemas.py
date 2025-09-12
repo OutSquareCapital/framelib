@@ -15,7 +15,6 @@ class Schema(dy.Schema):
     Base schema for file-based schemas, providing path and tree display utilities.
 
     Example:
-        >>> from framelib.schemas._schemas import Schema, directory
         >>> @directory("tests", "data_schema")
         ... class MyFile(Schema):
         ...     __ext__ = ".dat"

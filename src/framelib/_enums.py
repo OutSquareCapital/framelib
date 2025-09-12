@@ -4,8 +4,7 @@ from typing import Literal, Self
 
 import polars as pl
 import pychain as pc
-
-from .schemas import EnumCol
+from dataframely import Enum as EnumCol
 
 Kind = Literal["name", "value"]
 
