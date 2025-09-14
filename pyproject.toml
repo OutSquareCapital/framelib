@@ -9,9 +9,6 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "dataframely>=1.7.6",
-    "marimo>=0.15.2",
-    "plotly>=6.2.0",
-    "plotly-stubs @ git+https://github.com/OutSquareCapital/plotly-stubs.git@add-colors-namespace",
     "polars>=1.33.0",
     "pyarrow-stubs>=20.0.0.20250716",
     "pychain",

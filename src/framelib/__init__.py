@@ -29,13 +29,11 @@ from dataframely import (
 )
 from dataframely import Enum as EnumCol
 
-from . import graphs
 from ._enums import Enum
 from ._lib import CSV, NDJSON, Parquet
 from ._schemas import Schema, directory
 
 __all__ = [
-    "graphs",
     "Enum",
     "Float",
     "Float32",
