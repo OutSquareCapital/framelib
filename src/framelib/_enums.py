@@ -46,7 +46,7 @@ class Enum(StrEnum):
             >>> Enum.from_iter(data=["a", 'a', "b", "c"], name="foo").to_list()
             ['a', 'b', 'c']
         """
-        return cls(name, pc.Iter(data).unique().sort().to_obj(list))
+        return cls(name, pc.Iter(data).unique().sort().pipe_into(list))
 
     @classmethod
     def to_series(cls, kind: Kind = "value") -> pl.Series:
@@ -60,7 +60,7 @@ class Enum(StrEnum):
             >>> MyEnum.to_series().to_list()
             ['value1', 'value2', 'value3']
         """
-        values = cls.to_iter(kind).to_obj(list)
+        values = cls.to_iter(kind).pipe_into(list)
         return pl.Series(cls.__name__, values, dtype=pl.Enum(values))
 
     @classmethod
