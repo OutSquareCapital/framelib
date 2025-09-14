@@ -1,15 +1,14 @@
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Concatenate, Self
+from typing import Concatenate, Self
 
 import marimo as mo
 import plotly.express as px
 import plotly.graph_objects as go
 import polars as pl
 
-from ._colors import get_color_map
+from ._colors import palette_from_df
 from ._types import (
-    ColorMap,
     DataFrameCompatible,
     FigureFunc,
     GraphArgs,
@@ -17,22 +16,12 @@ from ._types import (
 )
 
 
-def _get_keys(df: pl.LazyFrame | pl.DataFrame, group: str) -> list[Any]:
-    return (
-        df.lazy()
-        .select(pl.col(group).unique().sort())
-        .collect()
-        .get_column(group)
-        .to_list()
-    )
-
-
 @dataclass(slots=True)
 class Displayer:
     data_frame: DataFrameCompatible
     template: Templates
     color: str
-    color_discrete_map: ColorMap
+    color_discrete_map: dict[str, str]
     x: str | None = None
     y: str | None = None
     graphs: list[go.Figure] = field(default_factory=list[go.Figure])
@@ -83,13 +72,12 @@ class Displayer:
         """
         Construct a Displayer from a Polars LazyFrame by collecting and building a color map.
         """
-        discrete_map: ColorMap = get_color_map(_get_keys(df, group), base_palette)
         return cls(
             data_frame=df.lazy().collect(),
             x=x,
             y=y,
             color=group,
-            color_discrete_map=discrete_map,
+            color_discrete_map=df.pipe(palette_from_df, group, base_palette),
             template=template,
         )
 
