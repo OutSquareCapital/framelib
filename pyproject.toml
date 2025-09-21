@@ -11,7 +11,7 @@ dependencies = [
     "dataframely>=1.7.6",
     "polars>=1.33.0",
     "pyarrow-stubs>=20.0.0.20250716",
-    "pychain",
+    "pychain>=0.3.99",
 ]
 [build-system]
 requires = ["uv_build>=0.8.15,<0.9.0"]

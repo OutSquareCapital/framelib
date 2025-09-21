@@ -29,7 +29,7 @@ class Enum(StrEnum):
         )
 
     @classmethod
-    def from_series(cls, data: pl.Series):
+    def from_series(cls, data: pl.Series) -> Self:
         """Create a dynamic Enum from a Series.
 
         Example:
@@ -46,7 +46,7 @@ class Enum(StrEnum):
             >>> Enum.from_iter(data=["a", 'a', "b", "c"], name="foo").to_list()
             ['a', 'b', 'c']
         """
-        return cls(name, pc.Iter(data).unique().sort().pipe_into(list))
+        return cls(name, pc.Iter(data).unique().sort().pipe_unwrap(list))
 
     @classmethod
     def to_series(cls, kind: Kind = "value") -> pl.Series:
@@ -60,7 +60,7 @@ class Enum(StrEnum):
             >>> MyEnum.to_series().to_list()
             ['value1', 'value2', 'value3']
         """
-        values = cls.to_iter(kind).pipe_into(list)
+        values = cls.to_iter(kind).pipe_unwrap(list)
         return pl.Series(cls.__name__, values, dtype=pl.Enum(values))
 
     @classmethod
@@ -82,10 +82,10 @@ class Enum(StrEnum):
                 return pc.Iter(member.name for member in cls)
 
     @classmethod
-    def to_list(cls, kind: Kind = "value") -> pc.Seq[str]:
-        """Return the Enum members as a pychain Seq.
+    def to_list(cls, kind: Kind = "value") -> pc.Iter[str]:
+        """Return the Enum members as a pychain Iter.
 
-        Syntactic sugar for `to_iter().to_seq()`.
+        Syntactic sugar for `to_iter().to_list()`.
         """
         return cls.to_iter(kind).to_list()
 

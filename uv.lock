@@ -43,18 +43,18 @@ wheels = [
 
 [[package]]
 name = "dataframely"
-version = "1.11.0"
+version = "1.12.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
     { name = "polars" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/00/85/a9d189277ef03b2c4cf18773f82e4f52612b313cc397b174a6b620719c2e/dataframely-1.11.0.tar.gz", hash = "sha256:0240db7f92e3af09c73f13af92f3687db2d1b91ec4464cdf6fe0ba31a9c03984", size = 306240, upload-time = "2025-09-09T12:50:16.685Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3d/de/7b82a179a3b8d418a47434fd074a562640040b4cb608e0423ca2378247a4/dataframely-1.12.0.tar.gz", hash = "sha256:f1defdc52f94cdd3e8f6ae324c992ee017e6fa86128240c6143fbade0987920c", size = 307192, upload-time = "2025-09-15T11:57:34.701Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bf/fc/b7353e1dbdde9e08b6de56eb6cff83b2776c6deca9d8852f86fe6c6ee560/dataframely-1.11.0-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:49fb1506d63513d4a6246a5788abebea86396bdeee1eb55f148b375f59ed0cfb", size = 505550, upload-time = "2025-09-09T12:50:09.023Z" },
-    { url = "https://files.pythonhosted.org/packages/c6/be/872d87c6f4976d21a21c0e5051803db32e3e9a39d867895c77c61776eb84/dataframely-1.11.0-cp310-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:072a00ccc3fdaeada7b6f076d35f33ff19f57b9c1c8fe8d9eecbbf5c45cda87b", size = 551154, upload-time = "2025-09-09T12:50:11.243Z" },
-    { url = "https://files.pythonhosted.org/packages/9a/50/8b37f048fe4bef19031e1da821333497049f006481dbda6fdb6ed5114e23/dataframely-1.11.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:81b7ff693690add5da54cb78d131f58846f3473b5d947863c708c261db11042f", size = 559923, upload-time = "2025-09-09T12:50:12.51Z" },
-    { url = "https://files.pythonhosted.org/packages/46/05/26f77e542705b42b34da0e34aa49d47e143fcaee7c9bcdfcf68ca89fdf32/dataframely-1.11.0-cp310-abi3-win_amd64.whl", hash = "sha256:8169943f618bafbeb56681a9fc3c731da6686591c490e84d164b84221a797091", size = 426764, upload-time = "2025-09-09T12:50:14.085Z" },
+    { url = "https://files.pythonhosted.org/packages/38/12/1a0cadbb0dd8c84c454c6e9629f1ffcd36f63c6e3bc44161bbbf4a11dce3/dataframely-1.12.0-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:68217ca721b3b6a9c717fea1471fe3c23f83bcd8f975106c0f3c0c78f4c39029", size = 506427, upload-time = "2025-09-15T11:57:26.085Z" },
+    { url = "https://files.pythonhosted.org/packages/5f/80/f1c30b441429756c3071bb496834be5dc968520294b42f0bf99fd28e76b3/dataframely-1.12.0-cp310-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:8fabb3a446f2fb801102030f804b289cb08c5dde9793c55a6270e08c735855f3", size = 552034, upload-time = "2025-09-15T11:57:28Z" },
+    { url = "https://files.pythonhosted.org/packages/19/3b/70afa9a67dcff78fd14c1432e15d2f9e56ebe91505b451e361bbd64336c2/dataframely-1.12.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b5d4e7fb18c889bc6378c5ecad1132c6e85a9b208e7eeee86a54badc4c9ef2b1", size = 560806, upload-time = "2025-09-15T11:57:29.77Z" },
+    { url = "https://files.pythonhosted.org/packages/6a/df/f1bee09884d7093eb82216e39d728718655c5fb32578ffb4438464f3fd33/dataframely-1.12.0-cp310-abi3-win_amd64.whl", hash = "sha256:dc28f6ecbbfdfa79aae0307d5c254a33f0545c6dcdbf4d6ddfb2656053d4abe0", size = 427654, upload-time = "2025-09-15T11:57:31.133Z" },
 ]
 
 [[package]]
@@ -205,13 +205,18 @@ wheels = [
 
 [[package]]
 name = "pychain"
-version = "0.3.97"
-source = { git = "https://github.com/OutSquareCapital/pychain.git#635d2f008f1f55b6a136f8b4d26032433134605b" }
+version = "0.3.99"
+source = { git = "https://github.com/OutSquareCapital/pychain.git#fab43645b2c88862cbbc31c77dbfcec7e63cb191" }
 dependencies = [
     { name = "cytoolz" },
     { name = "more-itertools" },
-    { name = "numpy" },
+    { name = "rolling" },
 ]
+
+[[package]]
+name = "rolling"
+version = "0.5.0"
+source = { git = "https://github.com/OutSquareCapital/rolling.git?rev=add-type-stubs#70e8e6616fe400eda9739b29dff6d9b34321b550" }
 
 [[package]]
 name = "toolz"
