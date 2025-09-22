@@ -4,6 +4,7 @@ from dataframely import (
     Bool,
     Categorical,
     Collection,
+    Column,
     DataFrame,
     Date,
     Datetime,
@@ -31,7 +32,7 @@ from dataframely import Enum as EnumCol
 
 from ._enums import Enum
 from ._lib import CSV, NDJSON, Parquet
-from ._schemas import Schema, directory
+from ._schemas import Schema
 
 __all__ = [
     "Enum",
@@ -66,6 +67,6 @@ __all__ = [
     "NDJSON",
     "Parquet",
     "Schema",
-    "directory",
     "rule",
+    "Column",
 ]
