@@ -31,7 +31,7 @@ from dataframely import (
 from dataframely import Enum as EnumCol
 
 from ._enums import Enum
-from ._lib import CSV, NDJSON, Parquet
+from ._lib import CSV, JSON, NDJSON, Parquet
 from ._schemas import Schema
 
 __all__ = [
@@ -69,4 +69,5 @@ __all__ = [
     "Schema",
     "rule",
     "Column",
+    "JSON",
 ]
