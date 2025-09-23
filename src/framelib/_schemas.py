@@ -20,7 +20,7 @@ class Schema(dy.Schema):
         ...     __directory__ = Path("tests").joinpath("data_schema")
         ...     __ext__ = ".dat"
         ...
-        >>> MyFile.path().touch()
+        >>> MyFile.path(True).touch()
         >>> MyFile.show_tree()
         tests\\data_schema
         └── MyFile.dat
@@ -35,6 +35,7 @@ class Schema(dy.Schema):
     def path(cls, make_dir: bool = False) -> pathlib.Path:
         """
         Returns the full path to the file for this schema.
+        Optionally creates the directory if it does not exist.
         """
         if not cls.__ext__:
             raise ValueError("Schema must have a __ext__ attribute set.")

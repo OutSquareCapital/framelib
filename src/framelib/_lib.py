@@ -11,7 +11,7 @@ class CSV(Schema):
         >>> from pathlib import Path
         >>> class MyFile(CSV):
         ...     __directory__ = Path("tests").joinpath("data_csv")
-        >>> MyFile.path().touch()
+        >>> MyFile.path(True).touch()
         >>> MyFile.show_tree()
         tests\\data_csv
         └── MyFile.csv
@@ -30,7 +30,7 @@ class Parquet(Schema):
         >>> from pathlib import Path
         >>> class MyFile(Parquet):
         ...     __directory__ = Path("tests").joinpath("data_parquet")
-        >>> MyFile.path().touch()
+        >>> MyFile.path(True).touch()
         >>> MyFile.show_tree()
         tests\\data_parquet
         └── MyFile.parquet
@@ -49,7 +49,7 @@ class NDJSON(Schema):
         >>> from pathlib import Path
         >>> class MyFile(NDJSON):
         ...     __directory__ = Path("tests").joinpath("data_ndjson")
-        >>> MyFile.path().touch()
+        >>> MyFile.path(True).touch()
         >>> MyFile.show_tree()
         tests\\data_ndjson
         └── MyFile.ndjson
@@ -58,3 +58,21 @@ class NDJSON(Schema):
     __ext__ = ".ndjson"
     read = IODescriptor(pl.read_ndjson)
     scan = IODescriptor(pl.scan_ndjson)
+
+
+class JSON(Schema):
+    """
+    Schema for JSON files, providing methods to read using polars.
+
+    Example:
+        >>> from pathlib import Path
+        >>> class MyFile(JSON):
+        ...     __directory__ = Path("tests").joinpath("data_json")
+        >>> MyFile.path(True).touch()
+        >>> MyFile.show_tree()
+        tests\\data_json
+        └── MyFile.json
+    """
+
+    __ext__ = ".json"
+    read = IODescriptor(pl.read_json)
