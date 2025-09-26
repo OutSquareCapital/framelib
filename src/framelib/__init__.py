@@ -10,6 +10,7 @@ from dataframely import (
     Datetime,
     Decimal,
     Duration,
+    Enum,
     Float,
     Float32,
     Float64,
@@ -28,9 +29,7 @@ from dataframely import (
     UInt64,
     rule,
 )
-from dataframely import Enum as EnumCol
 
-from ._enums import Enum
 from ._lib import CSV, JSON, NDJSON, Parquet
 from ._schemas import Schema
 
@@ -54,7 +53,6 @@ __all__ = [
     "Array",
     "Bool",
     "Categorical",
-    "EnumCol",
     "Collection",
     "Date",
     "Datetime",

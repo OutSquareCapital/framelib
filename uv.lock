@@ -43,18 +43,18 @@ wheels = [
 
 [[package]]
 name = "dataframely"
-version = "1.12.1"
+version = "1.13.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
     { name = "polars" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/14/31/f999b9094d0eac0a9bbbc79785a2ec72211106cf1f1f3b942823e5e70f2b/dataframely-1.12.1.tar.gz", hash = "sha256:18f4d1995407bb53164b8c317d0fb1a1ddb5d6fa94db759985db37a6f38cc23b", size = 307083, upload-time = "2025-09-23T10:14:05.541Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d3/fe/b694bfc8e11d5a82d519043c3ee3193b0f127fabdaa5eb17a47fde94f778/dataframely-1.13.0.tar.gz", hash = "sha256:02d679399f613be25622f0196eb9a267c43789d1750fd615ea3392e6901d2640", size = 310932, upload-time = "2025-09-26T06:35:42.44Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7d/47/4e37cb87ee3e81a541cc1a5870d5f10a39ce7c9049c031fac201fe1426c1/dataframely-1.12.1-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:525435806f6e5f28d3984f9e63de119c25f63b3b01b40c06df423a633790aca7", size = 506295, upload-time = "2025-09-23T10:13:56.379Z" },
-    { url = "https://files.pythonhosted.org/packages/31/06/8ff1fe6d6b72ce7bc5741a9dcaeaabeaeecb9611f2c9e416d1a7bcf669b7/dataframely-1.12.1-cp310-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a195ebf18fb6aa7b07b1c6cef468291e7649d8cba6448bd0b4db2dd0dcf61d2c", size = 551980, upload-time = "2025-09-23T10:13:58.19Z" },
-    { url = "https://files.pythonhosted.org/packages/05/d3/37e18a8011af45c1afb7adaaecd9b4dc7dc3e77c750b5f074f52b0999a91/dataframely-1.12.1-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:9193ca2effe7217347b141ab418da01a93629e4411808a160bdc3722517aed90", size = 550880, upload-time = "2025-09-23T10:13:59.832Z" },
-    { url = "https://files.pythonhosted.org/packages/ab/95/0a1174e9e86bb09e16d3632ecd0f2f6244277581f68dbba54e61bc1625b8/dataframely-1.12.1-cp310-abi3-win_amd64.whl", hash = "sha256:876dcb126f60b7d47570a4d5cbf7110e27000a98cd8f3371ca0a21263887a461", size = 427523, upload-time = "2025-09-23T10:14:01.92Z" },
+    { url = "https://files.pythonhosted.org/packages/57/73/a9ed820f17fcc373f9085c6159e2be65dcd93c9e4cccbebc51798273cca8/dataframely-1.13.0-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:d5929fd8ccd061dc23325a7673c463ac6131022d0fd2ac6925e75ea3c9b402b9", size = 508140, upload-time = "2025-09-26T06:35:34.255Z" },
+    { url = "https://files.pythonhosted.org/packages/fe/24/7558d581986230dbce5f67cf8042c099a878cdf806f34ee0b6d321003ce3/dataframely-1.13.0-cp310-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:6bb5b5e30d2c1b0744b276458f7343ff44848399939b06d4b7048f626d84d0bd", size = 553825, upload-time = "2025-09-26T06:35:35.986Z" },
+    { url = "https://files.pythonhosted.org/packages/59/2e/e64ec9bd09a459d2fa6836226b54683157aec95747ed34fb8f481f4a471d/dataframely-1.13.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:3e7104fcc492586a4a2a9a1fe6674ca913a31d23a6f6902612c57966ec245904", size = 552723, upload-time = "2025-09-26T06:35:37.815Z" },
+    { url = "https://files.pythonhosted.org/packages/15/71/ba79bc936b69d2fcd3fd38d955d2a3d835f2ed3ac005258a1d887968da39/dataframely-1.13.0-cp310-abi3-win_amd64.whl", hash = "sha256:5f8e45a871d8372f7c6de456eb05ffc71f902f379f8dab280dc5de64813921c6", size = 429389, upload-time = "2025-09-26T06:35:39.541Z" },
 ]
 
 [[package]]
@@ -214,8 +214,8 @@ wheels = [
 
 [[package]]
 name = "pychain"
-version = "0.3.99"
-source = { git = "https://github.com/OutSquareCapital/pychain.git#8f599991c963e69beab66b441a9f0b5dc01f8a43" }
+version = "0.4.0"
+source = { git = "https://github.com/OutSquareCapital/pychain.git#e3742f837c8d2756dd230ef6df41bd93e3d56103" }
 dependencies = [
     { name = "cytoolz" },
     { name = "more-itertools" },
