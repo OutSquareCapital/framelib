@@ -30,12 +30,6 @@ class CSS(StrEnum):
             .tree li::after {
                 border-top: 1px solid #999; height: 0; top: 20px; width: 18px;
             }
-            .tree li.file::after {
-                background-image: url('data:image/svg+xml,...'); /* Icône fichier SVG (optionnel) */
-            }
-            .tree li.dir::after {
-                background-image: url('data:image/svg+xml,...'); /* Icône dossier SVG (optionnel) */
-            }
         </style>
         """
 
@@ -43,7 +37,7 @@ class CSS(StrEnum):
 def _build_tree(directory: Path, prefix: str = "") -> list[str]:
     lines: list[str] = []
     items: pc.Iter[Path] = _paths(directory)
-    items_length = items.length()
+    items_length: int = items.length()
 
     for i, item in items.enumerate().unwrap():
         is_last: bool = i == (items_length - 1)

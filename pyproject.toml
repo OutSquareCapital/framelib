@@ -1,21 +1,20 @@
 [project]
-name = "framelib"
-version = "0.1.3"
-description = "polars and dataframely plugin"
-readme = "README.md"
 authors = [
-    { name = "OutSquareCapital", email = "166045166+OutSquareCapital@users.noreply.github.com" }
+    { name = "OutSquareCapital", email = "166045166+OutSquareCapital@users.noreply.github.com" },
 ]
-requires-python = ">=3.12"
 dependencies = [
-    "dataframely>=1.7.6",
-    "polars>=1.33.0",
-    "pyarrow-stubs>=20.0.0.20250716",
-    "pychain>=0.3.99",
+    "polars==1.33.0",
+    "pyarrow-stubs>=20.0.0.20250928",
+    "pychain>=0.4.0",
 ]
+description = "polars and dataframely plugin"
+name = "framelib"
+readme = "README.md"
+requires-python = ">=3.12"
+version = "0.1.3"
 [build-system]
-requires = ["uv_build>=0.8.15,<0.9.0"]
 build-backend = "uv_build"
+requires      = ["uv_build>=0.8.15,<0.9.0"]
 
 [tool.uv.sources]
 pychain = { git = "https://github.com/OutSquareCapital/pychain.git" }
