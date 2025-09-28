@@ -11,14 +11,6 @@ class FileReader:
     File reader class for different file formats.
 
     The path attribute will be set automatically when used in a Folder subclass, using the variable name as the filename, and the subclass name as the file extension.
-    For example:
-
-    >>> class MyData(Folder):
-    ...     __directory__ = Path("data")
-    ...     users = CSV()
-    ...     orders = Parquet()
-    >>> MyData.users.path.as_posix()
-    'data/users.csv'
 
     The read and scan properties returns partial functions from polars, with the path already set.
     """
@@ -32,6 +24,8 @@ class FileReader:
         Set the path attribute for this file reader instance from a directory and file name.
 
         Used internally by the Folder initialization process, or can be used manually as a convenience method.
+
+        >>> from framelib import CSV
         >>> CSV().from_dir("my_folder", "my_data").path.as_posix()
         'my_folder/my_data.csv'
         """
@@ -44,6 +38,8 @@ class FileReader:
     def extension(self) -> str:
         """
         Returns the file extension for this file reader, defined from the class name in lowercase.
+
+        >>> from framelib import CSV
         >>> CSV().extension
         'csv'
         """

@@ -5,8 +5,11 @@ import polars as pl
 import framelib as fl
 
 
-class MyDirectory(fl.Folder):
-    __directory__ = Path("tests", "data")
+class Base:
+    __directory__ = Path("tests")
+
+
+class Data(fl.Folder, Base):
     sales = fl.CSV()
     customers = fl.NDJson()
 
@@ -18,7 +21,7 @@ def mock_sales():
             "customer_id": [101, 102, 103],
             "amount": [250.0, 450.5, 300.75],
         }
-    ).write_csv(MyDirectory.sales.path)
+    ).write_csv(Data.sales.path)
 
 
 def mock_customers():
@@ -28,14 +31,13 @@ def mock_customers():
             "name": ["Alice", "Bob", "Charlie"],
             "email": ["alice@example.com", "bob@example.com", "charlie@example.com"],
         }
-    ).write_ndjson(MyDirectory.customers.path)
+    ).write_ndjson(Data.customers.path)
 
 
 if __name__ == "__main__":
     mock_sales()
     mock_customers()
-    assert MyDirectory.sales.path.as_posix() == "tests/data/sales.csv"
-    assert MyDirectory.customers.path.as_posix() == "tests/data/customers.ndjson"
-    print(MyDirectory.show_tree())
-    print(MyDirectory.sales.read())
-    print(MyDirectory.customers.read())
+    assert Data.sales.path.as_posix() == "tests/data/sales.csv"
+    assert Data.customers.path.as_posix() == "tests/data/customers.ndjson"
+    assert Data.sales.read().shape == (3, 3)
+    print(Data.show_tree())

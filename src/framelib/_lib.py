@@ -102,14 +102,38 @@ class Json(FileReader):
 
 
 class Folder:
+    """
+    Folder schema class to organize FileReader instances, used as a base class.
+    The __directory__ attribute will be set automatically when subclassed, using the subclass name as the folder name.
+
+    The FileReader instances will have their path attribute set automatically, using the variable name as the filename, and the subclass name as the file extension.
+
+    For example:
+    >>> class MyDirectory(Folder):
+    ...     __directory__ = Path("data")
+    ...     users = CSV()
+    ...     orders = Parquet()
+    >>> MyDirectory.directory().as_posix()
+    'data/mydirectory'
+    >>> MyDirectory.users.path.as_posix()
+    'data/mydirectory/users.csv'
+
+    """
+
     __directory__: Path
     _is_folder = True
 
     def __init_subclass__(cls) -> None:
+        if not hasattr(cls, "__directory__"):
+            raise AttributeError(
+                f"Class {cls.__name__} must define a __directory__ attribute"
+            )
+        cls.__directory__ = cls.__directory__.joinpath(cls.__name__.lower())
         for name, obj in cls.__dict__.items():
-            if not FileReader.__identity__(obj):
+            if FileReader.__identity__(obj):
+                obj.from_dir(cls.directory(), name)
+            else:
                 continue
-            obj.from_dir(cls.__directory__, name)
 
     @staticmethod
     def __identity__(obj: Any) -> TypeGuard[Folder]:
@@ -128,3 +152,10 @@ class Folder:
         Returns an iterator over the FileReader instances in the folder.
         """
         return pc.Iter(cls.__directory__.iterdir())
+
+    @classmethod
+    def directory(cls) -> Path:
+        """
+        Returns the directory path of this Folder subclass.
+        """
+        return cls.__directory__
