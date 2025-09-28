@@ -9,6 +9,12 @@ It includes features for:
 - reading/scanning them using polars engine
 - visualizing them in a tree format.
 
+## Installation
+
+```bash
+uv add git+https://github.com/OutSquareCapital/framelib.git
+```
+
 ## Example
 
 ```python
@@ -57,10 +63,4 @@ if __name__ == "__main__":
 
 
 
-```
-
-## Installation
-
-```bash
-uv add git+https://github.com/OutSquareCapital/framelib.git
 ```
