@@ -104,7 +104,10 @@ class Json(FileReader):
 class Folder:
     """
     Folder schema class to organize FileReader instances, used as a base class.
-    The __directory__ attribute will be set automatically when subclassed, using the subclass name as the folder name.
+
+    If not provided, the __directory__ attribute will be set automatically when subclassed as `Path()`.
+
+    Then, the subclass name will be used as a subdirectory.
 
     The FileReader instances will have their path attribute set automatically, using the variable name as the filename, and the subclass name as the file extension.
 
@@ -125,9 +128,7 @@ class Folder:
 
     def __init_subclass__(cls) -> None:
         if not hasattr(cls, "__directory__"):
-            raise AttributeError(
-                f"Class {cls.__name__} must define a __directory__ attribute"
-            )
+            cls.__directory__ = Path()
         cls.__directory__ = cls.__directory__.joinpath(cls.__name__.lower())
         for name, obj in cls.__dict__.items():
             if FileReader.__identity__(obj):
@@ -141,10 +142,11 @@ class Folder:
 
     @classmethod
     def show_tree(cls) -> TreeDisplay:
-        """
-        Returns a TreeDisplay object for this schema's directory.
-        """
-        return TreeDisplay(root=cls.__directory__)
+        return TreeDisplay(cls.__directory__)
+
+    @classmethod
+    def _display_(cls) -> TreeDisplay:
+        return cls.show_tree()
 
     @classmethod
     def iter_dir(cls) -> pc.Iter[Path]:

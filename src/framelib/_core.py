@@ -5,6 +5,8 @@ from typing import Any, TypeGuard
 
 import pychain as pc
 
+from ._tree import TreeDisplay
+
 
 class FileReader:
     """
@@ -12,12 +14,23 @@ class FileReader:
 
     The path attribute will be set automatically when used in a Folder subclass, using the variable name as the filename, and the subclass name as the file extension.
 
+    if glob is set to True, the extension will be ignored, and the path will be generated without extension.
+
+    This is primarily useful for partitioned parquet files.
+
     The read and scan properties returns partial functions from polars, with the path already set.
     """
 
     path: Path
+    extension: str
     _is_file_reader = True
-    __slots__ = ("path",)
+    __slots__ = ("path", "extension")
+
+    def __init__(self, glob: bool = False) -> None:
+        if glob:
+            self.extension = ""
+        else:
+            self.extension = f".{self.__class__.__name__.lower()}"
 
     def from_dir(self, directory: Path | str, file_name: str) -> FileReader:
         """
@@ -29,21 +42,8 @@ class FileReader:
         >>> CSV().from_dir("my_folder", "my_data").path.as_posix()
         'my_folder/my_data.csv'
         """
-        self.path = (
-            Path(directory).joinpath(file_name).with_suffix(f".{self.extension}")
-        )
+        self.path = Path(directory, file_name).with_suffix(self.extension)
         return self
-
-    @property
-    def extension(self) -> str:
-        """
-        Returns the file extension for this file reader, defined from the class name in lowercase.
-
-        >>> from framelib import CSV
-        >>> CSV().extension
-        'csv'
-        """
-        return self.__class__.__name__.lower()
 
     @staticmethod
     def __identity__(obj: Any) -> TypeGuard[FileReader]:
@@ -57,3 +57,9 @@ class FileReader:
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(path={self.path})"
+
+    def _display_(self) -> TreeDisplay:
+        return TreeDisplay(self.path)
+
+    def _repr_html_(self) -> TreeDisplay:
+        return self._display_()
