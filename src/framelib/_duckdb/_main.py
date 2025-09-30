@@ -6,6 +6,7 @@ from typing import Any, Self, TypeGuard
 import duckdb
 import narwhals as nw
 import pychain as pc
+from narwhals.typing import IntoFrame, IntoLazyFrame
 
 
 class Table:
@@ -18,9 +19,8 @@ class Table:
     def __identity__(obj: Any) -> TypeGuard[Table]:
         return getattr(obj, "_is_table", False)
 
-    def with_name(self, name: str) -> Self:
+    def __from_db__(self, name: str) -> None:
         self._name = name
-        return self
 
     def with_connexion(self, con: duckdb.DuckDBPyConnection) -> Self:
         self._con = con
@@ -28,6 +28,16 @@ class Table:
 
     def read(self) -> nw.LazyFrame[duckdb.DuckDBPyRelation]:
         return nw.from_native(self._con.table(self._name))
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    def write(self, df: IntoFrame | IntoLazyFrame) -> None:
+        df_to_write = nw.from_native(df).lazy().collect().to_native()  # type: ignore # noqa
+        self._con.execute(
+            f"CREATE OR REPLACE TABLE {self._name} AS SELECT * FROM df_to_write"
+        )
 
 
 class DataBase:
@@ -57,7 +67,7 @@ class DataBase:
         cls._schema = {}
         for name, obj in cls.__dict__.items():
             if Table.__identity__(obj):
-                obj.with_name(name)
+                obj.__from_db__(name)
                 cls._schema[name] = obj
             else:
                 continue

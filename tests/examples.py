@@ -1,7 +1,18 @@
+from pathlib import Path
+
 import dataframely as dy
 import polars as pl
+from duckdb import DuckDBPyRelation
 
 import framelib as fl
+
+BASE_PATH = Path("tests")
+
+
+class Duck(fl.duck.DataBase):
+    __directory__ = BASE_PATH
+    salesdb = fl.duck.Table()
+    customersdb = fl.duck.Table()
 
 
 class Sales(dy.Schema):
@@ -25,13 +36,9 @@ class PartitionedSales(dy.Schema):
     product = dy.String(nullable=False)
 
 
-# This will generate a __directory__ set to Path("tests")
-class Tests(fl.Folder):
-    pass
-
-
 # By inheriting from Tests, the __directory__ will be Path("tests").joinpath("data")
-class Data(Tests):
+class Data(fl.Folder):
+    __directory__ = BASE_PATH
     sales = fl.CSV(schema=Sales)  # "tests/data/sales.csv"
     customers = fl.NDJson(schema=Customers)  # "tests/data/customers.ndjson"
     data_glob = fl.ParquetPartitioned(
@@ -73,6 +80,48 @@ def mock_partitioned_parquet(file: fl.Parquet[PartitionedSales]) -> None:
     ).pipe(file.write)
 
 
+def mock_tables() -> None:
+    sales = pl.DataFrame(
+        {
+            "order_id": [1, 2, 3],
+            "customer_id": [101, 102, 103],
+            "amount": [250.0, 450.5, 300.75],
+        }
+    )
+
+    customers = pl.DataFrame(
+        {
+            "customer_id": [101, 102, 103],
+            "name": ["Alice", "Bob", "Charlie"],
+            "email": ["alice@example.com", "bob@example.com", "charlie@example.com"],
+        }
+    )
+    with Duck() as db:
+        db.salesdb.write(sales)
+        db.customersdb.write(customers)
+
+
+def test_nw() -> None:
+    import duckdb
+    import polars as pl
+
+    class Foo(fl.duck.Schema):
+        a = fl.duck.Float32()
+        b = fl.duck.Float32()
+        c = fl.duck.String()
+
+    df = pl.DataFrame({"a": [1, 2], "b": [3.0, 4.0], "c": ["x", "y"]})
+
+    df_duck: duckdb.DuckDBPyRelation = duckdb.sql("""SELECT * FROM df""")
+
+    df_casted: pl.DataFrame = Foo.cast(df.lazy()).collect()
+    duck_casted: DuckDBPyRelation = Foo.cast(df_duck).execute()
+    print("polars casted:")
+    print(df_casted)
+    print("duckdb casted:")
+    print(duck_casted)
+
+
 if __name__ == "__main__":
     mock_sales(Data.sales)
     mock_customers(Data.customers)
@@ -83,3 +132,9 @@ if __name__ == "__main__":
     assert Data.data_glob.read().shape == (30, 6)
     print(Data.show_tree())
     print(Data.data_glob.schema)
+    mock_tables()
+    with Duck() as db:
+        print(db.salesdb.read().schema)
+        print(db.salesdb.read().to_native())
+        print(db.customersdb.read().to_native())
+    test_nw()
