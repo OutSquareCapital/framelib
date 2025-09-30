@@ -1,6 +1,28 @@
+import dataframely as dy
 import polars as pl
 
 import framelib as fl
+
+
+class Sales(dy.Schema):
+    order_id = dy.UInt64(primary_key=True, nullable=False)
+    customer_id = dy.UInt64(nullable=False)
+    amount = dy.Float64(nullable=False)
+
+
+class Customers(dy.Schema):
+    customer_id = dy.UInt64(primary_key=True, nullable=False)
+    name = dy.String(nullable=False)
+    email = dy.String(nullable=False)
+
+
+class PartitionedSales(dy.Schema):
+    order_id = dy.UInt64(primary_key=True, nullable=False)
+    customer_id = dy.UInt64(nullable=False)
+    amount = dy.Float64(nullable=False)
+    order_date = dy.Date(nullable=False)
+    region = dy.String(nullable=False)
+    product = dy.String(nullable=False)
 
 
 # This will generate a __directory__ set to Path("tests")
@@ -10,32 +32,35 @@ class Tests(fl.Folder):
 
 # By inheriting from Tests, the __directory__ will be Path("tests").joinpath("data")
 class Data(Tests):
-    sales = fl.CSV()  # "tests/data/sales.csv"
-    customers = fl.NDJson()  # "tests/data/customers.ndjson"
-    data_glob = fl.Parquet(glob=True)  # "tests/data/data_glob"
+    sales = fl.CSV(schema=Sales)  # "tests/data/sales.csv"
+    customers = fl.NDJson(schema=Customers)  # "tests/data/customers.ndjson"
+    data_glob = fl.ParquetPartitioned(
+        "customer_id",
+        PartitionedSales,  # "tests/data/data_glob"
+    )
 
 
-def mock_sales(reader: fl.CSV) -> None:
+def mock_sales(file: fl.CSV[Sales]) -> None:
     pl.DataFrame(
         {
             "order_id": [1, 2, 3],
             "customer_id": [101, 102, 103],
             "amount": [250.0, 450.5, 300.75],
         }
-    ).write_csv(reader.path)
+    ).pipe(file.write)
 
 
-def mock_customers(reader: fl.NDJson) -> None:
+def mock_customers(file: fl.NDJson[Customers]) -> None:
     pl.DataFrame(
         {
             "customer_id": [101, 102, 103],
             "name": ["Alice", "Bob", "Charlie"],
             "email": ["alice@example.com", "bob@example.com", "charlie@example.com"],
         }
-    ).write_ndjson(reader.path)
+    ).pipe(file.write)
 
 
-def mock_partitioned_parquet(reader: fl.Parquet) -> None:
+def mock_partitioned_parquet(file: fl.Parquet[PartitionedSales]) -> None:
     pl.DataFrame(
         {
             "order_id": list(range(1, 31)),
@@ -45,7 +70,7 @@ def mock_partitioned_parquet(reader: fl.Parquet) -> None:
             "region": ["north", "south", "east", "west", "central"] * 6,
             "product": ["A", "B", "C", "D", "E"] * 6,
         }
-    ).write_parquet(reader.path, partition_by="customer_id")
+    ).pipe(file.write)
 
 
 if __name__ == "__main__":
@@ -57,3 +82,4 @@ if __name__ == "__main__":
     assert Data.sales.read().shape == (3, 3)
     assert Data.data_glob.read().shape == (30, 6)
     print(Data.show_tree())
+    print(Data.data_glob.schema)

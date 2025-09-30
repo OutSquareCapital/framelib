@@ -23,7 +23,7 @@ uv add git+https://github.com/OutSquareCapital/framelib.git
 - define directory structures and files within them
 - read/scan them using polars engine
 - visualize them in a tree format.
-- supports CSV, NDJson, JSON, and Parquet file formats
+- supports CSV, NDJson, JSON, Parquet and partitionned Parquet file formats
 
 ```python
 import framelib as fl
@@ -48,13 +48,40 @@ MyData.sales.scan(any_argument=...)  # scans the CSV file as a Polars LazyFrame
 
 ## Example
 
-Below is a complete example of defining a folder structure, creating mock data files, and reading them using `framelib`.
+Below is a complete example of:
+
+- defining dataframely schemas for the dataframes
+- defining a folder structure linking the schemas to their positions
+- functions for creating mock data files, and reading them using `framelib`.
+
 This file can be found in `tests/examples.py`.
 
 ```python
+import dataframely as dy
 import polars as pl
 
 import framelib as fl
+
+
+class Sales(dy.Schema):
+    order_id = dy.UInt64(primary_key=True, nullable=False)
+    customer_id = dy.UInt64(nullable=False)
+    amount = dy.Float64(nullable=False)
+
+
+class Customers(dy.Schema):
+    customer_id = dy.UInt64(primary_key=True, nullable=False)
+    name = dy.String(nullable=False)
+    email = dy.String(nullable=False)
+
+
+class PartitionedSales(dy.Schema):
+    order_id = dy.UInt64(primary_key=True, nullable=False)
+    customer_id = dy.UInt64(nullable=False)
+    amount = dy.Float64(nullable=False)
+    order_date = dy.Date(nullable=False)
+    region = dy.String(nullable=False)
+    product = dy.String(nullable=False)
 
 
 # This will generate a __directory__ set to Path("tests")
@@ -64,32 +91,35 @@ class Tests(fl.Folder):
 
 # By inheriting from Tests, the __directory__ will be Path("tests").joinpath("data")
 class Data(Tests):
-    sales = fl.CSV()  # "tests/data/sales.csv"
-    customers = fl.NDJson()  # "tests/data/customers.ndjson"
-    data_glob = fl.Parquet(glob=True)  # "tests/data/data_glob"
+    sales = fl.CSV(schema=Sales)  # "tests/data/sales.csv"
+    customers = fl.NDJson(schema=Customers)  # "tests/data/customers.ndjson"
+    data_glob = fl.ParquetPartitioned(
+        "customer_id",
+        PartitionedSales,  # "tests/data/data_glob"
+    )
 
 
-def mock_sales(reader: fl.CSV) -> None:
+def mock_sales(file: fl.CSV[Sales]) -> None:
     pl.DataFrame(
         {
             "order_id": [1, 2, 3],
             "customer_id": [101, 102, 103],
             "amount": [250.0, 450.5, 300.75],
         }
-    ).write_csv(reader.path)
+    ).pipe(file.write)
 
 
-def mock_customers(reader: fl.NDJson) -> None:
+def mock_customers(file: fl.NDJson[Customers]) -> None:
     pl.DataFrame(
         {
             "customer_id": [101, 102, 103],
             "name": ["Alice", "Bob", "Charlie"],
             "email": ["alice@example.com", "bob@example.com", "charlie@example.com"],
         }
-    ).write_ndjson(reader.path)
+    ).pipe(file.write)
 
 
-def mock_partitioned_parquet(reader: fl.Parquet) -> None:
+def mock_partitioned_parquet(file: fl.Parquet[PartitionedSales]) -> None:
     pl.DataFrame(
         {
             "order_id": list(range(1, 31)),
@@ -99,7 +129,7 @@ def mock_partitioned_parquet(reader: fl.Parquet) -> None:
             "region": ["north", "south", "east", "west", "central"] * 6,
             "product": ["A", "B", "C", "D", "E"] * 6,
         }
-    ).write_parquet(reader.path, partition_by="customer_id")
+    ).pipe(file.write)
 
 
 if __name__ == "__main__":
@@ -112,13 +142,16 @@ if __name__ == "__main__":
     assert Data.data_glob.read().shape == (30, 6)
 ```
 
-### Tree Visualization
+### Tree and schema Visualization
 
 Easily visualize the existing files and folders in a tree format.
 Note that this only shows **existing** files and folders.
 
+You can also easily visualize the underlying dataframely schema for each file.
+
 ```python
 print(Data.show_tree())
+print(Data.data_glob.schema)
 ```
 
 This will output something like:
@@ -138,4 +171,13 @@ tests\data
 │       └── 0.parquet
 ├── customers.ndjson
 └── sales.csv
+[Schema "PartitionedSales"]
+  Columns:
+    - "order_id": UInt64(nullable=False, primary_key=True)
+    - "customer_id": UInt64(nullable=False)
+    - "amount": Float64(nullable=False)
+    - "order_date": Date(nullable=False)
+    - "region": String(nullable=False)
+    - "product": String(nullable=False)
+
 ```

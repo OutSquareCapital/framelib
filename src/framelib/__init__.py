@@ -1,3 +1,14 @@
-from ._lib import CSV, Folder, Json, NDJson, Parquet
+from ._core import Folder
+from ._duckdb import DataBase, Table
+from ._lib import CSV, Json, NDJson, Parquet, ParquetPartitioned
 
-__all__ = ["CSV", "Json", "NDJson", "Parquet", "Folder"]
+__all__ = [
+    "CSV",
+    "Json",
+    "NDJson",
+    "Parquet",
+    "ParquetPartitioned",
+    "Folder",
+    "DataBase",
+    "Table",
+]

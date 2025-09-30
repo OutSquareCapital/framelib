@@ -3,6 +3,9 @@ authors = [
     { name = "OutSquareCapital", email = "166045166+OutSquareCapital@users.noreply.github.com" },
 ]
 dependencies = [
+    "dataframely>=1.13.0",
+    "duckdb>=1.4.0",
+    "narwhals>=2.5.0",
     "polars==1.33.0",
     "pyarrow-stubs>=20.0.0.20250928",
     "pychain>=0.4.0",
