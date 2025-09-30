@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Self, TypeGuard
+from typing import Any, ClassVar, Final, Self, TypeGuard
 
 import duckdb
 import narwhals as nw
@@ -12,7 +12,7 @@ from narwhals.typing import IntoFrame, IntoLazyFrame
 class Table:
     _name: str
     _con: duckdb.DuckDBPyConnection
-    _is_table: bool = True
+    _is_table: Final[bool] = True
     __slots__ = ("_name", "_con")
 
     @staticmethod
@@ -41,9 +41,9 @@ class Table:
 
 
 class DataBase:
-    __directory__: Path
-    _is_db: bool = True
-    _schema: dict[str, Table]
+    __directory__: ClassVar[Path]
+    _is_db: Final[bool] = True
+    _schema: ClassVar[dict[str, Table]]
     _con: duckdb.DuckDBPyConnection
     __slots__ = ("_con",)
 

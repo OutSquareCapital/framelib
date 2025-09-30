@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Self
+from typing import ClassVar, Final, Self
 
 import narwhals as nw
 import pychain as pc
@@ -10,8 +10,8 @@ from ._columns import Column
 
 
 class Schema:
-    _is_folder = True
-    _schema: dict[str, Column]
+    _is_folder: Final[bool] = True
+    _schema: ClassVar[dict[str, Column]]
 
     def __init_subclass__(cls) -> None:
         cls._set_schema()

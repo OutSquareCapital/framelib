@@ -3,13 +3,13 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Self, TypeGuard
+from typing import Any, ClassVar, Final, Self, TypeGuard
 
 import dataframely as dy
 import polars as pl
 import pychain as pc
 
-from ._tree import TreeDisplay
+from ._tree import show_tree
 
 
 class FileReader[T: dy.Schema](ABC):
@@ -28,7 +28,7 @@ class FileReader[T: dy.Schema](ABC):
     path: Path
     extension: str
     schema: type[T]
-    _is_file_reader = True
+    _is_file_reader: Final[bool] = True
     __slots__ = ("path", "extension", "schema")
 
     def __init__(self, schema: type[T] = dy.Schema) -> None:
@@ -62,7 +62,7 @@ class FileReader[T: dy.Schema](ABC):
         return f"{self.__class__.__name__}(path={self.path})"
 
     def _display_(self) -> str:
-        return TreeDisplay(self.path)._display_()  # type: ignore
+        return self.__repr__()
 
     def _repr_html_(self) -> str:
         return self._display_()
@@ -126,8 +126,8 @@ class Folder:
 
     """
 
-    __directory__: Path
-    _is_folder = True
+    __directory__: ClassVar[Path]
+    _is_folder: Final[bool] = True
 
     def __init_subclass__(cls) -> None:
         cls._set_directory()._set_schema()
@@ -153,11 +153,11 @@ class Folder:
         return getattr(obj, "_is_folder", False) is True
 
     @classmethod
-    def show_tree(cls) -> TreeDisplay:
-        return TreeDisplay(cls.__directory__)
+    def show_tree(cls) -> str:
+        return show_tree(cls.__directory__)
 
     @classmethod
-    def _display_(cls) -> TreeDisplay:
+    def _display_(cls) -> str:
         return cls.show_tree()
 
     @classmethod

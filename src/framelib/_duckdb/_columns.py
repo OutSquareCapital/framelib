@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Any, TypeGuard
+from typing import Any, Final, TypeGuard
 
 import narwhals as nw
 
 
 class Column:
-    _is_column = True
+    _is_column: Final[bool] = True
     _name: str
     __slots__ = "_name"
 
