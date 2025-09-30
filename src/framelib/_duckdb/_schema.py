@@ -35,10 +35,9 @@ class Schema:
         return pc.Dict(cls._schema)
 
     @classmethod
-    def cast(cls, df: IntoLazyFrameT) -> IntoLazyFrameT:
+    def cast(cls, df: IntoLazyFrameT) -> nw.LazyFrame[IntoLazyFrameT]:
         return (
             nw.from_native(df)
             .lazy()
             .select([col.col.cast(col.dtype) for col in cls._schema.values()])
-            .to_native()
         )

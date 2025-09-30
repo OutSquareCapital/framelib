@@ -2,11 +2,22 @@ from pathlib import Path
 
 import dataframely as dy
 import polars as pl
-from duckdb import DuckDBPyRelation
 
 import framelib as fl
 
 BASE_PATH = Path("tests")
+
+
+class SalesDB(fl.duck.Schema):
+    order_id = fl.duck.UInt64()
+    customer_id = fl.duck.UInt64()
+    amount = fl.duck.Float64()
+
+
+class CustomersDB(fl.duck.Schema):
+    customer_id = fl.duck.UInt64()
+    name = fl.duck.String()
+    email = fl.duck.String()
 
 
 class Duck(fl.duck.DataBase):
@@ -101,27 +112,6 @@ def mock_tables() -> None:
         db.customersdb.write(customers)
 
 
-def test_nw() -> None:
-    import duckdb
-    import polars as pl
-
-    class Foo(fl.duck.Schema):
-        a = fl.duck.Float32()
-        b = fl.duck.Float32()
-        c = fl.duck.String()
-
-    df = pl.DataFrame({"a": [1, 2], "b": [3.0, 4.0], "c": ["x", "y"]})
-
-    df_duck: duckdb.DuckDBPyRelation = duckdb.sql("""SELECT * FROM df""")
-
-    df_casted: pl.DataFrame = Foo.cast(df.lazy()).collect()
-    duck_casted: DuckDBPyRelation = Foo.cast(df_duck).execute()
-    print("polars casted:")
-    print(df_casted)
-    print("duckdb casted:")
-    print(duck_casted)
-
-
 if __name__ == "__main__":
     mock_sales(Data.sales)
     mock_customers(Data.customers)
@@ -134,7 +124,6 @@ if __name__ == "__main__":
     print(Data.data_glob.schema)
     mock_tables()
     with Duck() as db:
-        print(db.salesdb.read().schema)
-        print(db.salesdb.read().to_native())
+        print(db.salesdb.read().to_native().pl().schema)
+        print(db.salesdb.read().collect().to_native())
         print(db.customersdb.read().to_native())
-    test_nw()
