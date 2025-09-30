@@ -1,17 +1,15 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from functools import partial
-from pathlib import Path
-from typing import Any, TypeGuard
 
+import dataframely as dy
 import polars as pl
-import pychain as pc
 
 from ._core import FileReader
-from ._tree import TreeDisplay
 
 
-class Parquet(FileReader):
+class Parquet[T: dy.Schema](FileReader[T]):
     @property
     def scan(self):
         return partial(pl.scan_parquet, self.path)
@@ -70,8 +68,29 @@ class Parquet(FileReader):
         """
         return pl.read_parquet_metadata(self.path)
 
+    @property
+    def write(self):
+        return partial(pl.DataFrame.write_parquet, file=self.path)
 
-class CSV(FileReader):
+
+class ParquetPartitioned[T: dy.Schema](Parquet[T]):
+    __slots__ = ("_partition_by",)
+
+    def __init__(
+        self, partition_by: str | Sequence[str], schema: type[T] = dy.Schema
+    ) -> None:
+        self.schema: type[T] = schema
+        self.extension = ""
+        self._partition_by: str | Sequence[str] = partition_by
+
+    @property
+    def write(self):
+        return partial(
+            pl.DataFrame.write_parquet, file=self.path, partition_by=self._partition_by
+        )
+
+
+class CSV[T: dy.Schema](FileReader[T]):
     @property
     def scan(self):
         return partial(pl.scan_csv, self.path)
@@ -84,8 +103,12 @@ class CSV(FileReader):
     def read_batched(self):
         return partial(pl.read_csv_batched, self.path)
 
+    @property
+    def write(self):
+        return partial(pl.DataFrame.write_csv, file=self.path)
 
-class NDJson(FileReader):
+
+class NDJson[T: dy.Schema](FileReader[T]):
     @property
     def scan(self):
         return partial(pl.scan_ndjson, self.path)
@@ -94,70 +117,16 @@ class NDJson(FileReader):
     def read(self):
         return partial(pl.read_ndjson, self.path)
 
+    @property
+    def write(self):
+        return partial(pl.DataFrame.write_ndjson, file=self.path)
 
-class Json(FileReader):
+
+class Json[T: dy.Schema](FileReader[T]):
     @property
     def read(self):
         return partial(pl.read_json, self.path)
 
-
-class Folder:
-    """
-    Folder schema class to organize FileReader instances, used as a base class.
-
-    If not provided, the __directory__ attribute will be set automatically when subclassed as `Path()`.
-
-    Then, the subclass name will be used as a subdirectory.
-
-    The FileReader instances will have their path attribute set automatically, using the variable name as the filename, and the subclass name as the file extension.
-
-    For example:
-    >>> class MyDirectory(Folder):
-    ...     __directory__ = Path("data")
-    ...     users = CSV()
-    ...     orders = Parquet()
-    >>> MyDirectory.directory().as_posix()
-    'data/mydirectory'
-    >>> MyDirectory.users.path.as_posix()
-    'data/mydirectory/users.csv'
-
-    """
-
-    __directory__: Path
-    _is_folder = True
-
-    def __init_subclass__(cls) -> None:
-        if not hasattr(cls, "__directory__"):
-            cls.__directory__ = Path()
-        cls.__directory__ = cls.__directory__.joinpath(cls.__name__.lower())
-        for name, obj in cls.__dict__.items():
-            if FileReader.__identity__(obj):
-                obj.from_dir(cls.directory(), name)
-            else:
-                continue
-
-    @staticmethod
-    def __identity__(obj: Any) -> TypeGuard[Folder]:
-        return getattr(obj, "_is_folder", False) is True
-
-    @classmethod
-    def show_tree(cls) -> TreeDisplay:
-        return TreeDisplay(cls.__directory__)
-
-    @classmethod
-    def _display_(cls) -> TreeDisplay:
-        return cls.show_tree()
-
-    @classmethod
-    def iter_dir(cls) -> pc.Iter[Path]:
-        """
-        Returns an iterator over the FileReader instances in the folder.
-        """
-        return pc.Iter(cls.__directory__.iterdir())
-
-    @classmethod
-    def directory(cls) -> Path:
-        """
-        Returns the directory path of this Folder subclass.
-        """
-        return cls.__directory__
+    @property
+    def write(self):
+        return partial(pl.DataFrame.write_json, file=self.path)
