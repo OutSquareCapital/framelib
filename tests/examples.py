@@ -5,21 +5,20 @@ import polars as pl
 
 from framelib import database as db
 from framelib import files as fl
-from framelib import schemas as sc
 
 BASE_PATH = Path("tests")
 
 
-class SalesDB(sc.Schema):
-    order_id = sc.UInt16()
-    customer_id = sc.UInt16()
-    amount = sc.Float32()
+class SalesDB(db.Schema):
+    order_id = db.UInt16()
+    customer_id = db.UInt16()
+    amount = db.Float32()
 
 
-class CustomersDB(sc.Schema):
-    customer_id = sc.UInt16()
-    name = sc.String()
-    email = sc.String()
+class CustomersDB(db.Schema):
+    customer_id = db.UInt16()
+    name = db.String()
+    email = db.String()
 
 
 class Duck(db.DataBase):

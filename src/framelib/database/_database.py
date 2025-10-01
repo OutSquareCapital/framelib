@@ -7,7 +7,7 @@ import narwhals as nw
 from narwhals.typing import IntoFrame, IntoLazyFrame
 
 from .._core import BaseLayout, Entry, EntryType
-from ..schemas import Schema
+from ._schema import Schema
 
 
 class Table[T: Schema](Entry[T, duckdb.DuckDBPyConnection]):

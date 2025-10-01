@@ -1,10 +1,4 @@
-from . import database, files, requests, schemas
+from . import database, files, requests
 from ._const import constant
 
-__all__ = [
-    "constant",
-    "schemas",
-    "database",
-    "files",
-    "requests",
-]
+__all__ = ["constant", "database", "files", "requests"]
