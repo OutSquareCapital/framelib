@@ -1,12 +1,68 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
+from abc import abstractmethod
+from collections.abc import Callable, Sequence
 from functools import partial
+from pathlib import Path
+from typing import Any, Final
 
 import dataframely as dy
 import polars as pl
 
-from ._entries import File
+from .._core import BaseLayout, Entry, EntryType
+
+
+class File[T: dy.Schema](Entry[T, Path]):
+    _is_file: Final[bool] = True
+    _with_suffix: bool = True
+
+    def _build_source(self, source: Path | str) -> None:
+        self.source = Path(source, self._name)
+        if self.__class__._with_suffix:
+            self.source = self.source.with_suffix(f".{self.__class__.__name__.lower()}")
+
+    @property
+    @abstractmethod
+    def read(self) -> Callable[..., pl.DataFrame]:
+        raise NotImplementedError
+
+    @property
+    def scan(self) -> Callable[..., pl.LazyFrame]:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def write(self) -> Any:
+        raise NotImplementedError
+
+    def read_cast(self) -> pl.DataFrame:
+        """
+        Read the file and cast it to the defined schema.
+        """
+        return self.read().pipe(self.model.cast)
+
+    def scan_cast(self) -> pl.LazyFrame:
+        """
+        Scan the file and cast it to the defined schema.
+        """
+        return self.scan().pipe(self.model.cast)
+
+    def write_cast(
+        self, df: pl.LazyFrame | pl.DataFrame, *args: Any, **kwargs: Any
+    ) -> None:
+        """
+        Cast the dataframe to the defined schema and write it to the file.
+        """
+        self.model.cast(df.lazy().collect()).pipe(self.write, *args, **kwargs)
+
+
+class Folder(BaseLayout[File[dy.Schema]]):
+    _is_entry_type = EntryType.FILE
+
+    def __init_subclass__(cls) -> None:
+        super().__init_subclass__()
+        for file in cls._schema.values():
+            file._build_source(cls.source())  # type: ignore
 
 
 class Parquet[T: dy.Schema](File[T]):

@@ -3,28 +3,29 @@ from pathlib import Path
 import dataframely as dy
 import polars as pl
 
-import framelib as fl
-from framelib import duck as dk
+from framelib import database as db
+from framelib import files as fl
+from framelib import schemas as sc
 
 BASE_PATH = Path("tests")
 
 
-class SalesDB(dk.Schema):
-    order_id = dk.UInt64()
-    customer_id = dk.UInt64()
-    amount = dk.Float64()
+class SalesDB(sc.Schema):
+    order_id = sc.UInt16()
+    customer_id = sc.UInt16()
+    amount = sc.Float32()
 
 
-class CustomersDB(dk.Schema):
-    customer_id = dk.UInt64()
-    name = dk.String()
-    email = dk.String()
+class CustomersDB(sc.Schema):
+    customer_id = sc.UInt16()
+    name = sc.String()
+    email = sc.String()
 
 
-class Duck(fl.DataBase):
+class Duck(db.DataBase):
     __source__ = BASE_PATH
-    salesdb = fl.Table(SalesDB)
-    customersdb = fl.Table(CustomersDB)
+    salesdb = db.Table(SalesDB)
+    customersdb = db.Table(CustomersDB)
 
 
 class Sales(dy.Schema):
@@ -117,16 +118,10 @@ if __name__ == "__main__":
     mock_sales(Data.sales)
     mock_customers(Data.customers)
     mock_partitioned_parquet(Data.data_glob)
-    print(Data.sales.source)
+    mock_tables()
     assert Data.sales.source.as_posix() == "tests/data/sales.csv"
     assert Data.customers.source.as_posix() == "tests/data/customers.ndjson"
     assert Data.sales.read().shape == (3, 3)
     assert Data.data_glob.read().shape == (30, 6)
-    print(Data.show_tree())
-    print(Data.data_glob.schema)
-    mock_tables()
     with Duck() as db:
-        db.salesdb.read().pipe(SalesDB.cast)
-        print(db.salesdb.read().to_native().pl().schema)
-        print(db.salesdb.read().collect().to_native())
-        print(db.customersdb.read().to_native())
+        print(db.salesdb.read().pipe(SalesDB.cast).collect("polars"))

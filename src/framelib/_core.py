@@ -7,6 +7,8 @@ from typing import Any, Protocol, Self
 
 import pychain as pc
 
+from ._tree import show_tree
+
 
 class EntryType(StrEnum):
     ENTRY_TYPE = "_is_entry_type"
@@ -55,6 +57,25 @@ class BaseLayout[T: BaseEntry](ABC):
     @classmethod
     def schema(cls) -> pc.Dict[str, T]:
         return pc.Dict(cls._schema)
+
+    @classmethod
+    def source(cls) -> Path:
+        return cls.__source__
+
+    @classmethod
+    def show_tree(cls) -> str:
+        return show_tree(cls.__source__)
+
+    @classmethod
+    def _display_(cls) -> str:
+        return cls.show_tree()
+
+    @classmethod
+    def iter_dir(cls) -> pc.Iter[Path]:
+        """
+        Returns an iterator over the File instances in the folder.
+        """
+        return pc.Iter(cls.__source__.iterdir())
 
 
 class Entry[T, U](BaseEntry):

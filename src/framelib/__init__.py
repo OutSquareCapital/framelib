@@ -1,25 +1,10 @@
-from . import _schema as duck
+from . import database, files, requests, schemas
 from ._const import constant
-from ._paths import (
-    CSV,
-    DataBase,
-    Folder,
-    Json,
-    NDJson,
-    Parquet,
-    ParquetPartitioned,
-    Table,
-)
 
 __all__ = [
     "constant",
-    "CSV",
-    "Json",
-    "NDJson",
-    "Parquet",
-    "ParquetPartitioned",
-    "Folder",
-    "duck",
-    "DataBase",
-    "Table",
+    "schemas",
+    "database",
+    "files",
+    "requests",
 ]
