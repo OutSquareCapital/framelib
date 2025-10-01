@@ -20,10 +20,10 @@ class CustomersDB(fl.duck.Schema):
     email = fl.duck.String()
 
 
-class Duck(fl.duck.DataBase):
+class Duck(fl.DataBase):
     __directory__ = BASE_PATH
-    salesdb = fl.duck.Table()
-    customersdb = fl.duck.Table()
+    salesdb = fl.Table(SalesDB)
+    customersdb = fl.Table(CustomersDB)
 
 
 class Sales(dy.Schema):
@@ -116,8 +116,8 @@ if __name__ == "__main__":
     mock_sales(Data.sales)
     mock_customers(Data.customers)
     mock_partitioned_parquet(Data.data_glob)
-    assert Data.sales.path.as_posix() == "tests/data/sales.csv"
-    assert Data.customers.path.as_posix() == "tests/data/customers.ndjson"
+    assert Data.sales.source.as_posix() == "tests/data/sales.csv"
+    assert Data.customers.source.as_posix() == "tests/data/customers.ndjson"
     assert Data.sales.read().shape == (3, 3)
     assert Data.data_glob.read().shape == (30, 6)
     print(Data.show_tree())

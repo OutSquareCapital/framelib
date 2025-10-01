@@ -1,7 +1,15 @@
-from . import _duckdb as duck
+from . import _schema as duck
 from ._const import constant
-from ._core import Folder
-from ._lib import CSV, Json, NDJson, Parquet, ParquetPartitioned
+from ._paths import (
+    CSV,
+    DataBase,
+    Folder,
+    Json,
+    NDJson,
+    Parquet,
+    ParquetPartitioned,
+    Table,
+)
 
 __all__ = [
     "constant",
@@ -12,4 +20,6 @@ __all__ = [
     "ParquetPartitioned",
     "Folder",
     "duck",
+    "DataBase",
+    "Table",
 ]

@@ -20,7 +20,7 @@ def _get_simple_attributes(cls: type) -> list[str]:
         if name.startswith("__") and name.endswith("__"):
             continue
         # Skip functions defined using 'def' within the scope of the class or any parent class
-        if isinstance(value, Callable):
+        if callable(value):
             if any(
                 value.__qualname__.startswith(base.__name__ + ".")
                 for base in cls.__mro__
