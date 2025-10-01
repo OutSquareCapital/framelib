@@ -9,6 +9,8 @@ dependencies = [
     "polars==1.33.0",
     "pyarrow-stubs>=20.0.0.20250928",
     "pychain>=0.4.0",
+    "requests>=2.32.5",
+    "yarl>=1.20.1",
 ]
 description = "polars and dataframely plugin"
 name = "framelib"
