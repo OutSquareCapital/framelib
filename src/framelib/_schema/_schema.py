@@ -1,31 +1,18 @@
 from __future__ import annotations
 
-from typing import ClassVar, Final, Self
+from typing import overload
 
 import narwhals as nw
+import polars as pl
 import pychain as pc
-from narwhals.typing import IntoLazyFrameT
+from narwhals.typing import IntoLazyFrameT, LazyFrameT
 
+from .._core import BaseLayout, EntryType
 from ._columns import Column
 
 
-class Schema:
-    _is_folder: Final[bool] = True
-    _schema: ClassVar[dict[str, Column]]
-
-    def __init_subclass__(cls) -> None:
-        cls._set_schema()
-
-    @classmethod
-    def _set_schema(cls) -> type[Self]:
-        cls._schema = {}
-        for name, obj in cls.__dict__.items():
-            if Column.__identity__(obj):
-                obj.__from_schema__(name)
-                cls._schema[name] = obj
-            else:
-                continue
-        return cls
+class Schema(BaseLayout[Column]):
+    _is_entry_type = EntryType.COLUMN
 
     @classmethod
     def columns(cls) -> pc.Dict[str, Column]:
@@ -35,7 +22,32 @@ class Schema:
         return pc.Dict(cls._schema)
 
     @classmethod
-    def cast(cls, df: IntoLazyFrameT) -> nw.LazyFrame[IntoLazyFrameT]:
+    def column_names(cls) -> pc.Iter[str]:
+        """The column names of this schema."""
+        return pc.Iter(cls._schema.keys())
+
+    @classmethod
+    def column_exprs(cls) -> pc.Iter[nw.Expr]:
+        """The column expressions of this schema."""
+        return pc.Iter(col.col for col in cls._schema.values())
+
+    @overload
+    @classmethod
+    def cast(cls, df: LazyFrameT) -> LazyFrameT: ...
+
+    @overload
+    @classmethod
+    def cast(cls, df: IntoLazyFrameT) -> nw.LazyFrame[IntoLazyFrameT]: ...
+
+    @overload
+    @classmethod
+    def cast(cls, df: pl.DataFrame) -> nw.LazyFrame[pl.LazyFrame]: ...
+
+    @classmethod
+    def cast(
+        cls,
+        df: IntoLazyFrameT | LazyFrameT | pl.DataFrame,
+    ) -> LazyFrameT | nw.LazyFrame[IntoLazyFrameT]:
         return (
             nw.from_native(df)
             .lazy()

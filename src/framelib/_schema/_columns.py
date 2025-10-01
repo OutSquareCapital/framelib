@@ -1,29 +1,18 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
-from typing import Any, Final, TypeGuard
+from collections.abc import Iterable, Mapping, Sequence
+from typing import Final
 
 import narwhals as nw
 
+from .._core import BaseEntry
 
-class Column:
+
+class Column(BaseEntry):
     _is_column: Final[bool] = True
-    _name: str
-    __slots__ = "_name"
 
     def __repr__(self) -> str:
         return f"Column(name={self.name}, dtype={self.dtype})"
-
-    @staticmethod
-    def __identity__(obj: Any) -> TypeGuard[Column]:
-        return getattr(obj, "_is_column", False) is True
-
-    def __from_schema__(self, name: str) -> None:
-        self._name = name
-
-    @property
-    def name(self) -> str:
-        return self._name
 
     @property
     def col(self) -> nw.Expr:
@@ -70,6 +59,12 @@ class Int64(Column):
         return nw.Int64()
 
 
+class Int128(Column):
+    @property
+    def dtype(self) -> nw.Int128:
+        return nw.Int128()
+
+
 class UInt8(Column):
     @property
     def dtype(self) -> nw.UInt8:
@@ -94,6 +89,12 @@ class UInt64(Column):
         return nw.UInt64()
 
 
+class UInt128(Column):
+    @property
+    def dtype(self) -> nw.UInt128:
+        return nw.UInt128()
+
+
 class Boolean(Column):
     @property
     def dtype(self) -> nw.Boolean:
@@ -112,10 +113,53 @@ class Date(Column):
         return nw.Date()
 
 
-class Categorical(Column):
+class DateTime(Column):
     @property
-    def dtype(self) -> nw.Categorical:
-        return nw.Categorical()
+    def dtype(self) -> nw.Time:
+        return nw.Time()
+
+
+class Decimal(Column):
+    @property
+    def dtype(self) -> nw.Decimal:
+        return nw.Decimal()
+
+
+class Array(Column):
+    _inner: nw.dtypes.DType
+    _shape: int | tuple[int, ...]
+
+    def __init__(self, inner: nw.dtypes.DType, shape: int | tuple[int, ...]) -> None:
+        self._inner = inner
+        self._shape = shape
+
+    @property
+    def dtype(self) -> nw.Array:
+        return nw.Array(self._inner, self._shape)
+
+
+class Struct(Column):
+    _fields: Sequence[nw.Field] | Mapping[str, nw.dtypes.DType]
+
+    def __init__(
+        self, fields: Sequence[nw.Field] | Mapping[str, nw.dtypes.DType]
+    ) -> None:
+        self._fields = fields
+
+    @property
+    def dtype(self) -> nw.Struct:
+        return nw.Struct(self._fields)
+
+
+class List(Column):
+    _inner: nw.dtypes.DType
+
+    def __init__(self, inner: nw.dtypes.DType) -> None:
+        self._inner = inner
+
+    @property
+    def dtype(self) -> nw.List:
+        return nw.List(self._inner)
 
 
 class Enum(Column):
