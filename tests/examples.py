@@ -4,24 +4,25 @@ import dataframely as dy
 import polars as pl
 
 import framelib as fl
+from framelib import duck as dk
 
 BASE_PATH = Path("tests")
 
 
-class SalesDB(fl.duck.Schema):
-    order_id = fl.duck.UInt64()
-    customer_id = fl.duck.UInt64()
-    amount = fl.duck.Float64()
+class SalesDB(dk.Schema):
+    order_id = dk.UInt64()
+    customer_id = dk.UInt64()
+    amount = dk.Float64()
 
 
-class CustomersDB(fl.duck.Schema):
-    customer_id = fl.duck.UInt64()
-    name = fl.duck.String()
-    email = fl.duck.String()
+class CustomersDB(dk.Schema):
+    customer_id = dk.UInt64()
+    name = dk.String()
+    email = dk.String()
 
 
 class Duck(fl.DataBase):
-    __directory__ = BASE_PATH
+    __source__ = BASE_PATH
     salesdb = fl.Table(SalesDB)
     customersdb = fl.Table(CustomersDB)
 
@@ -47,11 +48,10 @@ class PartitionedSales(dy.Schema):
     product = dy.String(nullable=False)
 
 
-# By inheriting from Tests, the __directory__ will be Path("tests").joinpath("data")
 class Data(fl.Folder):
-    __directory__ = BASE_PATH
-    sales = fl.CSV(schema=Sales)  # "tests/data/sales.csv"
-    customers = fl.NDJson(schema=Customers)  # "tests/data/customers.ndjson"
+    __source__ = BASE_PATH
+    sales = fl.CSV(model=Sales)  # "tests/data/sales.csv"
+    customers = fl.NDJson(model=Customers)  # "tests/data/customers.ndjson"
     data_glob = fl.ParquetPartitioned(
         "customer_id",
         PartitionedSales,  # "tests/data/data_glob"
@@ -113,9 +113,11 @@ def mock_tables() -> None:
 
 
 if __name__ == "__main__":
+    print(Data.source())
     mock_sales(Data.sales)
     mock_customers(Data.customers)
     mock_partitioned_parquet(Data.data_glob)
+    print(Data.sales.source)
     assert Data.sales.source.as_posix() == "tests/data/sales.csv"
     assert Data.customers.source.as_posix() == "tests/data/customers.ndjson"
     assert Data.sales.read().shape == (3, 3)
@@ -124,6 +126,7 @@ if __name__ == "__main__":
     print(Data.data_glob.schema)
     mock_tables()
     with Duck() as db:
+        db.salesdb.read().pipe(SalesDB.cast)
         print(db.salesdb.read().to_native().pl().schema)
         print(db.salesdb.read().collect().to_native())
         print(db.customersdb.read().to_native())
