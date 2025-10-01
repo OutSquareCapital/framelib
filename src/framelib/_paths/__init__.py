@@ -1,5 +1,5 @@
-from ._base import DataBase, Folder
-from ._files import CSV, Json, NDJson, Parquet, ParquetPartitioned, Table
+from ._files import CSV, Json, NDJson, Parquet, ParquetPartitioned
+from ._layouts import DataBase, Folder, Table
 
 __all__ = [
     "CSV",

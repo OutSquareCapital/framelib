@@ -1,57 +1,82 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import ABC
+from enum import StrEnum
 from pathlib import Path
-from typing import Any, ClassVar, Self, TypeGuard
+from typing import Any, Protocol, Self
 
 import pychain as pc
 
 
-class SourceUser[T](ABC):
-    source: Any
-    schema: type[T]
+class EntryType(StrEnum):
+    ENTRY_TYPE = "_is_entry_type"
+    FILE = "_is_file"
+    TABLE = "_is_table"
+    REQUEST = "_is_request"
+    COLUMN = "_is_column"
+    SOURCE = "__source__"
 
-    @staticmethod
-    def __identity__(obj: Any) -> TypeGuard[SourceUser[Any]]: ...
 
-    def __from_source__(self, source: Any, name: str) -> None: ...
+class PathLike(Protocol):
+    def joinpath(self, *other: Any) -> Self: ...
+    def with_suffix(self, suffix: str) -> Self: ...
+
+
+class BaseEntry(ABC):
+    _name: str
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    def __name_from_layout__(self, name: str) -> None:
+        self._name = name
+
+
+class BaseLayout[T: BaseEntry](ABC):
+    __source__: Path
+    _schema: dict[str, T]
+    _is_entry_type: EntryType
+
+    def __init_subclass__(cls) -> None:
+        if not hasattr(cls, EntryType.ENTRY_TYPE):
+            pass
+        else:
+            if not hasattr(cls, EntryType.SOURCE):
+                cls.__source__ = Path()
+
+            cls.__source__ = cls.__source__.joinpath(cls.__name__.lower())
+            cls._schema: dict[str, T] = {}
+            for name, obj in cls.__dict__.items():
+                if getattr(obj, cls._is_entry_type, False) is True:
+                    obj.__name_from_layout__(name)
+                    cls._schema[name] = obj
+
+    @classmethod
+    def schema(cls) -> pc.Dict[str, T]:
+        return pc.Dict(cls._schema)
+
+
+class Entry[T, U](BaseEntry):
+    model: type[T]
+    source: U
+
+    def __init__(self, model: type[T] = object) -> None:
+        self.model = model
+
+    def __from_source__(self, source: U) -> None:
+        self._build_source(source)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(source={self.source})"
+        return (
+            f"{self.__class__.__name__}(\nsource={self.source},\nmodel={self.model}\n)"
+        )
+
+    def _build_source(self, source: U) -> None:
+        self.source = source
 
     def _display_(self) -> str:
         return self.__repr__()
 
     def _repr_html_(self) -> str:
         return self._display_()
-
-
-class SourceSchema[T: SourceUser[Any]](ABC):
-    __source__: ClassVar[Path]
-    _member_type: type[T]
-    _schema: ClassVar[dict[str, SourceUser[Any]]]
-
-    def __init_subclass__(cls) -> None:
-        cls._set_source()._set_schema()
-
-    @classmethod
-    @abstractmethod
-    def _set_source(cls) -> type[Self]: ...
-    @classmethod
-    def _set_schema(cls) -> type[Self]:
-        cls._schema = {}
-        for name, obj in cls.__dict__.items():
-            if cls._member_type.__identity__(obj):
-                obj.__from_source__(cls.source(), name)
-                cls._schema[name] = obj
-            else:
-                continue
-        return cls
-
-    @classmethod
-    def source(cls) -> Path:
-        return cls.__source__
-
-    @classmethod
-    def schema(cls) -> pc.Dict[str, SourceUser[Any]]:
-        return pc.Dict(cls._schema)

@@ -1,7 +1,9 @@
 from ._columns import (
+    Array,
     Boolean,
-    Categorical,
     Date,
+    DateTime,
+    Decimal,
     Enum,
     Float32,
     Float64,
@@ -9,17 +11,20 @@ from ._columns import (
     Int16,
     Int32,
     Int64,
+    Int128,
+    List,
     String,
+    Struct,
     UInt8,
     UInt16,
     UInt32,
     UInt64,
+    UInt128,
 )
 from ._schema import Schema
 
 __all__ = [
     "String",
-    "Categorical",
     "Enum",
     "Date",
     "Float32",
@@ -32,6 +37,13 @@ __all__ = [
     "UInt16",
     "UInt32",
     "UInt64",
+    "UInt128",
+    "Int128",
+    "Decimal",
+    "Array",
+    "List",
+    "Struct",
+    "DateTime",
     "Boolean",
     "Schema",
 ]

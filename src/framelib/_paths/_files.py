@@ -1,130 +1,15 @@
 from __future__ import annotations
 
-from abc import abstractmethod
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from functools import partial
-from pathlib import Path
-from typing import Any, Final, Self, TypeGuard
 
 import dataframely as dy
-import duckdb
-import narwhals as nw
 import polars as pl
-import pychain as pc
-from narwhals.typing import IntoFrame, IntoLazyFrame
 
-from .._core import SourceUser
-from .._schema import Schema
+from ._entries import File
 
 
-class FileReader[T: dy.Schema](SourceUser[T]):
-    """
-    File reader class for different file formats.
-
-    The path attribute will be set automatically when used in a Folder subclass, using the variable name as the filename, and the subclass name as the file extension.
-
-    if glob is set to True, the extension will be ignored, and the path will be generated without extension.
-
-    This is primarily useful for partitioned parquet files.
-
-    The read and scan properties returns partial functions from polars, with the path already set.
-    """
-
-    source: Path
-    extension: str
-    schema: type[T]
-    _is_file_reader: Final[bool] = True
-    __slots__ = ("source", "extension", "schema")
-
-    def __init__(self, schema: type[T] = dy.Schema) -> None:
-        self.extension = f".{self.__class__.__name__.lower()}"
-        self.schema: type[T] = schema
-
-    def __from_source__(self, source: Path | str, name: str) -> None:
-        self.source = Path(source, name).with_suffix(self.extension)
-
-    @staticmethod
-    def __identity__(obj: Any) -> TypeGuard[FileReader[Any]]:
-        return getattr(obj, "_is_file_reader", False) is True
-
-    def iter_dir(self) -> pc.Iter[Path]:
-        """
-        Returns a pychain iterator over the files in the directory containing this schema's file.
-        """
-        return pc.Iter(self.source.iterdir())
-
-    @property
-    @abstractmethod
-    def read(self) -> Callable[..., pl.DataFrame]:
-        raise NotImplementedError
-
-    @property
-    def scan(self) -> Callable[..., pl.LazyFrame]:
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def write(self) -> Any:
-        raise NotImplementedError
-
-    def read_cast(self) -> dy.DataFrame[T]:
-        """
-        Read the file and cast it to the defined schema.
-        """
-        return self.read().pipe(self.schema.cast)
-
-    def scan_cast(self) -> dy.LazyFrame[T]:
-        """
-        Scan the file and cast it to the defined schema.
-        """
-        return self.scan().pipe(self.schema.cast)
-
-    def write_cast(
-        self, df: pl.LazyFrame | pl.DataFrame, *args: Any, **kwargs: Any
-    ) -> None:
-        """
-        Cast the dataframe to the defined schema and write it to the file.
-        """
-        self.schema.cast(df.lazy().collect()).pipe(self.write, *args, **kwargs)
-
-
-class Table[T: Schema](SourceUser[T]):
-    _name: str
-    _con: duckdb.DuckDBPyConnection
-    schema: type[T]
-    _is_table: Final[bool] = True
-    __slots__ = ("_name", "_con", "schema")
-
-    def __init__(self, schema: type[T] = Schema) -> None:
-        self.schema = schema
-
-    @staticmethod
-    def __identity__(obj: Any) -> TypeGuard[Table[Any]]:
-        return getattr(obj, "_is_table", False)
-
-    def __from_source__(self, source: duckdb.DuckDBPyConnection, name: str) -> None:
-        self.source = source
-        self._name = name
-
-    def with_connexion(self, con: duckdb.DuckDBPyConnection) -> Self:
-        self._con = con
-        return self
-
-    def read(self) -> nw.LazyFrame[duckdb.DuckDBPyRelation]:
-        return nw.from_native(self._con.table(self._name))
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    def write(self, df: IntoFrame | IntoLazyFrame) -> None:
-        df_to_write = nw.from_native(df).lazy().collect().to_native()  # type: ignore # noqa
-        self._con.execute(
-            f"CREATE OR REPLACE TABLE {self._name} AS SELECT * FROM df_to_write"
-        )
-
-
-class Parquet[T: dy.Schema](FileReader[T]):
+class Parquet[T: dy.Schema](File[T]):
     @property
     def scan(self):
         return partial(pl.scan_parquet, self.source)
@@ -189,13 +74,13 @@ class Parquet[T: dy.Schema](FileReader[T]):
 
 
 class ParquetPartitioned[T: dy.Schema](Parquet[T]):
+    _with_suffix: bool = False
     __slots__ = ("_partition_by",)
 
     def __init__(
         self, partition_by: str | Sequence[str], schema: type[T] = dy.Schema
     ) -> None:
         self.schema: type[T] = schema
-        self.extension = ""
         self._partition_by: str | Sequence[str] = partition_by
 
     @property
@@ -207,7 +92,7 @@ class ParquetPartitioned[T: dy.Schema](Parquet[T]):
         )
 
 
-class CSV[T: dy.Schema](FileReader[T]):
+class CSV[T: dy.Schema](File[T]):
     @property
     def scan(self):
         return partial(pl.scan_csv, self.source)
@@ -225,7 +110,7 @@ class CSV[T: dy.Schema](FileReader[T]):
         return partial(pl.DataFrame.write_csv, file=self.source)
 
 
-class NDJson[T: dy.Schema](FileReader[T]):
+class NDJson[T: dy.Schema](File[T]):
     @property
     def scan(self):
         return partial(pl.scan_ndjson, self.source)
@@ -239,7 +124,7 @@ class NDJson[T: dy.Schema](FileReader[T]):
         return partial(pl.DataFrame.write_ndjson, file=self.source)
 
 
-class Json[T: dy.Schema](FileReader[T]):
+class Json[T: dy.Schema](File[T]):
     @property
     def read(self):
         return partial(pl.read_json, self.source)
