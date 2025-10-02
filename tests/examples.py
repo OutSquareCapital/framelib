@@ -3,28 +3,26 @@ from pathlib import Path
 import dataframely as dy
 import polars as pl
 
-from framelib import database as db
-from framelib import files as fl
+import framelib as fl
 
 BASE_PATH = Path("tests")
 
 
-class SalesDB(db.Schema):
-    order_id = db.UInt16()
-    customer_id = db.UInt16()
-    amount = db.Float32()
+class SalesDB(fl.Schema):
+    order_id = fl.UInt16()
+    customer_id = fl.UInt16()
+    amount = fl.Float32()
 
 
-class CustomersDB(db.Schema):
-    customer_id = db.UInt16()
-    name = db.String()
-    email = db.String()
+class CustomersDB(fl.Schema):
+    customer_id = fl.UInt16()
+    name = fl.String()
+    email = fl.String()
 
 
-class Duck(db.DataBase):
-    __source__ = BASE_PATH
-    salesdb = db.Table(SalesDB)
-    customersdb = db.Table(CustomersDB)
+class Duck(fl.DataBase):
+    salesdb = fl.Table(SalesDB)
+    customersdb = fl.Table(CustomersDB)
 
 
 class Sales(dy.Schema):
@@ -56,6 +54,13 @@ class Data(fl.Folder):
         "customer_id",
         PartitionedSales,  # "tests/data/data_glob"
     )
+    dataduck = Duck()
+
+
+print("helo")
+print(Data.schema())
+print(Data.dataduck.schema())
+print("fdp")
 
 
 def mock_sales(file: fl.CSV[Sales]) -> None:
@@ -107,9 +112,9 @@ def mock_tables() -> None:
             "email": ["alice@example.com", "bob@example.com", "charlie@example.com"],
         }
     )
-    with Duck() as db:
-        db.salesdb.write(sales)
-        db.customersdb.write(customers)
+    with Data.dataduck as db:
+        db.salesdb.create_or_replace_from(sales)
+        db.customersdb.create_or_replace_from(customers)
 
 
 if __name__ == "__main__":
@@ -122,5 +127,9 @@ if __name__ == "__main__":
     assert Data.customers.source.as_posix() == "tests/data/customers.ndjson"
     assert Data.sales.read().shape == (3, 3)
     assert Data.data_glob.read().shape == (30, 6)
-    with Duck() as db:
-        print(db.salesdb.read().pipe(SalesDB.cast).collect("polars"))
+    try:
+        Data.dataduck.salesdb.read()
+    except Exception as e:
+        print(f"Error reading salesdb: {e}")
+    with Data.dataduck as db:
+        print(db.salesdb.read().collect())

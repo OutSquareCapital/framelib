@@ -5,7 +5,7 @@ from typing import Final
 
 import narwhals as nw
 
-from .._core import BaseEntry
+from ._core import BaseEntry
 
 
 class Column(BaseEntry):

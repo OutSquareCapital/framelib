@@ -7,19 +7,19 @@ import polars as pl
 import pychain as pc
 from narwhals.typing import IntoLazyFrameT, LazyFrameT
 
-from .._core import BaseLayout, EntryType
 from ._columns import Column
+from ._core import BaseLayout, EntryType
 
 
 class Schema(BaseLayout[Column]):
     _is_entry_type = EntryType.COLUMN
 
     @classmethod
-    def columns(cls) -> pc.Dict[str, Column]:
+    def columns(cls) -> pc.Iter[Column]:
         """
-        Returns a dictionary of the Column instances in the folder.
+        Returns an iterator over the Column instances in the folder.
         """
-        return pc.Dict(cls._schema)
+        return pc.Iter(cls._schema.values())
 
     @classmethod
     def column_names(cls) -> pc.Iter[str]:
@@ -51,5 +51,5 @@ class Schema(BaseLayout[Column]):
         return (
             nw.from_native(df)
             .lazy()
-            .select([col.col.cast(col.dtype) for col in cls._schema.values()])
+            .select(cls.columns().map(lambda col: col.col.cast(col.dtype)).unwrap())
         )
