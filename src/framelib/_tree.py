@@ -25,7 +25,6 @@ def _build_tree(directory: Path, prefix: str = "") -> list[str]:
     )
 
     items_length: int = items.length()
-
     for i, item in items.enumerate().unwrap():
         is_last: bool = i == (items_length - 1)
         lines.append(f"{prefix}{_connector(is_last)}{item.name}")
