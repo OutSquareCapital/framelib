@@ -9,6 +9,11 @@ def create_from(name: str) -> str:
     """
 
 
+def add_primary_key(name: str, *keys: str) -> str:
+    pk_cols = ", ".join(f'"{k}"' for k in keys)
+    return f"""ALTER TABLE {name} ADD PRIMARY KEY ({pk_cols});"""
+
+
 def create_or_replace(name: str) -> str:
     return f"""
     --sql
@@ -34,4 +39,17 @@ def truncate(name: str) -> str:
     return f"""
     --sql
     TRUNCATE TABLE {name};
+    """
+
+
+def insert_if_not_exists(name: str, *keys: str) -> str:
+    where = " AND ".join(f'existing_data."{key}" = _."{key}"' for key in keys)
+
+    return f"""
+    --sql
+    INSERT INTO {name}
+    SELECT * FROM _
+    WHERE NOT EXISTS (
+        SELECT 1 FROM {name} AS existing_data WHERE {where}
+    );
     """

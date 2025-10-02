@@ -18,11 +18,11 @@ from ._schema import Schema
 from ._tree import show_tree
 
 
-class Table[T: Schema](Entry[T, Path]):
+class Table(Entry[Schema, Path]):
     _is_table: Final[bool] = True
 
     def _from_df(self, df: IntoFrame | IntoLazyFrame):
-        return nw.from_native(df).lazy().collect().to_native()
+        return nw.from_native(df).lazy().pipe(self.model.cast).to_native()
 
     def with_connexion(self, con: duckdb.DuckDBPyConnection) -> Self:
         self._con = con
@@ -34,6 +34,9 @@ class Table[T: Schema](Entry[T, Path]):
     def create_or_replace_from(self, df: IntoFrame | IntoLazyFrame) -> None:
         _ = self._from_df(df)
         self._con.execute(qry.create_or_replace(self._name))
+        pk_names: list[str] = self.model.primary_keys().pipe_unwrap(list)
+        if pk_names:
+            self._con.execute(qry.add_primary_key(self._name, *pk_names))
 
     def append(self, df: IntoFrame | IntoLazyFrame) -> None:
         _ = self._from_df(df)
@@ -43,21 +46,29 @@ class Table[T: Schema](Entry[T, Path]):
         _ = self._from_df(df)
         self._con.execute(qry.create_from(self._name))
 
-    def truncate(self, df: IntoFrame | IntoLazyFrame) -> None:
-        _ = self._from_df(df)
+    def truncate(self) -> None:
         self._con.execute(qry.truncate(self._name))
 
-    def drop(self, df: IntoFrame | IntoLazyFrame) -> None:
-        _ = self._from_df(df)
+    def drop(self) -> None:
         self._con.execute(qry.drop(self._name))
 
+    def insert_if_not_exists(self, df: IntoFrame | IntoLazyFrame) -> None:
+        _ = self._from_df(df)
+        keys: list[str] = self.model.primary_keys().pipe_unwrap(list)
+        if not keys:
+            raise ValueError(
+                f"Cannot perform 'insert_if_not_exists' on table '{self._name}' "
+                "because no primary keys are defined in its schema."
+            )
+        self._con.execute(qry.insert_if_not_exists(self._name, *keys))
 
-class DataBase(BaseLayout[Table[Schema]], BaseEntry, ABC):
+
+class DataBase(BaseLayout[Table], BaseEntry, ABC):
     _is_file: Final[bool] = True
     _connexion: duckdb.DuckDBPyConnection
     _is_entry_type = EntryType.TABLE
     source: Path
-    model: pc.Dict[str, Table[Schema]]
+    model: pc.Dict[str, Table]
 
     def __from_source__(self, source: Path) -> None:
         self.source = Path(source, self._name).with_suffix(".ddb")

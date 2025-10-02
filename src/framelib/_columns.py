@@ -10,6 +10,11 @@ from ._core import BaseEntry
 
 class Column(BaseEntry):
     _is_column: Final[bool] = True
+    primary_key: bool
+
+    def __init__(self, primary_key: bool = False) -> None:
+        self.primary_key = primary_key
+        super().__init__()
 
     def __repr__(self) -> str:
         return f"Column(name={self.name}, dtype={self.dtype})"

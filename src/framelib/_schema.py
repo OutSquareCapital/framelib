@@ -31,6 +31,13 @@ class Schema(BaseLayout[Column]):
         """The column expressions of this schema."""
         return pc.Iter(col.col for col in cls._schema.values())
 
+    @classmethod
+    def primary_keys(cls) -> pc.Iter[str]:
+        """The primary key columns of this schema."""
+        return (
+            cls.columns().filter(lambda col: col.primary_key).map(lambda col: col.name)
+        )
+
     @overload
     @classmethod
     def cast(cls, df: LazyFrameT) -> LazyFrameT: ...
