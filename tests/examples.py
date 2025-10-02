@@ -1,135 +1,148 @@
-from pathlib import Path
+from __future__ import annotations
 
 import dataframely as dy
+import narwhals as nw
 import polars as pl
 
 import framelib as fl
 
-BASE_PATH = Path("tests")
+
+# --- Schema Definitions (the structure of the data) ---
+class CustomersFile(dy.Schema):
+    customer_id = dy.UInt16(nullable=False)
+    name = dy.String(nullable=False)
+    country = dy.String(nullable=False)
+
+
+class SalesFile(dy.Schema):
+    transaction_id = dy.UInt32(nullable=False)
+    customer_id = dy.UInt16(nullable=False)
+    amount = dy.Float32(nullable=False)
+
+
+class CustomersDB(fl.Schema):
+    customer_id = fl.UInt16(primary_key=True)
+    name = fl.String()
+    country = fl.String()
 
 
 class SalesDB(fl.Schema):
-    order_id = fl.UInt16()
+    transaction_id = fl.UInt32(primary_key=True)
     customer_id = fl.UInt16()
     amount = fl.Float32()
 
 
-class CustomersDB(fl.Schema):
-    customer_id = fl.UInt16()
-    name = fl.String()
-    email = fl.String()
+class SalesReport(dy.Schema):
+    country = dy.String(nullable=False)
+    total_transactions = dy.Int64(nullable=False)
+    total_revenue = dy.Float64(nullable=False)
 
 
-class Duck(fl.DataBase):
-    salesdb = fl.Table(SalesDB)
-    customersdb = fl.Table(CustomersDB)
+# --- Layout Definitions via INHERITANCE ---
+class Root(fl.Folder):
+    """
+    Root layout. Its path will automatically be './root'.
+    It only contains the declaration of other layouts that inherit from it.
+    """
+
+    pass
 
 
-class Sales(dy.Schema):
-    order_id = dy.UInt64(primary_key=True, nullable=False)
-    customer_id = dy.UInt64(nullable=False)
-    amount = dy.Float64(nullable=False)
+class AnalyticsDB(fl.DataBase):
+    """
+    The DataBase has its own path logic (.ddb), so it doesn't inherit from Root.
+    It's placed within a folder for logical grouping.
+    """
+
+    customers = fl.Table(CustomersDB)
+    sales = fl.Table(SalesDB)
 
 
-class Customers(dy.Schema):
-    customer_id = dy.UInt64(primary_key=True, nullable=False)
-    name = dy.String(nullable=False)
-    email = dy.String(nullable=False)
+class InputData(Root):
+    """Inherits from Root. Its path will automatically be './root/inputdata'."""
+
+    customers = fl.CSV(model=CustomersFile)
+    sales = fl.Parquet(model=SalesFile)
+    analytics = AnalyticsDB()
 
 
-class PartitionedSales(dy.Schema):
-    order_id = dy.UInt64(primary_key=True, nullable=False)
-    customer_id = dy.UInt64(nullable=False)
-    amount = dy.Float64(nullable=False)
-    order_date = dy.Date(nullable=False)
-    region = dy.String(nullable=False)
-    product = dy.String(nullable=False)
+class OutputReports(Root):
+    """Inherits from Root. Its path will automatically be './root/outputreports'."""
+
+    sales_report = fl.Json(model=SalesReport)
 
 
-class Data(fl.Folder):
-    __source__ = BASE_PATH
-    sales = fl.CSV(model=Sales)  # "tests/data/sales.csv"
-    customers = fl.NDJson(model=Customers)  # "tests/data/customers.ndjson"
-    data_glob = fl.ParquetPartitioned(
-        "customer_id",
-        PartitionedSales,  # "tests/data/data_glob"
+def setup_mock_data() -> None:
+    """Creates the files and directories described in the layouts."""
+    print("🔧 Setting up the data environment...")
+    Root.source().mkdir(parents=True, exist_ok=True)
+    InputData.source().mkdir(parents=True, exist_ok=True)
+    OutputReports.source().mkdir(parents=True, exist_ok=True)
+
+    InputData.customers.write(
+        pl.DataFrame(
+            {
+                "customer_id": [1, 2, 3, 4],
+                "name": ["Alice", "Bob", "Charlie", "David"],
+                "country": ["USA", "USA", "France", "France"],
+            }
+        )
     )
-    dataduck = Duck()
-
-
-print("helo")
-print(Data.schema())
-print(Data.dataduck.schema())
-print("fdp")
-
-
-def mock_sales(file: fl.CSV[Sales]) -> None:
-    pl.DataFrame(
-        {
-            "order_id": [1, 2, 3],
-            "customer_id": [101, 102, 103],
-            "amount": [250.0, 450.5, 300.75],
-        }
-    ).pipe(file.write)
-
-
-def mock_customers(file: fl.NDJson[Customers]) -> None:
-    pl.DataFrame(
-        {
-            "customer_id": [101, 102, 103],
-            "name": ["Alice", "Bob", "Charlie"],
-            "email": ["alice@example.com", "bob@example.com", "charlie@example.com"],
-        }
-    ).pipe(file.write)
-
-
-def mock_partitioned_parquet(file: fl.Parquet[PartitionedSales]) -> None:
-    pl.DataFrame(
-        {
-            "order_id": list(range(1, 31)),
-            "customer_id": [101, 102, 103, 104, 105] * 6,
-            "amount": [float(x) for x in range(100, 130)],
-            "order_date": [f"2024-01-{i:02d}" for i in range(1, 31)],
-            "region": ["north", "south", "east", "west", "central"] * 6,
-            "product": ["A", "B", "C", "D", "E"] * 6,
-        }
-    ).pipe(file.write)
-
-
-def mock_tables() -> None:
-    sales = pl.DataFrame(
-        {
-            "order_id": [1, 2, 3],
-            "customer_id": [101, 102, 103],
-            "amount": [250.0, 450.5, 300.75],
-        }
+    InputData.sales.write(
+        pl.DataFrame(
+            {
+                "transaction_id": [101, 102, 103, 104, 105],
+                "customer_id": [1, 2, 1, 3, 4],
+                "amount": [1200.50, 25.00, 75.25, 300.00, 55.50],
+            }
+        )
     )
+    print(f"✅ Test data created in '{Root.source()}'\n")
 
-    customers = pl.DataFrame(
-        {
-            "customer_id": [101, 102, 103],
-            "name": ["Alice", "Bob", "Charlie"],
-            "email": ["alice@example.com", "bob@example.com", "charlie@example.com"],
-        }
-    )
-    with Data.dataduck as db:
-        db.salesdb.create_or_replace_from(sales)
-        db.customersdb.create_or_replace_from(customers)
+
+def run_analysis() -> None:
+    """Orchestrates the pipeline using the declared API."""
+    print("🚀 Starting the analysis pipeline...")
+
+    # 1. Read data
+    customers_df = InputData.customers.read_cast()
+    sales_df = InputData.sales.read_cast()
+
+    # 2. Load and Analyze
+    with InputData.analytics as db:
+        print("📥 Loading data into the database...")
+        db.customers.create_or_replace_from(customers_df)
+        db.sales.create_or_replace_from(sales_df)
+
+        print("⚙️  Analyzing via the Narwhals API (without raw SQL)...")
+        lazy_report = (
+            db.customers.read()
+            .join(db.sales.read(), on="customer_id")
+            .group_by("country")
+            .agg(
+                nw.len().alias("total_transactions"),
+                nw.sum("amount").alias("total_revenue"),
+            )
+            .sort("total_revenue", descending=True)
+        )
+        report_df = lazy_report.collect("polars").to_native()
+        print(" -> Analysis complete.\n")
+
+    # 3. Write the report
+    print("📊 Final Report: Revenue by Country")
+    print(report_df)
+
+    OutputReports.sales_report.write_cast(report_df)
+    print(f"\n✅ Report saved to: {OutputReports.sales_report.source}")
+
+    # 4. Clean up the environment
+    InputData.clean()
+    OutputReports.clean()
+    Root.clean()
+    print("✅ Data environment cleaned up.")
+    assert not Root.source().exists()
 
 
 if __name__ == "__main__":
-    print(Data.source())
-    mock_sales(Data.sales)
-    mock_customers(Data.customers)
-    mock_partitioned_parquet(Data.data_glob)
-    mock_tables()
-    assert Data.sales.source.as_posix() == "tests/data/sales.csv"
-    assert Data.customers.source.as_posix() == "tests/data/customers.ndjson"
-    assert Data.sales.read().shape == (3, 3)
-    assert Data.data_glob.read().shape == (30, 6)
-    try:
-        Data.dataduck.salesdb.read()
-    except Exception as e:
-        print(f"Error reading salesdb: {e}")
-    with Data.dataduck as db:
-        print(db.salesdb.read().collect())
+    setup_mock_data()
+    run_analysis()
