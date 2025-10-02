@@ -2,6 +2,8 @@ from collections.abc import Sequence
 from functools import partial
 
 import dataframely as dy
+import duckdb
+import narwhals as nw
 import polars as pl
 
 from ._files import File
@@ -72,6 +74,8 @@ class Parquet[T: dy.Schema](File[T]):
 
 
 class ParquetPartitioned[T: dy.Schema](Parquet[T]):
+    """A Parquet file that is partitioned by one or more columns."""
+
     _with_suffix: bool = False
     __slots__ = ("_partition_by",)
 
@@ -123,6 +127,15 @@ class NDJson[T: dy.Schema](File[T]):
 
 
 class Json[T: dy.Schema](File[T]):
+    """
+    Json file handler
+    Note that the scan method return a duckdb relation wrapped in a narwhals LazyFrame.
+    """
+
+    @property
+    def scan(self) -> nw.LazyFrame[duckdb.DuckDBPyRelation]:
+        return nw.from_native(duckdb.read_json(self.source.as_posix()))
+
     @property
     def read(self):
         return partial(pl.read_json, self.source)

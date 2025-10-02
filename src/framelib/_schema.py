@@ -55,6 +55,9 @@ class Schema(BaseLayout[Column]):
         cls,
         df: IntoLazyFrameT | LazyFrameT | pl.DataFrame,
     ) -> LazyFrameT | nw.LazyFrame[IntoLazyFrameT]:
+        """
+        Selects only the columns defined in the schema, and casts them to the correct dtype.
+        """
         return (
             nw.from_native(df)
             .lazy()

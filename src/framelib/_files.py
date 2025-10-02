@@ -25,13 +25,25 @@ class Table(Entry[Schema, Path]):
         return nw.from_native(df).lazy().pipe(self.model.cast).to_native()
 
     def with_connexion(self, con: duckdb.DuckDBPyConnection) -> Self:
+        """
+        Sets the DuckDB connexion for the table.
+
+        Is called automatically when entering a DataBase context.
+
+        Is provided as a convenience method in case you want to use the table outside of a DataBase context, for pure SQL operations for example.
+        """
         self._con = con
         return self
 
     def read(self) -> nw.LazyFrame[duckdb.DuckDBPyRelation]:
+        """Reads the table from the database, and returns it as a Narwhals LazyFrame."""
         return nw.from_native(self._con.table(self._name))
 
     def create_or_replace_from(self, df: IntoFrame | IntoLazyFrame) -> Self:
+        """
+        Creates or replaces the table from the dataframe.
+        Add primary keys if defined in the schema.
+        """
         _ = self._from_df(df)
         self._con.execute(qry.create_or_replace(self._name))
         pk_names: list[str] = self.model.primary_keys().pipe_unwrap(list)
@@ -40,24 +52,38 @@ class Table(Entry[Schema, Path]):
         return self
 
     def append(self, df: IntoFrame | IntoLazyFrame) -> Self:
+        """
+        Appends rows to the table.
+        Fails if the table does not exist.
+        """
         _ = self._from_df(df)
         self._con.execute(qry.insert_into(self._name))
         return self
 
     def create_from(self, df: IntoFrame | IntoLazyFrame) -> Self:
+        """
+        Creates the table from the dataframe.
+        Fails if the table already exists.
+        """
         _ = self._from_df(df)
         self._con.execute(qry.create_from(self._name))
         return self
 
     def truncate(self) -> Self:
+        """Removes all rows from the table."""
         self._con.execute(qry.truncate(self._name))
         return self
 
     def drop(self) -> Self:
+        """Drops the table from the database."""
         self._con.execute(qry.drop(self._name))
         return self
 
     def insert_if_not_exists(self, df: IntoFrame | IntoLazyFrame) -> Self:
+        """
+        Inserts rows into the table if they do not already exist.
+        A primary key must be defined in the schema for this operation to work.
+        """
         _ = self._from_df(df)
         keys: list[str] = self.model.primary_keys().pipe_unwrap(list)
         if not keys:
@@ -93,6 +119,7 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
 
     @property
     def connexion(self) -> duckdb.DuckDBPyConnection:
+        """Returns the DuckDB connexion."""
         return self._connexion
 
 
@@ -111,7 +138,7 @@ class File[T: dy.Schema](Entry[T, Path]):
         raise NotImplementedError
 
     @property
-    def scan(self) -> Callable[..., pl.LazyFrame]:
+    def scan(self) -> Any:
         raise NotImplementedError
 
     @property
@@ -155,10 +182,12 @@ class Folder(BaseLayout[File[dy.Schema]]):
 
     @classmethod
     def source(cls) -> Path:
+        """Returns the source path of the folder."""
         return cls.__source__
 
     @classmethod
     def show_tree(cls) -> str:
+        """Show the folder structure."""
         return show_tree(cls.__source__)
 
     @classmethod
