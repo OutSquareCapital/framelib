@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import dataframely as dy
 import narwhals as nw
 import polars as pl

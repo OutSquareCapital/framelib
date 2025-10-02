@@ -1,183 +1,216 @@
-# framelib: pathlib declarative schemas for polars users
+# Framelib: Declarative Data Architecture
 
-This package provides schema and classes to work with file system paths using `pathlib`.
-It allows you to define directory structures and the files within them in a declarative manner.
-You can then read and scan these files using the `polars` engine, as well as visualize the directory structure in a tree format.
+Framelib transforms how you manage data projects.
 
-This allows you to:
+Instead of juggling hardcoded paths and implicit data structures, you can define your entire data architecture—files, folders, schemas, and even embedded databases—as clean, self-documenting, and type-safe Python classes.
 
-- Organize your data files in a structured way
-- Self-document your data structure
-- Easily read and manipulate data files using `polars`
-- Visualize the directory structure for better understanding and navigation
-- Implement conjointly with dataframely to combine both dataframe schemas and file system schemas.
+It leverages pathlib, polars, and duckdb to provide a robust framework for building maintainable and scalable data pipelines.
+
+## Why Framelib?
+
+🏛️ **Declare Your Architecture:** Define your project's file and database layout using intuitive Python classes.
+
+📜 **Enforce Data Contracts:** Integrate with dataframely to ensure data quality with schema-aware I/O operations.
+
+🚀 **Streamline Workflows:** Read, write, and process data with a high-level API that abstracts away boilerplate code.
+
+🌲 **Visualize Your Project:** Automatically generate a tree view of your data layout for easy navigation and documentation.
+
+📦 **Embedded Data Warehouse:** Manage and query an embedded DuckDB database with the same declarative approach.
 
 ## Installation
 
 ```bash
-uv add git+https://github.com/OutSquareCapital/framelib.git
+uv add git+[https://github.com/OutSquareCapital/framelib.git](https://github.com/OutSquareCapital/framelib.git)
 ```
 
-## Features
+## Quickstart
 
-- define directory structures and files within them
-- read/scan them using polars engine
-- visualize them in a tree format.
-- supports CSV, NDJson, JSON, Parquet and partitionned Parquet file formats
+Let's build a simple pipeline that reads raw data, loads it into a DuckDB database for analysis, and generates a report.
 
-```python
-import framelib as fl
+### Define Your Schemas
 
-class MyData(fl.Folder):
-    sales = fl.CSV()
-    customers = fl.NDJson()
+First, define the "data contracts" for your files and database tables.
 
-
-class MySubFolder(MyData):
-    reports = fl.Parquet()
-    big_data = fl.Parquet(glob=True)
-
-
-print(MyData.sales.path)  # mydata\sales.csv
-print(MySubFolder.sales.path)  # mydata\sales.csv
-print(MySubFolder.reports.path)  # mydata\mysubfolder\reports.parquet
-print(MySubFolder.big_data.path)  # mydata\mysubfolder\big_data
-MyData.sales.read()  # reads the CSV file as a Polars DataFrame
-MyData.sales.scan(any_argument=...)  # scans the CSV file as a Polars LazyFrame
-```
-
-## Example
-
-Below is a complete example of:
-
-- defining dataframely schemas for the dataframes
-- defining a folder structure linking the schemas to their positions
-- functions for creating mock data files, and reading them using `framelib`.
-
-This file can be found in `tests/examples.py`.
+Framelib uses dataframely for file schemas and has its own Schema object for database tables.
 
 ```python
+from pathlib import Path
 import dataframely as dy
-import polars as pl
-
 import framelib as fl
+import polars as pl
+import narwhals as nw
 
+## Schema for the raw input file (CSV)
 
-class Sales(dy.Schema):
-    order_id = dy.UInt64(primary_key=True, nullable=False)
-    customer_id = dy.UInt64(nullable=False)
-    amount = dy.Float64(nullable=False)
+class SalesFile(dy.Schema):
+    transaction_id = dy.UInt32(nullable=False)
+    customer_id = dy.UInt16(nullable=False)
+    amount = dy.Float32(nullable=False)
 
+## Schema for the database table
 
-class Customers(dy.Schema):
-    customer_id = dy.UInt64(primary_key=True, nullable=False)
-    name = dy.String(nullable=False)
-    email = dy.String(nullable=False)
-
-
-class PartitionedSales(dy.Schema):
-    order_id = dy.UInt64(primary_key=True, nullable=False)
-    customer_id = dy.UInt64(nullable=False)
-    amount = dy.Float64(nullable=False)
-    order_date = dy.Date(nullable=False)
-    region = dy.String(nullable=False)
-    product = dy.String(nullable=False)
-
-
-# This will generate a __directory__ set to Path("tests")
-class Tests(fl.Folder):
-    pass
-
-
-# By inheriting from Tests, the __directory__ will be Path("tests").joinpath("data")
-class Data(Tests):
-    sales = fl.CSV(schema=Sales)  # "tests/data/sales.csv"
-    customers = fl.NDJson(schema=Customers)  # "tests/data/customers.ndjson"
-    data_glob = fl.ParquetPartitioned(
-        "customer_id",
-        PartitionedSales,  # "tests/data/data_glob"
-    )
-
-
-def mock_sales(file: fl.CSV[Sales]) -> None:
-    pl.DataFrame(
-        {
-            "order_id": [1, 2, 3],
-            "customer_id": [101, 102, 103],
-            "amount": [250.0, 450.5, 300.75],
-        }
-    ).pipe(file.write)
-
-
-def mock_customers(file: fl.NDJson[Customers]) -> None:
-    pl.DataFrame(
-        {
-            "customer_id": [101, 102, 103],
-            "name": ["Alice", "Bob", "Charlie"],
-            "email": ["alice@example.com", "bob@example.com", "charlie@example.com"],
-        }
-    ).pipe(file.write)
-
-
-def mock_partitioned_parquet(file: fl.Parquet[PartitionedSales]) -> None:
-    pl.DataFrame(
-        {
-            "order_id": list(range(1, 31)),
-            "customer_id": [101, 102, 103, 104, 105] * 6,
-            "amount": [float(x) for x in range(100, 130)],
-            "order_date": [f"2024-01-{i:02d}" for i in range(1, 31)],
-            "region": ["north", "south", "east", "west", "central"] * 6,
-            "product": ["A", "B", "C", "D", "E"] * 6,
-        }
-    ).pipe(file.write)
-
-
-if __name__ == "__main__":
-    mock_sales(Data.sales)
-    mock_customers(Data.customers)
-    mock_partitioned_parquet(Data.data_glob)
-    assert Data.sales.path.as_posix() == "tests/data/sales.csv"
-    assert Data.customers.path.as_posix() == "tests/data/customers.ndjson"
-    assert Data.sales.read().shape == (3, 3)
-    assert Data.data_glob.read().shape == (30, 6)
+class SalesDB(fl.Schema):
+    transaction_id = fl.UInt32(primary_key=True)
+    customer_id = fl.UInt16()
+    amount = fl.Float32()
 ```
 
-### Tree and schema Visualization
+### Declare Your Project Layout
 
-Easily visualize the existing files and folders in a tree format.
-Note that this only shows **existing** files and folders.
+Next, describe your project's structure using fl.Folder and fl.DataBase.
 
-You can also easily visualize the underlying dataframely schema for each file.
+Paths are generated automatically based on class and attribute names.
 
 ```python
-print(Data.show_tree())
-print(Data.data_glob.schema)
+## Declare the embedded database and its tables
+class Analytics(fl.DataBase):
+    sales = fl.Table(SalesDB)
+
+## Declare the root folder for our project
+
+class MyProject(fl.Folder):
+    __source__ = Path("./my_data_project")  ## Sets the root path
+
+    ## Files are defined as attributes
+    raw_sales = fl.CSV(model=SalesFile)
+
+    ## You can nest other layouts, like our database
+    analytics_db = Analytics()
 ```
 
-This will output something like:
+### Use the Defined Layout
+
+Now you can interact with your project through this clean, declarative API.
+
+```python
+## Mock some data for the example
+
+mock_sales_data = pl.DataFrame(
+    {
+        "transaction_id": [101, 102, 103],
+        "customer_id": [1, 2, 1],
+        "amount": [120.50, 75.00, 50.25],
+    }
+)
+
+## 1. Write data to the CSV, automatically casting to the `SalesFile` schema
+
+MyProject.raw_sales.write_cast(mock_sales_data)
+print(f"✅ Raw sales data written to: {MyProject.raw_sales.source}")
+
+## 2. Scan the raw data and load it into the DuckDB database
+
+raw_df = MyProject.raw_sales.scan_cast()
+
+with MyProject.analytics_db as db:
+    db.sales.create_or_replace_from(raw_df)
+    print("✅ Data loaded into DuckDB.")
+
+    ## 3. Query the data directly from the database using the Narwhals API
+    report_df = (
+        db.sales.read()
+        .group_by("customer_id")
+        .agg(
+            total_spent=nw.sum("amount"),
+            transaction_count=nw.len(),
+        )
+        .collect()
+        .to_native()
+    )
+    print("\n📊 Generated Report:")
+    print(report_df)
+
+```
+
+## Key Features
+
+### Declarative Path Management
+
+Paths are derived automatically from your class structure.
+
+This eliminates brittle, hardcoded strings and makes refactoring trivial.
+
+Inheritance can be used to create logical sub-folders.
+
+```python
+class V1(fl.Folder):
+    __source__ = Path("./production_data")
+    sales = fl.CSV(model=SalesFile)
+
+class V2(V1): ## Inherits from V1
+    ## This file will be located at './production_data/v2/reports.parquet'
+    reports = fl.Parquet()
+
+## The `source` attribute gives you the resolved pathlib.Path object
+
+print(V1.sales.source)
+
+## >>> PosixPath('production_data/sales.csv')
+
+print(V2.reports.source)
+
+## >>> PosixPath('production_data/v2/reports.parquet')
+
+```
+
+## Schema-Driven I/O
+
+**Never guess your data types again.**
+
+Framelib uses the attached schema to cast data during I/O operations, ensuring that your dataframes always conform to the defined contract.
+
+- read_cast(): Reads the entire file into a Polars DataFrame and applies the schema.
+- scan_cast(): Scans the file as a Polars LazyFrame and applies the schema.
+- write_cast(): Casts a DataFrame to the schema before writing it to a file.
+
+This will raise an error if the data in 'raw_sales.csv' doesn't match the SalesFile schema
+
+```python
+df = MyProject.raw_sales.read_cast()
+```
+
+Integrated Database
+
+Go beyond flat files with the fl.DataBase layout.
+
+ It provides a clean, high-level interface for an embedded DuckDB instance, managed as a context manager to handle connections automatically.
+
+```python
+new_sales = pl.DataFrame(...)  
+
+with MyProject.analytics_db as db:     
+## High-level methods simplify common database operations
+    db.sales.append(new_sales)
+    db.sales.truncate()
+## Intelligently insert rows, skipping duplicates based on the primary key
+    db.sales.insert_if_not_exists(new_sales)
+```
+
+## Directory & Schema Visualization
+
+**Understand your project's structure at a glance**.
+
+The *show_tree()* method prints a visual representation of your declared layout, while accessing the .model attribute on a file entry displays its schema.
+
+```python
+## Assuming the directories and files have been created
+print(MyProject.show_tree())
+
+```
+
+This will output a tree structure representing your project on the file system:
 
 ```bash
-tests\data
-├── data_glob
-│   ├── customer_id=101
-│   │   └── 0.parquet
-│   ├── customer_id=102
-│   │   └── 0.parquet
-│   ├── customer_id=103
-│   │   └── 0.parquet
-│   ├── customer_id=104
-│   │   └── 0.parquet
-│   └── customer_id=105
-│       └── 0.parquet
-├── customers.ndjson
-└── sales.csv
-[Schema "PartitionedSales"]
-  Columns:
-    - "order_id": UInt64(nullable=False, primary_key=True)
-    - "customer_id": UInt64(nullable=False)
-    - "amount": Float64(nullable=False)
-    - "order_date": Date(nullable=False)
-    - "region": String(nullable=False)
-    - "product": String(nullable=False)
-
+my_data_project/
+├── analytics_db.ddb
+└── raw_sales.csv
 ```
+
+## Credits
+
+Heavily inspired by dataframely: <https://github.com/quantco/dataframely>
+
+## License
+
+MIT License. See [LICENSE](./LICENSE) for details.

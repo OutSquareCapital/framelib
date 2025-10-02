@@ -22,13 +22,7 @@ from ._columns import (
     UInt128,
 )
 from ._const import constant
-from ._filehandlers import (
-    CSV,
-    Json,
-    NDJson,
-    Parquet,
-    ParquetPartitioned,
-)
+from ._filehandlers import CSV, Json, NDJson, Parquet, ParquetPartitioned
 from ._files import DataBase, Folder, Table
 from ._schema import Schema
 
