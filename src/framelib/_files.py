@@ -10,7 +10,7 @@ import duckdb
 import narwhals as nw
 import polars as pl
 import pychain as pc
-from narwhals.typing import IntoFrame, IntoLazyFrame
+from narwhals.typing import IntoFrame, IntoFrameT, IntoLazyFrame, IntoLazyFrameT
 
 from . import _queries as qry
 from ._core import BaseEntry, BaseLayout, Entry, EntryType
@@ -21,7 +21,7 @@ from ._tree import show_tree
 class Table(Entry[Schema, Path]):
     _is_table: Final[bool] = True
 
-    def _from_df(self, df: IntoFrame | IntoLazyFrame):
+    def _from_df(self, df: IntoFrameT | IntoLazyFrameT) -> IntoFrameT | IntoLazyFrameT:
         return nw.from_native(df).lazy().pipe(self.model.cast).to_native()
 
     def with_connexion(self, con: duckdb.DuckDBPyConnection) -> Self:
@@ -31,28 +31,33 @@ class Table(Entry[Schema, Path]):
     def read(self) -> nw.LazyFrame[duckdb.DuckDBPyRelation]:
         return nw.from_native(self._con.table(self._name))
 
-    def create_or_replace_from(self, df: IntoFrame | IntoLazyFrame) -> None:
+    def create_or_replace_from(self, df: IntoFrame | IntoLazyFrame) -> Self:
         _ = self._from_df(df)
         self._con.execute(qry.create_or_replace(self._name))
         pk_names: list[str] = self.model.primary_keys().pipe_unwrap(list)
         if pk_names:
             self._con.execute(qry.add_primary_key(self._name, *pk_names))
+        return self
 
-    def append(self, df: IntoFrame | IntoLazyFrame) -> None:
+    def append(self, df: IntoFrame | IntoLazyFrame) -> Self:
         _ = self._from_df(df)
         self._con.execute(qry.insert_into(self._name))
+        return self
 
-    def create_from(self, df: IntoFrame | IntoLazyFrame) -> None:
+    def create_from(self, df: IntoFrame | IntoLazyFrame) -> Self:
         _ = self._from_df(df)
         self._con.execute(qry.create_from(self._name))
+        return self
 
-    def truncate(self) -> None:
+    def truncate(self) -> Self:
         self._con.execute(qry.truncate(self._name))
+        return self
 
-    def drop(self) -> None:
+    def drop(self) -> Self:
         self._con.execute(qry.drop(self._name))
+        return self
 
-    def insert_if_not_exists(self, df: IntoFrame | IntoLazyFrame) -> None:
+    def insert_if_not_exists(self, df: IntoFrame | IntoLazyFrame) -> Self:
         _ = self._from_df(df)
         keys: list[str] = self.model.primary_keys().pipe_unwrap(list)
         if not keys:
@@ -61,6 +66,7 @@ class Table(Entry[Schema, Path]):
                 "because no primary keys are defined in its schema."
             )
         self._con.execute(qry.insert_if_not_exists(self._name, *keys))
+        return self
 
 
 class DataBase(BaseLayout[Table], BaseEntry, ABC):
@@ -165,3 +171,15 @@ class Folder(BaseLayout[File[dy.Schema]]):
         Returns an iterator over the File instances in the folder.
         """
         return pc.Iter(cls.__source__.iterdir())
+
+    @classmethod
+    def clean(cls) -> type[Self]:
+        """
+        Delete all files in the folder and recreate the directory.
+        """
+        import shutil
+
+        source_path: Path = cls.source()
+        if source_path.exists():
+            shutil.rmtree(source_path)
+        return cls

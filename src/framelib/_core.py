@@ -32,7 +32,7 @@ class BaseEntry(ABC):
         self._name = name
 
 
-class BaseLayout[T: BaseEntry](ABC):
+class BaseLayout[T](ABC):
     _schema: dict[str, T]
     _is_entry_type: EntryType
 
