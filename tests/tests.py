@@ -162,7 +162,7 @@ def run_quick_table_tests() -> None:
         try:
             print("▶️ Test: create_or_replace_from...")
             db.salesdb.create_or_replace_from(initial_sales)
-            result = db.salesdb.read().collect().to_native()
+            result = db.salesdb.scan().collect().to_native()
             print(result)
             assert result.shape == (2, 3)
             print("✅ OK")
@@ -176,7 +176,7 @@ def run_quick_table_tests() -> None:
 
             print("\n▶️ Test: insert_if_not_exists (with PK conflict)...")
             db.salesdb.insert_if_not_exists(conflicting_sales)
-            result = db.salesdb.read().collect()
+            result = db.salesdb.scan().collect()
             print(result)
 
             assert result.shape == (3, 3)
@@ -194,7 +194,7 @@ def run_quick_table_tests() -> None:
 
             print("\n▶️ Test: truncate...")
             db.salesdb.truncate()
-            result = db.salesdb.read().to_native()
+            result = db.salesdb.scan().to_native()
             print(result)
             assert result.shape == (0, 3)
             print("✅ OK")
@@ -202,7 +202,7 @@ def run_quick_table_tests() -> None:
             print("\n▶️ Test: drop...")
             db.salesdb.drop()
             try:
-                db.salesdb.read()
+                db.salesdb.scan()
                 raise AssertionError("Table was not dropped.")
             except CatalogException:
                 print("✅ OK")

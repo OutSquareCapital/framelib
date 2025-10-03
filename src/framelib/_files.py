@@ -35,8 +35,8 @@ class Table(Entry[Schema, Path]):
         self._con = con
         return self
 
-    def read(self) -> nw.LazyFrame[duckdb.DuckDBPyRelation]:
-        """Reads the table from the database, and returns it as a Narwhals LazyFrame."""
+    def scan(self) -> nw.LazyFrame[duckdb.DuckDBPyRelation]:
+        """Scan the table from the database, and returns it as a Narwhals LazyFrame."""
         return nw.from_native(self._con.table(self._name))
 
     def create_or_replace_from(self, df: IntoFrame | IntoLazyFrame) -> Self:

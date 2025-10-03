@@ -114,8 +114,8 @@ def run_analysis() -> None:
 
         print("⚙️  Analyzing via the Narwhals API (without raw SQL)...")
         lazy_report = (
-            db.customers.read()
-            .join(db.sales.read(), on="customer_id")
+            db.customers.scan()
+            .join(db.sales.scan(), on="customer_id")
             .group_by("country")
             .agg(
                 nw.len().alias("total_transactions"),
