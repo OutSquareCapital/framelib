@@ -8,17 +8,47 @@ It leverages **pathlib**, **polars**, **narwhals**, and **duckdb** to provide a 
 
 ## Why Framelib?
 
-🏛️ **Declare Your Architecture:** Define your project's file and database layout using intuitive Python classes.
+### 🏛️ Declare Your Architecture Once
 
-📜 **Enforce Data Contracts:** Integrate with dataframely to ensure data quality with schema-aware I/O operations.
+Define your project's file and database layout using intuitive Python classes.
 
-🚀 **Streamline Workflows:** Read, write, and process data with a high-level API that abstracts away boilerplate code.
+Each class represents a folder, file, or database table, making your data structure explicit and easy to understand.
 
-🌲 **Visualize Your Project:** Automatically generate a tree view of your data layout for easy navigation and documentation.
+If no **source** is provided, the source path is automatically inferred from the class name and its position in the hierarchy.
 
-📦 **Embedded Data Warehouse:** Manage and query an embedded DuckDB database with the same declarative approach.
+This applies for each file declared as an attribute of a Folder class, and each Column declared in a Schema class.
 
-📃 **Write SQL in polars syntax:** Get back your DuckDB queries as narwhals lazyframe, and write your queries with the polars syntax.
+Define once, use everywhere. Your data structure definitions are reusable across your entire codebase.
+
+### 📜 Enforce Data Contracts
+
+Integrate with dataframely to ensure data quality with schema-aware I/O operations.
+
+You can cast data to the defined schema when reading from files or databases, ensuring consistency and reducing runtime errors.
+
+framelib provides its own lightweight Schema class, with the same API as dataframely, for the duckDB schemas.
+
+Thanks to narwhals, the framelib.Schema has complete interoperability across lazyframes-like libraries (polars, duckdb, dask, pyspark...).
+
+So you can cast a polars LazyFrame with datatypes defined in a framelib.Schema.
+
+### 🚀 Streamline Workflows
+
+Read, write, and process data with a high-level API that abstracts away boilerplate code.
+
+You don't have to manually pass your argument to polars.scan_parquet ever again. simply call `MyFolder.myfile.scan()` and framelib handles the rest.
+
+At a glance, you can then check: where is my data stored? in which format? with which schema?
+
+### 🌲 Visualize Your Project
+
+Automatically generate a recursive tree view of your data layout for easy navigation and documentation.
+
+### 📦 Embedded Data Warehouse
+
+Manage and query an embedded DuckDB database with the same declarative approach.
+
+Get back your DuckDB queries as narwhals lazyframe, and write your queries with the polars syntax.
 
 ## Installation
 
