@@ -1,20 +1,17 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from collections.abc import Callable
+from abc import ABC
 from pathlib import Path
 from typing import Any, Final, Self
 
 import duckdb
 import narwhals as nw
-import polars as pl
 import pychain as pc
 from narwhals.typing import IntoFrame, IntoFrameT, IntoLazyFrame, IntoLazyFrameT
 
+from .._core import BaseEntry, BaseLayout, Entry, EntryType
+from .._schema import Schema
 from . import _queries as qry
-from ._core import BaseEntry, BaseLayout, Entry, EntryType
-from ._schema import Schema
-from ._tree import show_tree
 
 
 class Table(Entry[Schema, Path]):
@@ -120,94 +117,3 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
     def connexion(self) -> duckdb.DuckDBPyConnection:
         """Returns the DuckDB connexion."""
         return self._connexion
-
-
-class File[T: Schema](Entry[T, Path]):
-    _is_file: Final[bool] = True
-    _with_suffix: bool = True
-
-    def __from_source__(self, source: Path | str) -> None:
-        self.source = Path(source, self._name)
-        if self.__class__._with_suffix:
-            self.source = self.source.with_suffix(f".{self.__class__.__name__.lower()}")
-
-    @property
-    @abstractmethod
-    def read(self) -> Callable[..., pl.DataFrame]:
-        raise NotImplementedError
-
-    @property
-    def scan(self) -> Any:
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def write(self) -> Any:
-        raise NotImplementedError
-
-    def read_cast(self) -> pl.DataFrame:
-        """
-        Read the file and cast it to the defined schema.
-        """
-        return self.read().pipe(self.model.cast_native).collect()
-
-    def scan_cast(self) -> pl.LazyFrame:
-        """
-        Scan the file and cast it to the defined schema.
-        """
-        return self.scan().pipe(self.model.cast_native)
-
-    def write_cast(
-        self, df: pl.LazyFrame | pl.DataFrame, *args: Any, **kwargs: Any
-    ) -> None:
-        """
-        Cast the dataframe to the defined schema and write it to the file.
-        """
-        self.model.cast(df.lazy().collect()).pipe(self.write, *args, **kwargs)
-
-
-class Folder(BaseLayout[File[Schema]]):
-    _is_entry_type = EntryType.FILE
-
-    def __init_subclass__(cls) -> None:
-        super().__init_subclass__()
-
-        if not hasattr(cls, EntryType.SOURCE):
-            cls.__source__ = Path()
-
-        cls.__source__ = cls.__source__.joinpath(cls.__name__.lower())
-        for file in cls._schema.values():
-            file.__from_source__(cls.source())
-
-    @classmethod
-    def source(cls) -> Path:
-        """Returns the source path of the folder."""
-        return cls.__source__
-
-    @classmethod
-    def show_tree(cls) -> str:
-        """Show the folder structure."""
-        return show_tree(cls.__source__)
-
-    @classmethod
-    def _display_(cls) -> str:
-        return cls.show_tree()
-
-    @classmethod
-    def iter_dir(cls) -> pc.Iter[Path]:
-        """
-        Returns an iterator over the File instances in the folder.
-        """
-        return pc.Iter(cls.__source__.iterdir())
-
-    @classmethod
-    def clean(cls) -> type[Self]:
-        """
-        Delete all files in the folder and recreate the directory.
-        """
-        import shutil
-
-        source_path: Path = cls.source()
-        if source_path.exists():
-            shutil.rmtree(source_path)
-        return cls

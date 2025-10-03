@@ -1,12 +1,59 @@
-from collections.abc import Sequence
+from abc import ABC, abstractmethod
+from collections.abc import Callable, Sequence
 from functools import partial
+from pathlib import Path
+from typing import Any, Final
 
 import duckdb
 import narwhals as nw
 import polars as pl
 
-from ._files import File
+from ._core import Entry
 from ._schema import Schema
+
+
+class File[T: Schema](Entry[T, Path], ABC):
+    _is_file: Final[bool] = True
+    _with_suffix: bool = True
+
+    def __from_source__(self, source: Path | str) -> None:
+        self.source = Path(source, self._name)
+        if self.__class__._with_suffix:
+            self.source = self.source.with_suffix(f".{self.__class__.__name__.lower()}")
+
+    @property
+    @abstractmethod
+    def read(self) -> Callable[..., pl.DataFrame]:
+        raise NotImplementedError
+
+    @property
+    def scan(self) -> Any:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def write(self) -> Any:
+        raise NotImplementedError
+
+    def read_cast(self) -> pl.DataFrame:
+        """
+        Read the file and cast it to the defined schema.
+        """
+        return self.read().pipe(self.model.cast_native).collect()
+
+    def scan_cast(self) -> pl.LazyFrame:
+        """
+        Scan the file and cast it to the defined schema.
+        """
+        return self.scan().pipe(self.model.cast_native)
+
+    def write_cast(
+        self, df: pl.LazyFrame | pl.DataFrame, *args: Any, **kwargs: Any
+    ) -> None:
+        """
+        Cast the dataframe to the defined schema and write it to the file.
+        """
+        self.model.cast(df.lazy().collect()).pipe(self.write, *args, **kwargs)
 
 
 class Parquet[T: Schema](File[T]):
