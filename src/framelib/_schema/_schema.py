@@ -7,11 +7,16 @@ import polars as pl
 import pychain as pc
 from narwhals.typing import IntoLazyFrameT, LazyFrameT
 
-from ._columns import Column
-from ._core import BaseLayout, EntryType
+from .._core import BaseLayout, EntryType
+from ._base import Column
 
 
 class Schema(BaseLayout[Column]):
+    """
+    A schema is a layout containing only Column entries.
+    Used to define the schema of a Table or a File.
+    """
+
     _is_entry_type = EntryType.COLUMN
 
     @classmethod
@@ -25,11 +30,6 @@ class Schema(BaseLayout[Column]):
     def column_names(cls) -> pc.Iter[str]:
         """The column names of this schema."""
         return pc.Iter(cls._schema.keys())
-
-    @classmethod
-    def column_exprs(cls) -> pc.Iter[nw.Expr]:
-        """The column expressions of this schema."""
-        return pc.Iter(col.col for col in cls._schema.values())
 
     @classmethod
     def primary_keys(cls) -> pc.Iter[str]:
@@ -56,24 +56,46 @@ class Schema(BaseLayout[Column]):
         df: IntoLazyFrameT | LazyFrameT | pl.DataFrame,
     ) -> LazyFrameT | nw.LazyFrame[IntoLazyFrameT]:
         """
-        Selects only the columns defined in the schema, and casts them to the correct dtype.
+        - Selects only the columns defined in the schema
+        - Casts them to the correct dtype
+        - Returns the results wrapped in a narwhals LazyFrame.
+
+        Mostly useful when casting duckdb relations, as this keeps the polars/narwhals API consistent.
         """
         return (
             nw.from_native(df)
             .lazy()
-            .select(cls.columns().map(lambda col: col.col.cast(col.dtype)).unwrap())
+            .select(
+                cls.columns().map(lambda col: col.nw_col.cast(col.nw_dtype)).unwrap()
+            )
         )
 
+    @overload
     @classmethod
-    def cast_native(cls, df: IntoLazyFrameT) -> IntoLazyFrameT:
-        """
-        Selects only the columns defined in the schema, and casts them to the correct dtype.
+    def cast_native(cls, df: LazyFrameT) -> LazyFrameT: ...
 
-        Returns a native DataFrame (e.g. Polars DataFrame) instead of a Narwhals LazyFrame.
+    @overload
+    @classmethod
+    def cast_native(cls, df: IntoLazyFrameT) -> IntoLazyFrameT: ...
+
+    @overload
+    @classmethod
+    def cast_native(cls, df: pl.DataFrame) -> pl.LazyFrame: ...
+
+    @classmethod
+    def cast_native(
+        cls, df: LazyFrameT | pl.DataFrame | IntoLazyFrameT
+    ) -> IntoLazyFrameT | LazyFrameT | pl.LazyFrame:
+        """
+        - Selects only the columns defined in the schema
+        - Casts them to the correct dtype
+        - Returns the results with the same native DataFrame type as the input.
         """
         return (
             nw.from_native(df)
             .lazy()
-            .select(cls.columns().map(lambda col: col.col.cast(col.dtype)).unwrap())
+            .select(
+                cls.columns().map(lambda col: col.nw_col.cast(col.nw_dtype)).unwrap()
+            )
             .to_native()
         )

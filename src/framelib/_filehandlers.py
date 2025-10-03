@@ -1,15 +1,15 @@
 from collections.abc import Sequence
 from functools import partial
 
-import dataframely as dy
 import duckdb
 import narwhals as nw
 import polars as pl
 
 from ._files import File
+from ._schema import Schema
 
 
-class Parquet[T: dy.Schema](File[T]):
+class Parquet[T: Schema](File[T]):
     @property
     def scan(self):
         return partial(pl.scan_parquet, self.source)
@@ -73,14 +73,14 @@ class Parquet[T: dy.Schema](File[T]):
         return partial(pl.DataFrame.write_parquet, file=self.source)
 
 
-class ParquetPartitioned[T: dy.Schema](Parquet[T]):
+class ParquetPartitioned[T: Schema](Parquet[T]):
     """A Parquet file that is partitioned by one or more columns."""
 
     _with_suffix: bool = False
     __slots__ = ("_partition_by",)
 
     def __init__(
-        self, partition_by: str | Sequence[str], model: type[T] = dy.Schema
+        self, partition_by: str | Sequence[str], model: type[T] = Schema
     ) -> None:
         self.model: type[T] = model
         self._partition_by: str | Sequence[str] = partition_by
@@ -94,7 +94,7 @@ class ParquetPartitioned[T: dy.Schema](Parquet[T]):
         )
 
 
-class CSV[T: dy.Schema](File[T]):
+class CSV[T: Schema](File[T]):
     @property
     def scan(self):
         return partial(pl.scan_csv, self.source)
@@ -112,7 +112,7 @@ class CSV[T: dy.Schema](File[T]):
         return partial(pl.DataFrame.write_csv, file=self.source)
 
 
-class NDJson[T: dy.Schema](File[T]):
+class NDJson[T: Schema](File[T]):
     @property
     def scan(self):
         return partial(pl.scan_ndjson, self.source)
@@ -126,7 +126,7 @@ class NDJson[T: dy.Schema](File[T]):
         return partial(pl.DataFrame.write_ndjson, file=self.source)
 
 
-class Json[T: dy.Schema](File[T]):
+class Json[T: Schema](File[T]):
     """
     Json file handler
     Note that the scan method return a duckdb relation wrapped in a narwhals LazyFrame.

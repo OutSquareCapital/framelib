@@ -5,7 +5,6 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Final, Self
 
-import dataframely as dy
 import duckdb
 import narwhals as nw
 import polars as pl
@@ -123,7 +122,7 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
         return self._connexion
 
 
-class File[T: dy.Schema](Entry[T, Path]):
+class File[T: Schema](Entry[T, Path]):
     _is_file: Final[bool] = True
     _with_suffix: bool = True
 
@@ -150,13 +149,13 @@ class File[T: dy.Schema](Entry[T, Path]):
         """
         Read the file and cast it to the defined schema.
         """
-        return self.read().pipe(self.model.cast)
+        return self.read().pipe(self.model.cast_native).collect()
 
     def scan_cast(self) -> pl.LazyFrame:
         """
         Scan the file and cast it to the defined schema.
         """
-        return self.scan().pipe(self.model.cast)
+        return self.scan().pipe(self.model.cast_native)
 
     def write_cast(
         self, df: pl.LazyFrame | pl.DataFrame, *args: Any, **kwargs: Any
@@ -167,7 +166,7 @@ class File[T: dy.Schema](Entry[T, Path]):
         self.model.cast(df.lazy().collect()).pipe(self.write, *args, **kwargs)
 
 
-class Folder(BaseLayout[File[dy.Schema]]):
+class Folder(BaseLayout[File[Schema]]):
     _is_entry_type = EntryType.FILE
 
     def __init_subclass__(cls) -> None:
