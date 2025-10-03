@@ -1,10 +1,6 @@
-from ._main import (
-    Array,
+from ._basictypes import (
     Boolean,
     Date,
-    DateTime,
-    Decimal,
-    Enum,
     Float32,
     Float64,
     Int8,
@@ -12,15 +8,14 @@ from ._main import (
     Int32,
     Int64,
     Int128,
-    List,
     String,
-    Struct,
     UInt8,
     UInt16,
     UInt32,
     UInt64,
     UInt128,
 )
+from ._main import Array, DateTime, Decimal, Enum, List, Struct
 from ._schema import Schema
 
 __all__ = [
