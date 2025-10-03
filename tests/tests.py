@@ -21,9 +21,14 @@ class Customers(fl.Schema):
     email = fl.String()
 
 
+class NoPKCustomers(Customers):
+    customer_id = fl.UInt16(primary_key=False)
+
+
 class Duck(fl.DataBase):
     salesdb = fl.Table(Sales)
     customersdb = fl.Table(Customers)
+    nopkcustomersdb = fl.Table(NoPKCustomers)
 
 
 class PartitionedSales(fl.Schema):
@@ -99,32 +104,27 @@ def mock_tables() -> None:
         db.salesdb.create_or_replace_from(sales)
         db.customersdb.create_or_replace_from(customers)
 
-    print("ok")
-
 
 def run_file_tests() -> None:
     print("\n--- DÉBUT DU TEST DES FICHIERS ---")
 
     # Test CSV
     print("▶️ Test: CSV read and write...")
-    csv_file = Data.sales
-    df_csv = csv_file.read_cast()
+    df_csv = Data.sales.read_cast()
     print(df_csv)
     assert df_csv.shape == (3, 3)
     print("✅ OK")
 
     # Test NDJson
     print("\n▶️ Test: NDJson read and write...")
-    ndjson_file = Data.customers
-    df_ndjson = ndjson_file.read_cast()
+    df_ndjson = Data.customers.read_cast()
     print(df_ndjson)
     assert df_ndjson.shape == (3, 3)
     print("✅ OK")
 
     # Test ParquetPartitioned
     print("\n▶️ Test: ParquetPartitioned read and write...")
-    parquet_file = Data.data_glob
-    df_parquet = parquet_file.scan_cast().collect()
+    df_parquet = Data.data_glob.scan_cast().collect()
     print(df_parquet)
     assert df_parquet.shape == (30, 6)
     print("✅ OK")
@@ -156,7 +156,7 @@ def run_quick_table_tests() -> None:
 
             print("\n▶️ Test: append (with PK conflict)...")
             try:
-                db.salesdb.append(conflicting_sales.filter(pl.col("order_id") == 2))
+                db.salesdb.append(conflicting_sales.filter(Sales.order_id.pl_col.eq(2)))
                 raise AssertionError("ConstraintException was not raised for append.")
             except duckdb.ConstraintException as e:
                 print(f"✅ OK (Caught expected error: {e})")
@@ -172,11 +172,10 @@ def run_quick_table_tests() -> None:
             )
             assert original_amount == 20.0
             print("✅ OK")
-
             print("\n▶️ Test: insert_if_not_exists (on table without PK)...")
             try:
-                db.customersdb.create_or_replace_from(customer_data)
-                db.customersdb.insert_if_not_exists(customer_data)
+                db.nopkcustomersdb.create_or_replace_from(customer_data)
+                db.nopkcustomersdb.insert_if_not_exists(customer_data)
                 raise AssertionError("ValueError was not raised for table without PK.")
             except ValueError as e:
                 print(f"✅ OK (Caught expected error: {e})")
@@ -203,6 +202,7 @@ def run_quick_table_tests() -> None:
 
 
 if __name__ == "__main__":
+    Data.source().mkdir(parents=True, exist_ok=True)
     mock_sales(Data.sales)
     mock_customers(Data.customers)
     mock_partitioned_parquet(Data.data_glob)
