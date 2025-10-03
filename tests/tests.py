@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import dataframely as dy
 import duckdb
 import polars as pl
 from duckdb import CatalogException
@@ -10,42 +9,30 @@ import framelib as fl
 BASE_PATH = Path("tests")
 
 
-class SalesDB(fl.Schema):
+class Sales(fl.Schema):
     order_id = fl.UInt16(primary_key=True)
     customer_id = fl.UInt16()
-    amount = fl.Float32()
+    amount = fl.Float64()
 
 
-class CustomersDB(fl.Schema):
-    customer_id = fl.UInt16()
+class Customers(fl.Schema):
+    customer_id = fl.UInt16(primary_key=True)
     name = fl.String()
     email = fl.String()
 
 
 class Duck(fl.DataBase):
-    salesdb = fl.Table(SalesDB)
-    customersdb = fl.Table(CustomersDB)
+    salesdb = fl.Table(Sales)
+    customersdb = fl.Table(Customers)
 
 
-class Sales(dy.Schema):
-    order_id = dy.UInt16(primary_key=True, nullable=False)
-    customer_id = dy.UInt16(nullable=False)
-    amount = dy.Float64(nullable=False)
-
-
-class Customers(dy.Schema):
-    customer_id = dy.UInt16(primary_key=True, nullable=False)
-    name = dy.String(nullable=False)
-    email = dy.String(nullable=False)
-
-
-class PartitionedSales(dy.Schema):
-    order_id = dy.UInt16(primary_key=True, nullable=False)
-    customer_id = dy.UInt16(nullable=False)
-    amount = dy.Float64(nullable=False)
-    order_date = dy.Date(nullable=False)
-    region = dy.String(nullable=False)
-    product = dy.String(nullable=False)
+class PartitionedSales(fl.Schema):
+    order_id = fl.UInt16(primary_key=True)
+    customer_id = fl.UInt16()
+    amount = fl.Float64()
+    order_date = fl.Date()
+    region = fl.String()
+    product = fl.String()
 
 
 class Data(fl.Folder):
@@ -180,7 +167,9 @@ def run_quick_table_tests() -> None:
             print(result)
 
             assert result.shape == (3, 3)
-            original_amount = result.filter(SalesDB.order_id.col == 2).item(0, "amount")
+            original_amount = result.filter(Sales.order_id.nw_col == 2).item(
+                0, "amount"
+            )
             assert original_amount == 20.0
             print("✅ OK")
 
@@ -220,3 +209,4 @@ if __name__ == "__main__":
     mock_tables()
     run_file_tests()
     run_quick_table_tests()
+    Data.clean()
