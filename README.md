@@ -12,7 +12,7 @@ It leverages **pathlib**, **polars**, **narwhals**, and **duckdb** to provide a 
 
 Define your project's file and database layout using intuitive Python classes.
 
-Each class represents a folder, file, or database table, making your data structure explicit and easy to understand.
+Each class represents a folder, file, types schema, or database table, making your data structure explicit and easy to understand.
 
 If no **source** is provided, the source path is automatically inferred from the class name and its position in the hierarchy.
 
@@ -22,15 +22,21 @@ Define once, use everywhere. Your data structure definitions are reusable across
 
 ### 📜 Enforce Data Contracts
 
-Integrate with dataframely to ensure data quality with schema-aware I/O operations.
+Framelib provides a **Schema** class, with an API strongly inspired by dataframely, to define data schemas with strong typing and validation.
+
+A **Schema** is a specialized **Layout** that only accepts **Column** entries.
+
+A **Column** represents a single column in a data schema, with optional primary key designation.
+
+Various **Column** types are available, such as **Int32**, **Enum**, **Struct**, and more.
+
+Each **Column** can then be converted to it's corresponding polars, narwhals, or SQL datatype.
+
+For example **Column.UInt32.pl_dtype** returns an instance of **pl.UInt32**.
 
 You can cast data to the defined schema when reading from files or databases, ensuring consistency and reducing runtime errors.
 
-framelib provides its own lightweight Schema class, with the same API as dataframely, for the duckDB schemas.
-
-Thanks to narwhals, the framelib.Schema has complete interoperability across lazyframes-like libraries (polars, duckdb, dask, pyspark...).
-
-So you can cast a polars LazyFrame with datatypes defined in a framelib.Schema.
+This interoperability and data validation maintains the core declarative DRY philosophy of framelib.
 
 ### 🚀 Streamline Workflows
 
@@ -38,7 +44,11 @@ Read, write, and process data with a high-level API that abstracts away boilerpl
 
 You don't have to manually pass your argument to polars.scan_parquet ever again. simply call `MyFolder.myfile.scan()` and framelib handles the rest.
 
-At a glance, you can then check: where is my data stored? in which format? with which schema?
+At a glance, you can then check:
+
+- where is my data stored?
+- in which format?
+- with which schema?
 
 ### 🌲 Visualize Your Project
 
@@ -61,7 +71,6 @@ uv add git+https://github.com/OutSquareCapital/framelib.git
 ### Declare Your Data Architecture
 
 ```python
-import dataframely as dy
 import duckdb
 import narwhals as nw
 import polars as pl
@@ -69,16 +78,8 @@ import polars as pl
 import framelib as fl
 
 
-class SalesFile(dy.Schema):
-    """Schema for the raw sales CSV file."""
-
-    transaction_id = dy.UInt32(nullable=False)
-    customer_id = dy.UInt16(nullable=False)
-    amount = dy.Float32(nullable=False)
-
-
-class SalesDB(fl.Schema):
-    """Schema for the sales table in the database."""
+class Sales(fl.Schema):
+    """Schema for the sales."""
 
     transaction_id = fl.UInt32(primary_key=True)
     customer_id = fl.UInt16()
@@ -88,14 +89,14 @@ class SalesDB(fl.Schema):
 class Analytics(fl.DataBase):
     """Embedded DuckDB database for analytics. Contain a sales table."""
 
-    sales = fl.Table(SalesDB)
+    sales = fl.Table(Sales)
 
 
 class MyProject(fl.Folder):
     """Root folder for the project. __source__ automatically set to Path("myproject")"""
 
     ## Files are defined as attributes
-    raw_sales = fl.CSV(model=SalesFile)  # Located at 'myproject/raw_sales.csv'
+    raw_sales = fl.CSV(model=Sales)  # Located at 'myproject/raw_sales.csv'
 
     ## Instantiate the embedded database
     analytics_db = Analytics()  # Located at 'myproject/analytics_db.ddb'
@@ -180,12 +181,13 @@ def load_data_into_db() -> None:
 ```python
 
 def show_inheritance_example() -> None:
+
     class ProductionData(fl.Folder):
-        sales = fl.CSV(model=SalesFile)
+        sales = fl.CSV(model=Sales)
 
     class Reports(ProductionData):
-        sales = fl.CSV(dy.Schema)
-        sales_formatted = fl.Parquet(dy.Schema)
+        sales = fl.CSV(fl.Schema)
+        sales_formatted = fl.Parquet(fl.Schema)
 
     print("\n📁 Inheritance Example:")
     print(Reports.sales.source)

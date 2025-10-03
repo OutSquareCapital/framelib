@@ -1,4 +1,3 @@
-import dataframely as dy
 import duckdb
 import narwhals as nw
 import polars as pl
@@ -6,16 +5,8 @@ import polars as pl
 import framelib as fl
 
 
-class SalesFile(dy.Schema):
-    """Schema for the raw sales CSV file."""
-
-    transaction_id = dy.UInt32(nullable=False)
-    customer_id = dy.UInt16(nullable=False)
-    amount = dy.Float32(nullable=False)
-
-
-class SalesDB(fl.Schema):
-    """Schema for the sales table in the database."""
+class Sales(fl.Schema):
+    """Schema for the sales."""
 
     transaction_id = fl.UInt32(primary_key=True)
     customer_id = fl.UInt16()
@@ -25,14 +16,14 @@ class SalesDB(fl.Schema):
 class Analytics(fl.DataBase):
     """Embedded DuckDB database for analytics. Contain a sales table."""
 
-    sales = fl.Table(SalesDB)
+    sales = fl.Table(Sales)
 
 
 class MyProject(fl.Folder):
     """Root folder for the project. __source__ automatically set to Path("myproject")"""
 
     ## Files are defined as attributes
-    raw_sales = fl.CSV(model=SalesFile)  # Located at 'myproject/raw_sales.csv'
+    raw_sales = fl.CSV(model=Sales)  # Located at 'myproject/raw_sales.csv'
 
     ## Instantiate the embedded database
     analytics_db = Analytics()  # Located at 'myproject/analytics_db.ddb'
@@ -78,11 +69,11 @@ def load_data_into_db() -> None:
 
 def show_inheritance_example() -> None:
     class ProductionData(fl.Folder):
-        sales = fl.CSV(model=SalesFile)
+        sales = fl.CSV(model=Sales)
 
     class Reports(ProductionData):
-        sales = fl.CSV(dy.Schema)
-        sales_formatted = fl.Parquet(dy.Schema)
+        sales = fl.CSV(fl.Schema)
+        sales_formatted = fl.Parquet(fl.Schema)
 
     print("\n📁 Inheritance Example:")
     print(Reports.sales.source)
