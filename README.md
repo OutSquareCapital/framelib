@@ -176,30 +176,6 @@ def load_data_into_db() -> None:
 └─────────────┴─────────────┴───────────────────┘
 ```
 
-### Inerhit for nested structures
-
-```python
-
-def show_inheritance_example() -> None:
-
-    class ProductionData(fl.Folder):
-        sales = fl.CSV(model=Sales)
-
-    class Reports(ProductionData):
-        sales = fl.CSV(fl.Schema)
-        sales_formatted = fl.Parquet(fl.Schema)
-
-    print("\n📁 Inheritance Example:")
-    print(Reports.sales.source)
-    print(Reports.sales_formatted.source)
-```
-
-```bash
-📁 Inheritance Example:
-productiondata\reports\sales.csv
-productiondata\reports\sales_formatted.parquet
-```
-
 ### Read and cast data
 
 ```python
@@ -234,16 +210,13 @@ def append_data() -> None:
         ## High-level methods simplify common database operations
         print("\n📦 Sales Data in DB before append:")
         print(db.sales.scan().to_native())
-        db.sales.append(new_sales)
         print("\n📦 Sales Data in DB after append:")
-        print(db.sales.scan().to_native())
+        print(db.sales.append(new_sales).scan().to_native())
         ## Intelligently insert rows, skipping duplicates based on the primary key
-        db.sales.insert_if_not_exists(new_sales)
         print("\n📦 Sales Data in DB after insert_if_not_exists (no duplicates):")
-        print(db.sales.scan().to_native())
-        db.sales.truncate()
+        print(db.sales.insert_if_not_exists(new_sales).scan().to_native())
         print("\n📦 Sales Data in DB after truncate:")
-        print(db.sales.scan().to_native())
+        print(db.sales.truncate().scan().to_native())
 ```
 
 ```bash
@@ -297,9 +270,32 @@ def append_data() -> None:
 ### Show the project structure
 
 ```python
-def show_tree() -> None:
-    print("\n📂 Project Structure:")
-    print(MyProject.show_tree())
+
+def show_inheritance_and_tree() -> None:
+    class ProductionData(fl.Folder):
+        sales = fl.CSV(model=Sales)
+
+    class Reports(ProductionData):
+        sales = fl.CSV(fl.Schema)
+        sales_formatted = fl.Parquet(fl.Schema)
+
+    print("\n📁 Inheritance Example:\n")
+    print(ProductionData.sales.source)
+    print(Reports.sales.source)
+    print(Reports.sales_formatted.source)
+    print("\n📂 Project Structure:\n")
+    print("ProductionData tree:\n")
+    print(ProductionData.show_tree())
+    print("Reports tree:\n")
+    print(Reports.show_tree())
+
+
+def read_and_cast() -> None:
+    print("\n📋 Raw Sales Data:")
+    print(MyProject.raw_sales.read().schema)
+    print("Casted to the defined schema:")
+    print(MyProject.raw_sales.read_cast().schema)
+
 ```
 
 ```bash
