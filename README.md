@@ -68,15 +68,14 @@ class Analytics(fl.DataBase):
     sales = fl.Table(SalesDB)
 
 ## Declare the root folder for our project
-
+# Automatically set the __source__ as Path("myproject)
 class MyProject(fl.Folder):
-    __source__ = Path("./my_data_project")  ## Sets the root path
 
     ## Files are defined as attributes
-    raw_sales = fl.CSV(model=SalesFile)
+    raw_sales = fl.CSV(model=SalesFile) # Located at 'myproject/raw_sales.csv'
 
-    ## You can nest other layouts, like our database
-    analytics_db = Analytics()
+    ## Instantiate the embedded database
+    analytics_db = Analytics() # Located at 'myproject/analytics_db.ddb'
 ```
 
 ### Use the Defined Layout
@@ -134,29 +133,29 @@ This eliminates brittle, hardcoded strings and makes refactoring trivial.
 Inheritance can be used to create logical sub-folders.
 
 ```python
-class V1(fl.Folder):
-    __source__ = Path("./production_data")
+class ProductionData(fl.Folder):
     sales = fl.CSV(model=SalesFile)
 
-class V2(V1): ## Inherits from V1
+class Reports(ProductionData): ## Inherits from ProductionData
     ## This file will be located at './production_data/v2/reports.parquet'
-    reports = fl.Parquet()
+    sales = fl.CSV() # Located at './production_data/reports/sales.csv'
+    sales_formatted = fl.Parquet() # Located at './production_data/reports/sales_formatted.parquet'
 
 ## The `source` attribute gives you the resolved pathlib.Path object
 
-print(V1.sales.source)
+print(Reports.sales.source)
 
-## >>> PosixPath('production_data/sales.csv')
+## >>> PosixPath('production_data/reports/sales.csv')
 
-print(V2.reports.source)
+print(Reports.sales_formatted.source)
 
-## >>> PosixPath('production_data/v2/reports.parquet')
+## >>> PosixPath('production_data/reports/sales_formatted.parquet')
 
 ```
 
 ## Schema-Driven I/O
 
-**Never guess your data types again.**
+### Never guess your data types again
 
 Framelib uses the attached schema to cast data during I/O operations, ensuring that your dataframes always conform to the defined contract.
 
@@ -170,11 +169,11 @@ This will raise an error if the data in 'raw_sales.csv' doesn't match the SalesF
 df = MyProject.raw_sales.read_cast()
 ```
 
-Integrated Database
+### Integrated Database
 
-Go beyond flat files with the fl.DataBase layout.
+**Go beyond flat files with the fl.DataBase layout**.
 
- It provides a clean, high-level interface for an embedded DuckDB instance, managed as a context manager to handle connections automatically.
+It provides a clean, high-level interface for an embedded DuckDB instance, managed as a context manager to handle connections automatically.
 
 ```python
 new_sales = pl.DataFrame(...)  
@@ -202,7 +201,7 @@ print(MyProject.show_tree())
 This will output a tree structure representing your project on the file system:
 
 ```bash
-my_data_project/
+myproject
 ├── analytics_db.ddb
 └── raw_sales.csv
 ```

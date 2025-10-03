@@ -1,0 +1,4 @@
+transaction_id,customer_id,amount
+101,1,120.5
+102,2,75.0
+103,1,50.25

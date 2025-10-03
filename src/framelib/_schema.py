@@ -63,3 +63,17 @@ class Schema(BaseLayout[Column]):
             .lazy()
             .select(cls.columns().map(lambda col: col.col.cast(col.dtype)).unwrap())
         )
+
+    @classmethod
+    def cast_native(cls, df: IntoLazyFrameT) -> IntoLazyFrameT:
+        """
+        Selects only the columns defined in the schema, and casts them to the correct dtype.
+
+        Returns a native DataFrame (e.g. Polars DataFrame) instead of a Narwhals LazyFrame.
+        """
+        return (
+            nw.from_native(df)
+            .lazy()
+            .select(cls.columns().map(lambda col: col.col.cast(col.dtype)).unwrap())
+            .to_native()
+        )
