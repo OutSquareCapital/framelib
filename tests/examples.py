@@ -67,7 +67,8 @@ def load_data_into_db() -> None:
         print(report_df)
 
 
-def show_inheritance_example() -> None:
+def show_inheritance_and_tree() -> None:
+    # TODO: reflechir a show tree, full show tree, interaction avec repr, schemas, etc...
     class ProductionData(fl.Folder):
         sales = fl.CSV(model=Sales)
 
@@ -75,10 +76,15 @@ def show_inheritance_example() -> None:
         sales = fl.CSV(fl.Schema)
         sales_formatted = fl.Parquet(fl.Schema)
 
-    print("\n📁 Inheritance Example:")
+    print("\n📁 Inheritance Example:\n")
+    print(ProductionData.sales.source)
     print(Reports.sales.source)
-
     print(Reports.sales_formatted.source)
+    print("\n📂 Project Structure:\n")
+    print("ProductionData tree:\n")
+    print(ProductionData.show_tree())
+    print("Reports tree:\n")
+    print(Reports.show_tree())
 
 
 def read_and_cast() -> None:
@@ -101,21 +107,13 @@ def append_data() -> None:
         ## High-level methods simplify common database operations
         print("\n📦 Sales Data in DB before append:")
         print(db.sales.scan().to_native())
-        db.sales.append(new_sales)
         print("\n📦 Sales Data in DB after append:")
-        print(db.sales.scan().to_native())
+        print(db.sales.append(new_sales).scan().to_native())
         ## Intelligently insert rows, skipping duplicates based on the primary key
-        db.sales.insert_if_not_exists(new_sales)
         print("\n📦 Sales Data in DB after insert_if_not_exists (no duplicates):")
-        print(db.sales.scan().to_native())
-        db.sales.truncate()
+        print(db.sales.insert_if_not_exists(new_sales).scan().to_native())
         print("\n📦 Sales Data in DB after truncate:")
-        print(db.sales.scan().to_native())
-
-
-def show_tree() -> None:
-    print("\n📂 Project Structure:")
-    print(MyProject.show_tree())
+        print(db.sales.truncate().scan().to_native())
 
 
 def clean_project() -> None:
@@ -131,8 +129,7 @@ if __name__ == "__main__":
     create_structure()
     create_mock_sales_data()
     load_data_into_db()
-    show_inheritance_example()
+    show_inheritance_and_tree()
     read_and_cast()
     append_data()
-    show_tree()
     clean_project()
