@@ -290,14 +290,6 @@ def show_inheritance_and_tree() -> None:
     print(Reports.sales_formatted.source)
     print("\n📂 Project Structure:\n")
     print(Reports.show_full_tree())
-
-
-def read_and_cast() -> None:
-    print("\n📋 Raw Sales Data:")
-    print(MyProject.raw_sales.read().schema)
-    print("Casted to the defined schema:")
-    print(MyProject.raw_sales.read_cast().schema)
-
 ```
 
 ```bash
@@ -309,6 +301,23 @@ productiondata
 │   └── sales_formatted.parquet
 └── sales.csv
 
+```
+
+### Cast data to the defined schema
+
+```python
+def read_and_cast() -> None:
+    print("\n📋 Raw Sales Data:")
+    print(MyProject.raw_sales.read().schema)
+    print("Casted to the defined schema:")
+    print(MyProject.raw_sales.read_cast().schema)
+```
+
+```bash
+📋 Raw Sales Data:
+Schema({'transaction_id': Int64, 'customer_id': Int64, 'amount': Float64})
+Casted to the defined schema:
+Schema({'transaction_id': UInt32, 'customer_id': UInt16, 'amount': Float32})
 ```
 
 ### Clean up the project structure
