@@ -1,3 +1,4 @@
+from ._base import Column
 from ._basictypes import (
     Boolean,
     Date,
@@ -15,15 +16,17 @@ from ._basictypes import (
     UInt64,
     UInt128,
 )
-from ._main import Array, DateTime, Decimal, Enum, List, Struct
+from ._main import Array, Categorical, Datetime, Decimal, Enum, List, Struct
 from ._schema import Schema
 
 __all__ = [
+    "Column",
     "Schema",
     "Array",
     "Boolean",
     "Date",
-    "DateTime",
+    "Categorical",
+    "Datetime",
     "Decimal",
     "Enum",
     "Float32",

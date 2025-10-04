@@ -12,7 +12,7 @@ from ._base import Column, TimeUnit
 
 
 @dataclass(slots=True)
-class DateTime(Column):
+class Datetime(Column):
     time_unit: TimeUnit = "ns"
     time_zone: str | datetime.timezone | None = None
 
