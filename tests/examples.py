@@ -68,23 +68,25 @@ def load_data_into_db() -> None:
 
 
 def show_inheritance_and_tree() -> None:
-    # TODO: reflechir a show tree, full show tree, interaction avec repr, schemas, etc...
     class ProductionData(fl.Folder):
         sales = fl.CSV(model=Sales)
 
     class Reports(ProductionData):
-        sales = fl.CSV(fl.Schema)
-        sales_formatted = fl.Parquet(fl.Schema)
+        """
+        Reports folder inheriting from ProductionData.
+        No schema defined in the files, so they default to framelib.Schema.
+        """
+
+        sales = fl.CSV()
+        sales_formatted = fl.Parquet()
 
     print("\n📁 Inheritance Example:\n")
     print(ProductionData.sales.source)
     print(Reports.sales.source)
     print(Reports.sales_formatted.source)
     print("\n📂 Project Structure:\n")
-    print("ProductionData tree:\n")
-    print(ProductionData.show_tree())
-    print("Reports tree:\n")
-    print(Reports.show_tree())
+    # TODO: fix so that children or root display both the full tree
+    print(Reports.show_full_tree())
 
 
 def read_and_cast() -> None:

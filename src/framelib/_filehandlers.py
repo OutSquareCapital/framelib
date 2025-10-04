@@ -16,6 +16,9 @@ class File[T: Schema](Entry[T, Path], ABC):
     _is_file: Final[bool] = True
     _with_suffix: bool = True
 
+    def __init__(self, model: type[T] = Schema) -> None:
+        self.model = model
+
     def __from_source__(self, source: Path | str) -> None:
         self.source = Path(source, self._name)
         if self.__class__._with_suffix:

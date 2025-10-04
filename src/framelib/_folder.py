@@ -38,6 +38,19 @@ class Folder(BaseLayout[File[Schema]]):
         )
 
     @classmethod
+    def show_full_tree(cls) -> str:
+        chain: list[type[Folder]] = (
+            pc.Iter(cls.mro())
+            .filter(lambda c: issubclass(c, Folder) and c is not Folder)
+            .pipe_unwrap(list)
+        )
+        if not chain:
+            return f"{cls.source()}"
+        root: Path = chain[-1].source()
+        expected = (f.source for c in chain for f in c._schema.values())
+        return show_tree(root, expected)
+
+    @classmethod
     def _display_(cls) -> str:
         return cls.show_tree()
 

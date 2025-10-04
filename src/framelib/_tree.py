@@ -26,7 +26,6 @@ def _build_tree(root: Path, expected: Iterable[Path]) -> list[str]:
         except ValueError:
             continue
         scoped.append(p)
-    all_paths: set[Path] = set(scoped)
     dir_paths: set[Path] = set()
     for p in scoped:
         rel: Path = p.relative_to(root)
@@ -35,6 +34,7 @@ def _build_tree(root: Path, expected: Iterable[Path]) -> list[str]:
             dir_paths.add(root.joinpath(parent))
             parent = parent.parent
     dir_paths.add(root)
+    all_paths: set[Path] = set(scoped) | dir_paths
 
     lines: list[str] = []
 

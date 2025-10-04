@@ -274,20 +274,22 @@ def append_data() -> None:
 def show_inheritance_and_tree() -> None:
     class ProductionData(fl.Folder):
         sales = fl.CSV(model=Sales)
-
+    # No schema defined here, so defaults to framelib.Schema
     class Reports(ProductionData):
-        sales = fl.CSV(fl.Schema)
-        sales_formatted = fl.Parquet(fl.Schema)
+        """
+        Reports folder inheriting from ProductionData.
+        No schema defined in the files, so they default to framelib.Schema.
+        """
+        sales = fl.CSV() 
+        sales_formatted = fl.Parquet()
+
 
     print("\n📁 Inheritance Example:\n")
     print(ProductionData.sales.source)
     print(Reports.sales.source)
     print(Reports.sales_formatted.source)
     print("\n📂 Project Structure:\n")
-    print("ProductionData tree:\n")
-    print(ProductionData.show_tree())
-    print("Reports tree:\n")
-    print(Reports.show_tree())
+    print(Reports.show_full_tree())
 
 
 def read_and_cast() -> None:
@@ -300,9 +302,13 @@ def read_and_cast() -> None:
 
 ```bash
 📂 Project Structure:
-myproject
-├── analytics_db.ddb
-└── raw_sales.csv
+
+productiondata
+├── reports
+│   ├── sales.csv
+│   └── sales_formatted.parquet
+└── sales.csv
+
 ```
 
 ### Clean up the project structure
