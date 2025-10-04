@@ -1,4 +1,5 @@
 from ._const import constant
+from ._database import DataBase, Table
 from ._filehandlers import CSV, Json, NDJson, Parquet, ParquetPartitioned
 from ._folder import Folder
 from ._schema import (
@@ -27,7 +28,6 @@ from ._schema import (
     UInt64,
     UInt128,
 )
-from ._table import DataBase, Table
 
 __all__ = [
     "constant",
