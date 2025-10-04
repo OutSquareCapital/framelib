@@ -85,8 +85,7 @@ def show_inheritance_and_tree() -> None:
     print(Reports.sales.source)
     print(Reports.sales_formatted.source)
     print("\n📂 Project Structure:\n")
-    # TODO: fix so that children or root display both the full tree
-    print(Reports.show_full_tree())
+    print(Reports.show_tree())
 
 
 def read_and_cast() -> None:

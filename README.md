@@ -274,7 +274,6 @@ def append_data() -> None:
 def show_inheritance_and_tree() -> None:
     class ProductionData(fl.Folder):
         sales = fl.CSV(model=Sales)
-    # No schema defined here, so defaults to framelib.Schema
     class Reports(ProductionData):
         """
         Reports folder inheriting from ProductionData.
@@ -289,7 +288,8 @@ def show_inheritance_and_tree() -> None:
     print(Reports.sales.source)
     print(Reports.sales_formatted.source)
     print("\n📂 Project Structure:\n")
-    print(Reports.show_full_tree())
+    print(Reports.show_tree())
+
 ```
 
 ```bash
