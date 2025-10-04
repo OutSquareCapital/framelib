@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import datetime
+import enum
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from inspect import isclass
 
 import narwhals as nw
 import polars as pl
@@ -116,7 +118,9 @@ class Categorical(Column):
 class Enum(Column):
     _categories: list[str]
 
-    def __init__(self, categories: Iterable[str]) -> None:
+    def __init__(self, categories: Iterable[str] | type[enum.Enum]) -> None:
+        if isclass(categories):
+            categories = (item.value for item in categories)
         self._categories = list(categories)
         super().__init__()
 
