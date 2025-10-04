@@ -35,6 +35,10 @@ class Table(Entry[Schema, Path]):
         """Scan the table from the database, and returns it as a Narwhals LazyFrame."""
         return nw.from_native(self._con.table(self._name))
 
+    def scan_cast(self) -> nw.LazyFrame[duckdb.DuckDBPyRelation]:
+        """Scan the table from the database, cast to the schema, and returns it as a Narwhals LazyFrame."""
+        return nw.from_native(self._con.table(self._name)).pipe(self.model.cast)
+
     def create_or_replace_from(self, df: IntoFrame | IntoLazyFrame) -> Self:
         """
         Creates or replaces the table from the dataframe.
