@@ -16,6 +16,7 @@ TimeUnit = Literal["ns", "us", "ms"]
 class Column(BaseEntry, ABC):
     _is_column: Final[bool] = field(init=False, default=True)
     primary_key: bool = False
+    unique: bool = False
 
     @property
     def nw_col(self) -> nw.Expr:
