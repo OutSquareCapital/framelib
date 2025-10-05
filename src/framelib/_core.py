@@ -58,6 +58,8 @@ class Entry[T, U](BaseEntry):
         self.source = source
 
     def __repr__(self) -> str:
-        return (
-            f"{self.__class__.__name__}(\nsource={self.source},\nmodel={self.model}\n)"
-        )
+        return f"{self._cls_name}(\nsource={self.source},\nmodel={self.model}\n)"
+
+    @property
+    def _cls_name(self) -> str:
+        return self.__class__.__name__

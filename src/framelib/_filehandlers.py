@@ -22,7 +22,7 @@ class File[T: Schema](Entry[T, Path], ABC):
     def __from_source__(self, source: Path | str) -> None:
         self.source = Path(source, self._name)
         if self.__class__._with_suffix:
-            self.source = self.source.with_suffix(f".{self.__class__.__name__.lower()}")
+            self.source = self.source.with_suffix(f".{self._cls_name.lower()}")
 
     @property
     @abstractmethod
