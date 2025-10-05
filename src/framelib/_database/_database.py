@@ -19,12 +19,12 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
     _is_file: Final[bool] = True
     _connexion: duckdb.DuckDBPyConnection
     _entry_type = EntryType.TABLE
-    source: Path
-    model: pc.Dict[str, Table]
+    _source: Path
+    _model: pc.Dict[str, Table]
 
     def __from_source__(self, source: Path) -> None:
-        self.source = Path(source, self._name).with_suffix(_DDB)
-        self.model = self.schema()
+        self._source = Path(source, self._name).with_suffix(_DDB)
+        self._model = self.schema()
         for table in self._schema.values():
             table.source = self.source
 
@@ -65,3 +65,13 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
         Shows all schemas in the database.
         """
         return self.query(qry.show_schemas())
+
+    @property
+    def source(self) -> Path:
+        """Returns the source path of the database."""
+        return self._source
+
+    @property
+    def model(self) -> pc.Dict[str, Table]:
+        """Returns the model of the database."""
+        return self._model
