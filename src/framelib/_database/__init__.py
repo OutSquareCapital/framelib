@@ -1,3 +1,4 @@
-from ._main import DataBase, Table
+from ._database import DataBase
+from ._table import DuckFrame, Table
 
-__all__ = ["Table", "DataBase"]
+__all__ = ["Table", "DataBase", "DuckFrame"]
