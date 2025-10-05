@@ -21,23 +21,22 @@ class Schema(BaseLayout[Column]):
 
     def __init_subclass__(cls) -> None:
         """
-        Initializes the schema by collecting columns from the class itself
-        and all its parent Schema classes.
+        Initializes the schema by collecting columns from parent classes
+        and then adding the columns from the current class, preserving order.
         """
         super().__init_subclass__()
 
-        # Start with the current class's schema
-        current_schema: dict[str, Column] = cls._schema.copy()
+        final_schema: dict[str, Column] = {}
 
-        # Traverse the MRO to merge schemas from parent classes
-        for base in cls.mro()[1:]:  # Skip the class itself
+        # Iterate over the MRO in reverse to build the schema from the base classes downwards
+        for base in reversed(cls.mro()):
             if issubclass(base, Schema) and hasattr(base, "_schema"):
-                for name, column in base._schema.items():
-                    # Add columns from parent if not already present
-                    if name not in current_schema:
-                        current_schema[name] = column
+                # Use base.__dict__ to get only the columns defined on that specific class
+                for name, obj in base.__dict__.items():
+                    if getattr(obj, base._is_entry_type, False) is True:
+                        final_schema[name] = obj
 
-        cls._schema = current_schema
+        cls._schema = final_schema
 
     @classmethod
     def columns(cls) -> pc.Iter[Column]:
