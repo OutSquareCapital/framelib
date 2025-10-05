@@ -142,6 +142,7 @@ def create_mock_sales_data() -> None:
 ### Load data into the DuckDB database and generate a report
 
 ```python
+
 def load_data_into_db() -> None:
     raw_df: pl.LazyFrame = MyProject.raw_sales.scan_cast()
 
@@ -213,7 +214,7 @@ def append_data() -> None:
         print("\n📦 Sales Data in DB after append:")
         print(db.sales.append(new_sales).scan().to_native())
         ## Intelligently insert rows, skipping duplicates based on the primary key
-        print("\n📦 Sales Data in DB after insert_if_not_exists (no duplicates):")
+        print("\n📦 Sales Data in DB after i (no duplicates):")
         print(db.sales.insert_if_not_exists(new_sales).scan().to_native())
         print("\n📦 Sales Data in DB after truncate:")
         print(db.sales.truncate().scan().to_native())

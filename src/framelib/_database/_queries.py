@@ -25,9 +25,6 @@ def show_schemas() -> str:
     """
 
 
-# -- TABLE OPERATIONS -- #
-
-
 @dataclass(slots=True, frozen=True)
 class Queries:
     """SQL queries builder for a specific table."""

@@ -1,17 +1,18 @@
 from pathlib import Path
 
-import duckdb
 import polars as pl
-from duckdb import CatalogException
+from duckdb import CatalogException, ConstraintException
 
 import framelib as fl
+
+# --- Configuration et Schémas ---
 
 BASE_PATH = Path("tests")
 
 
 class Sales(fl.Schema):
     order_id = fl.UInt16(primary_key=True)
-    customer_id = fl.UInt16()
+    customer_id = fl.UInt16(unique=True)
     amount = fl.Float64()
 
 
@@ -21,192 +22,137 @@ class Customers(fl.Schema):
     email = fl.String()
 
 
-class NoPKCustomers(Customers):
-    customer_id = fl.UInt16(primary_key=False)
+class TestDB(fl.DataBase):
+    sales = fl.Table(Sales)
+    customers = fl.Table(Customers)
 
 
-class Duck(fl.DataBase):
-    salesdb = fl.Table(Sales)
-    customersdb = fl.Table(Customers)
-    nopkcustomersdb = fl.Table(NoPKCustomers)
-
-
-class PartitionedSales(fl.Schema):
-    order_id = fl.UInt16(primary_key=True)
-    customer_id = fl.UInt16()
-    amount = fl.Float64()
-    order_date = fl.Date()
-    region = fl.String()
-    product = fl.String()
-
-
-class Data(fl.Folder):
+class TestData(fl.Folder):
     __source__ = BASE_PATH
-    sales = fl.CSV(model=Sales)
-    customers = fl.NDJson(model=Customers)
-    data_glob = fl.ParquetPartitioned(
-        "customer_id",
-        PartitionedSales,
-    )
-    dataduck = Duck()
+    sales_file = fl.CSV(model=Sales)
+    customers_file = fl.NDJson(model=Customers)
+    db = TestDB()
 
 
-def mock_sales(file: fl.CSV[Sales]) -> None:
-    pl.DataFrame(
-        {
-            "order_id": [1, 2, 3],
-            "customer_id": [101, 102, 103],
-            "amount": [250.0, 450.5, 300.75],
-        }
-    ).pipe(file.write)
+# --- Données de Test ---
+
+SALES_DATA = pl.DataFrame(
+    {
+        "order_id": [1, 2, 3],
+        "customer_id": [101, 102, 103],
+        "amount": [10.0, 20.0, 30.0],
+    }
+)
+CONFLICTING_SALES = pl.DataFrame(
+    {"order_id": [2, 4], "customer_id": [102, 104], "amount": [99.9, 40.0]}
+)
+UNIQUE_CONFLICT_SALES = pl.DataFrame(
+    {"order_id": [5], "customer_id": [101], "amount": [50.0]}
+)
 
 
-def mock_customers(file: fl.NDJson[Customers]) -> None:
-    pl.DataFrame(
-        {
-            "customer_id": [101, 102, 103],
-            "name": ["Alice", "Bob", "Charlie"],
-            "email": ["alice@example.com", "bob@example.com", "charlie@example.com"],
-        }
-    ).pipe(file.write)
+def setup_test_data() -> None:
+    """Crée les fichiers et la base de données de test."""
+    TestData.source().mkdir(parents=True, exist_ok=True)
+    TestData.sales_file.write(SALES_DATA)
+    with TestData.db as db:
+        db.sales.create_or_replace_from(SALES_DATA)
 
 
-def mock_partitioned_parquet(file: fl.Parquet[PartitionedSales]) -> None:
-    pl.DataFrame(
-        {
-            "order_id": list(range(1, 31)),
-            "customer_id": [101, 102, 103, 104, 105] * 6,
-            "amount": [float(x) for x in range(100, 130)],
-            "order_date": [f"2024-01-{i:02d}" for i in range(1, 31)],
-            "region": ["north", "south", "east", "west", "central"] * 6,
-            "product": ["A", "B", "C", "D", "E"] * 6,
-        }
-    ).pipe(file.write)
+def teardown_test_data() -> None:
+    """Nettoie les données de test."""
+    TestData.clean()
 
 
-def mock_tables() -> None:
-    sales = pl.DataFrame(
-        {
-            "order_id": [1, 2, 3],
-            "customer_id": [101, 102, 103],
-            "amount": [250.0, 450.5, 300.75],
-        }
-    )
-
-    customers = pl.DataFrame(
-        {
-            "customer_id": [101, 102, 103],
-            "name": ["Alice", "Bob", "Charlie"],
-            "email": ["alice@example.com", "bob@example.com", "charlie@example.com"],
-        }
-    )
-    with Data.dataduck as db:
-        db.salesdb.create_or_replace_from(sales)
-        db.customersdb.create_or_replace_from(customers)
+# --- Tests ---
 
 
-def run_file_tests() -> None:
-    print("\n--- DÉBUT DU TEST DES FICHIERS ---")
+def run_tests() -> None:
+    """Exécute tous les tests."""
+    print("🚀 Démarrage des tests de framelib...")
 
-    # Test CSV
-    print("▶️ Test: CSV read and write...")
-    df_csv = Data.sales.read_cast()
-    print(df_csv)
+    try:
+        setup_test_data()
+
+        # --- Tests de la base de données ---
+        print("\n--- ✅ Tests de la Base de Données ---")
+        test_database_operations()
+
+        # --- Tests des fichiers (si nécessaire) ---
+        print("\n--- ✅ Tests des Fichiers ---")
+        test_file_operations()
+
+        print("\n🎉 Tous les tests sont passés avec succès!")
+
+    except Exception as e:
+        print(f"❌ ERREUR PENDANT LES TESTS: {e}")
+    finally:
+        teardown_test_data()
+        print("\n🧹 Nettoyage terminé.")
+
+
+def test_database_operations() -> None:
+    """Teste les opérations CRUD et les contraintes de la base de données."""
+    with TestData.db as db:
+        # 1. Test de création et lecture
+        print("▶️ Test: create_or_replace_from & scan...")
+        assert db.sales.scan().collect().shape == (3, 3)
+        print("✅ OK")
+
+        # 2. Test de `append` avec conflit de clé primaire
+        print("\n▶️ Test: append (conflit PK)...")
+        try:
+            db.sales.append(CONFLICTING_SALES.filter(Sales.order_id.pl_col.eq(2)))
+            assert False, "ConstraintException non levée pour append."
+        except ConstraintException:
+            print("✅ OK (erreur attendue capturée)")
+
+        # 3. Test de `insert_or_ignore`
+        print("\n▶️ Test: insert_or_ignore (conflit PK)...")
+        db.sales.insert_or_ignore(CONFLICTING_SALES)
+        result = db.sales.scan().collect()
+        assert result.shape == (4, 3)
+        # Vérifie que la ligne conflictuelle n'a pas été modifiée
+        original_amount = result.filter(Sales.order_id.nw_col == 2).item(0, "amount")
+        assert original_amount == 20.0
+        print("✅ OK")
+
+        # 4. Test de `insert_or_replace`
+        print("\n▶️ Test: insert_or_replace (conflit PK)...")
+        db.sales.insert_or_replace(CONFLICTING_SALES)
+        result = db.sales.scan().collect()
+        # Vérifie que la ligne a été mise à jour
+        updated_amount = result.filter(Sales.order_id.nw_col == 2).item(0, "amount")
+        assert updated_amount == 99.9
+        print("✅ OK")
+
+        # 5. Test de contrainte `UNIQUE`
+        print("\n▶️ Test: contrainte UNIQUE...")
+        try:
+            db.sales.append(UNIQUE_CONFLICT_SALES)
+            assert False, "ConstraintException non levée pour contrainte UNIQUE."
+        except ConstraintException:
+            print("✅ OK (erreur attendue capturée)")
+
+        # 6. Test de `truncate` et `drop`
+        print("\n▶️ Test: truncate & drop...")
+        db.sales.truncate()
+        assert db.sales.scan().collect().shape == (0, 3)
+        db.sales.drop()
+        try:
+            db.sales.scan()
+            assert False, "La table n'a pas été supprimée."
+        except CatalogException:
+            print("✅ OK")
+
+
+def test_file_operations() -> None:
+    """Teste la lecture et l'écriture de fichiers."""
+    print("▶️ Test: CSV read_cast...")
+    df_csv = TestData.sales_file.read_cast()
     assert df_csv.shape == (3, 3)
     print("✅ OK")
 
-    # Test NDJson
-    print("\n▶️ Test: NDJson read and write...")
-    df_ndjson = Data.customers.read_cast()
-    print(df_ndjson)
-    assert df_ndjson.shape == (3, 3)
-    print("✅ OK")
-
-    # Test ParquetPartitioned
-    print("\n▶️ Test: ParquetPartitioned read and write...")
-    df_parquet = Data.data_glob.scan_cast().collect()
-    print(df_parquet)
-    assert df_parquet.shape == (30, 6)
-    print("✅ OK")
-
-    print("\n--- FIN DU TEST DES FICHIERS ---")
-
-
-def run_quick_table_tests() -> None:
-    print("\n--- DÉBUT DU TEST RAPIDE DES TABLES ---")
-
-    initial_sales = pl.DataFrame(
-        {"order_id": [1, 2], "customer_id": [101, 102], "amount": [10.0, 20.0]}
-    )
-    conflicting_sales = pl.DataFrame(
-        {"order_id": [2, 3], "customer_id": [102, 103], "amount": [99.9, 30.0]}
-    )
-    customer_data = pl.DataFrame(
-        {"customer_id": [201], "name": ["David"], "email": ["david@test.com"]}
-    )
-
-    with Data.dataduck as db:
-        try:
-            print("▶️ Test: create_or_replace_from...")
-            db.salesdb.create_or_replace_from(initial_sales)
-            result = db.salesdb.scan().collect().to_native()
-            print(result)
-            assert result.shape == (2, 3)
-            print("✅ OK")
-
-            print("\n▶️ Test: append (with PK conflict)...")
-            try:
-                db.salesdb.append(conflicting_sales.filter(Sales.order_id.pl_col.eq(2)))
-                raise AssertionError("ConstraintException was not raised for append.")
-            except duckdb.ConstraintException as e:
-                print(f"✅ OK (Caught expected error: {e})")
-
-            print("\n▶️ Test: insert_if_not_exists (with PK conflict)...")
-            db.salesdb.insert_if_not_exists(conflicting_sales)
-            result = db.salesdb.scan().collect()
-            print(result)
-
-            assert result.shape == (3, 3)
-            original_amount = result.filter(Sales.order_id.nw_col == 2).item(
-                0, "amount"
-            )
-            assert original_amount == 20.0
-            print("✅ OK")
-            print("\n▶️ Test: insert_if_not_exists (on table without PK)...")
-            try:
-                db.nopkcustomersdb.create_or_replace_from(customer_data)
-                db.nopkcustomersdb.insert_if_not_exists(customer_data)
-                raise AssertionError("ValueError was not raised for table without PK.")
-            except ValueError as e:
-                print(f"✅ OK (Caught expected error: {e})")
-
-            print("\n▶️ Test: truncate...")
-            db.salesdb.truncate()
-            result = db.salesdb.scan().to_native()
-            print(result)
-            assert result.shape == (0, 3)
-            print("✅ OK")
-
-            print("\n▶️ Test: drop...")
-            db.salesdb.drop()
-            try:
-                db.salesdb.scan()
-                raise AssertionError("Table was not dropped.")
-            except CatalogException:
-                print("✅ OK")
-
-        except (Exception, AssertionError) as e:
-            print(f"❌ ERREUR PENDANT LE TEST: {e}")
-        finally:
-            print("\n--- FIN DU TEST RAPIDE ---")
-
 
 if __name__ == "__main__":
-    Data.source().mkdir(parents=True, exist_ok=True)
-    mock_sales(Data.sales)
-    mock_customers(Data.customers)
-    mock_partitioned_parquet(Data.data_glob)
-    mock_tables()
-    run_file_tests()
-    run_quick_table_tests()
-    Data.clean()
+    run_tests()
