@@ -17,7 +17,7 @@ class Schema(BaseLayout[Column]):
     Used to define the schema of a Table or a File.
     """
 
-    _is_entry_type = EntryType.COLUMN
+    _entry_type = EntryType.COLUMN
 
     def __init_subclass__(cls) -> None:
         """
@@ -33,7 +33,7 @@ class Schema(BaseLayout[Column]):
             if issubclass(base, Schema) and hasattr(base, "_schema"):
                 # Use base.__dict__ to get only the columns defined on that specific class
                 for name, obj in base.__dict__.items():
-                    if getattr(obj, base._is_entry_type, False) is True:
+                    if getattr(obj, base._entry_type, False) is True:
                         final_schema[name] = obj
 
         cls._schema = final_schema
@@ -56,6 +56,11 @@ class Schema(BaseLayout[Column]):
         return (
             cls.columns().filter(lambda col: col.primary_key).map(lambda col: col.name)
         )
+
+    @classmethod
+    def unique_keys(cls) -> pc.Iter[str]:
+        """The unique key columns of this schema."""
+        return cls.columns().filter(lambda col: col.unique).map(lambda col: col.name)
 
     @overload
     @classmethod

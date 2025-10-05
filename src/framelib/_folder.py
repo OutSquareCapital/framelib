@@ -12,7 +12,7 @@ from ._tree import show_tree
 
 
 class Folder(BaseLayout[File[Schema]]):
-    _is_entry_type = EntryType.FILE
+    _entry_type = EntryType.FILE
 
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()

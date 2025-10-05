@@ -18,7 +18,7 @@ _DDB = ".ddb"
 class DataBase(BaseLayout[Table], BaseEntry, ABC):
     _is_file: Final[bool] = True
     _connexion: duckdb.DuckDBPyConnection
-    _is_entry_type = EntryType.TABLE
+    _entry_type = EntryType.TABLE
     source: Path
     model: pc.Dict[str, Table]
 

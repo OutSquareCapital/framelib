@@ -8,7 +8,6 @@ import pychain as pc
 
 
 class EntryType(StrEnum):
-    ENTRY_TYPE = "_is_entry_type"
     FILE = "_is_file"
     TABLE = "_is_table"
     REQUEST = "_is_request"
@@ -34,12 +33,12 @@ class BaseEntry(ABC):
 
 class BaseLayout[T](ABC):
     _schema: dict[str, T]
-    _is_entry_type: EntryType
+    _entry_type: EntryType
 
     def __init_subclass__(cls) -> None:
         cls._schema: dict[str, T] = {}
         for name, obj in cls.__dict__.items():
-            if getattr(obj, cls._is_entry_type, False) is True:
+            if getattr(obj, cls._entry_type, False) is True:
                 obj.__name_from_layout__(name)
                 cls._schema[name] = obj
 
