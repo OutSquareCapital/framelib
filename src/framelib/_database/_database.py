@@ -9,7 +9,7 @@ import narwhals as nw
 import pychain as pc
 
 from .._core import BaseEntry, BaseLayout, EntryType
-from . import _queries as qry
+from ._queries import show_schemas, show_tables, show_types
 from ._table import DuckFrame, Table
 
 _DDB = ".ddb"
@@ -31,7 +31,7 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
     def __enter__(self) -> Self:
         self._connexion = duckdb.connect(self.source)
         for table in self._schema.values():
-            table.with_connexion(self._connexion)
+            table.__from_connexion__(self._connexion)
         return self
 
     def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
@@ -52,19 +52,19 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
         """
         Shows all tables in the database.
         """
-        return self.query(qry.show_tables())
+        return self.query(show_tables())
 
     def show_types(self) -> DuckFrame:
         """
         Shows all data types, including user-defined ENUMs.
         """
-        return self.query(qry.show_types())
+        return self.query(show_types())
 
     def show_schemas(self) -> DuckFrame:
         """
         Shows all schemas in the database.
         """
-        return self.query(qry.show_schemas())
+        return self.query(show_schemas())
 
     @property
     def source(self) -> Path:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from enum import StrEnum
 from typing import overload
 
 import narwhals as nw
@@ -9,6 +10,11 @@ from narwhals.typing import IntoLazyFrameT, LazyFrameT
 
 from .._core import BaseLayout, EntryType
 from ._base import Column
+
+
+class KWord(StrEnum):
+    PRIMARY_KEY = "PRIMARY KEY"
+    UNIQUE = "UNIQUE"
 
 
 class Schema(BaseLayout[Column]):
@@ -61,6 +67,24 @@ class Schema(BaseLayout[Column]):
     def unique_keys(cls) -> pc.Iter[str]:
         """The unique key columns of this schema."""
         return cls.columns().filter(lambda col: col.unique).map(lambda col: col.name)
+
+    @classmethod
+    def sql_schema(cls) -> str:
+        """
+        Generates the SQL schema definition.
+        """
+        column_definitions: list[str] = []
+        for col in cls.columns().pipe_unwrap(list):
+            definition: str = f'"{col.name}" {col.sql_type}'
+            if col.primary_key:
+                definition += " "
+                definition += KWord.PRIMARY_KEY
+            if col.unique:
+                definition += " "
+                definition += KWord.UNIQUE
+            column_definitions.append(definition)
+
+        return ", ".join(column_definitions)
 
     @overload
     @classmethod
