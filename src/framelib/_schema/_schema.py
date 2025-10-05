@@ -19,6 +19,26 @@ class Schema(BaseLayout[Column]):
 
     _is_entry_type = EntryType.COLUMN
 
+    def __init_subclass__(cls) -> None:
+        """
+        Initializes the schema by collecting columns from the class itself
+        and all its parent Schema classes.
+        """
+        super().__init_subclass__()
+
+        # Start with the current class's schema
+        current_schema: dict[str, Column] = cls._schema.copy()
+
+        # Traverse the MRO to merge schemas from parent classes
+        for base in cls.mro()[1:]:  # Skip the class itself
+            if issubclass(base, Schema) and hasattr(base, "_schema"):
+                for name, column in base._schema.items():
+                    # Add columns from parent if not already present
+                    if name not in current_schema:
+                        current_schema[name] = column
+
+        cls._schema = current_schema
+
     @classmethod
     def columns(cls) -> pc.Iter[Column]:
         """
