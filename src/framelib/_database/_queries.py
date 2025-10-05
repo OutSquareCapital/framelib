@@ -2,6 +2,23 @@ def where_clause(name: str, *keys: str) -> str:
     return " AND ".join(f'{name}."{key}" = _."{key}"' for key in keys)
 
 
+def describe(table_name: str) -> str:
+    return f"""--sql
+    DESCRIBE {table_name};
+    """
+
+
+def show_types() -> str:
+    return "SELECT * FROM duckdb_types();"
+
+
+def show_tables() -> str:
+    return """
+    --sql 
+    SHOW TABLES;
+    """
+
+
 def create_from(name: str) -> str:
     return f"""
     --sql

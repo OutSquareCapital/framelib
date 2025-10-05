@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC
 from pathlib import Path
-from typing import Any, Final, Self
+from typing import Any, Final, Literal, Self
 
 import duckdb
 import narwhals as nw
@@ -12,6 +12,8 @@ from narwhals.typing import IntoFrame, IntoFrameT, IntoLazyFrame, IntoLazyFrameT
 from .._core import BaseEntry, BaseLayout, Entry, EntryType
 from .._schema import Schema
 from . import _queries as qry
+
+type DuckFrame = nw.LazyFrame[duckdb.DuckDBPyRelation]
 
 
 class Table(Entry[Schema, Path]):
@@ -31,11 +33,11 @@ class Table(Entry[Schema, Path]):
         self._con = con
         return self
 
-    def scan(self) -> nw.LazyFrame[duckdb.DuckDBPyRelation]:
+    def scan(self) -> DuckFrame:
         """Scan the table from the database, and returns it as a Narwhals LazyFrame."""
         return nw.from_native(self._con.table(self._name))
 
-    def scan_cast(self) -> nw.LazyFrame[duckdb.DuckDBPyRelation]:
+    def scan_cast(self) -> DuckFrame:
         """Scan the table from the database, cast to the schema, and returns it as a Narwhals LazyFrame."""
         return nw.from_native(self._con.table(self._name)).pipe(self.model.cast)
 
@@ -121,3 +123,41 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
     def connexion(self) -> duckdb.DuckDBPyConnection:
         """Returns the DuckDB connexion."""
         return self._connexion
+
+    def query(self, sql_query: str) -> DuckFrame:
+        """
+        Executes a SQL query and returns the result as a DuckDB relation wrapped in a Narwhals LazyFrame.
+        """
+        return nw.from_native(self._connexion.sql(sql_query))
+
+    def show_tables(self) -> DuckFrame:
+        """
+        Shows all tables in the database.
+        """
+        return self.query(qry.show_tables())
+
+    def show_types(self) -> DuckFrame:
+        """
+        Shows all data types, including user-defined ENUMs.
+        """
+        return self.query(qry.show_types())
+
+    def drop_type(
+        self, type_name: str, modifier: Literal["CASCADE", "RESTRICT"] = "RESTRICT"
+    ) -> Self:
+        """
+        Drops a custom type (e.g., an ENUM) from the database.
+
+        Args:
+            **type_name**: The name of the type to drop.
+            **modifier**: If "CASCADE", automatically drop objects that depend on the type.
+            If "RESTRICT" (default), an error will be raised if the type is in use.
+        """
+        self.query(f"DROP TYPE IF EXISTS {type_name} {modifier};")
+        return self
+
+    def describe_table(self, table_name: str) -> DuckFrame:
+        """
+        Describes the schema of a specific table.
+        """
+        return self.query(qry.describe(table_name))
