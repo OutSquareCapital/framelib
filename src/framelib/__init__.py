@@ -1,5 +1,5 @@
 from ._const import constant
-from ._database import DataBase, Table
+from ._database import DataBase, DuckFrame, Table
 from ._filehandlers import CSV, Json, NDJson, Parquet, ParquetPartitioned
 from ._folder import Folder
 from ._schema import (
@@ -30,6 +30,7 @@ from ._schema import (
 )
 
 __all__ = [
+    "DuckFrame",
     "constant",
     "Schema",
     "Array",

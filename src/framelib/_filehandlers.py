@@ -42,13 +42,13 @@ class File[T: Schema](Entry[T, Path], ABC):
         """
         Read the file and cast it to the defined schema.
         """
-        return self.read().pipe(self.model.cast_native).collect()
+        return self.read().pipe(self.model.cast).to_native().collect()
 
     def scan_cast(self) -> pl.LazyFrame:
         """
         Scan the file and cast it to the defined schema.
         """
-        return self.scan().pipe(self.model.cast_native)
+        return self.scan().pipe(self.model.cast).to_native()
 
     def write_cast(
         self, df: pl.LazyFrame | pl.DataFrame, *args: Any, **kwargs: Any
@@ -56,7 +56,9 @@ class File[T: Schema](Entry[T, Path], ABC):
         """
         Cast the dataframe to the defined schema and write it to the file.
         """
-        self.model.cast(df.lazy().collect()).pipe(self.write, *args, **kwargs)
+        self.model.cast(df.lazy().collect()).to_native().pipe(
+            self.write, *args, **kwargs
+        )
 
 
 class Parquet[T: Schema](File[T]):

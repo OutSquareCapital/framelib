@@ -83,8 +83,6 @@ class Schema(BaseLayout[Column]):
         - Selects only the columns defined in the schema
         - Casts them to the correct dtype
         - Returns the results wrapped in a narwhals LazyFrame.
-
-        Mostly useful when casting duckdb relations, as this keeps the polars/narwhals API consistent.
         """
         return (
             nw.from_native(df)
@@ -92,34 +90,4 @@ class Schema(BaseLayout[Column]):
             .select(
                 cls.columns().map(lambda col: col.nw_col.cast(col.nw_dtype)).unwrap()
             )
-        )
-
-    @overload
-    @classmethod
-    def cast_native(cls, df: LazyFrameT) -> LazyFrameT: ...
-
-    @overload
-    @classmethod
-    def cast_native(cls, df: IntoLazyFrameT) -> IntoLazyFrameT: ...
-
-    @overload
-    @classmethod
-    def cast_native(cls, df: pl.DataFrame) -> pl.LazyFrame: ...
-
-    @classmethod
-    def cast_native(
-        cls, df: LazyFrameT | pl.DataFrame | IntoLazyFrameT
-    ) -> IntoLazyFrameT | LazyFrameT | pl.LazyFrame:
-        """
-        - Selects only the columns defined in the schema
-        - Casts them to the correct dtype
-        - Returns the results with the same native DataFrame type as the input.
-        """
-        return (
-            nw.from_native(df)
-            .lazy()
-            .select(
-                cls.columns().map(lambda col: col.nw_col.cast(col.nw_dtype)).unwrap()
-            )
-            .to_native()
         )
