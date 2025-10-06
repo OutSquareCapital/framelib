@@ -20,3 +20,8 @@ requires      = ["uv_build>=0.8.15,<0.9.0"]
 
 [tool.uv.sources]
 pychain = { git = "https://github.com/OutSquareCapital/pychain.git" }
+
+[dependency-groups]
+dev = [
+    "marimo>=0.16.5",
+]
