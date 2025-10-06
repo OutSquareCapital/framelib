@@ -1,28 +1,24 @@
 from dataclasses import dataclass
+from enum import StrEnum
 
 _SEPARATOR = ", "
+DATA = "_"
 
 
 def _join_keys(*keys: str) -> str:
     return _SEPARATOR.join(f'"{k}"' for k in keys)
 
 
-# -- DB OPERATIONS -- #
-def show_types() -> str:
-    return """SELECT * FROM duckdb_types();"""
+class DBQueries(StrEnum):
+    SHOW_TYPES = """SELECT * FROM duckdb_types();"""
 
+    SHOW_TABLES = """--sql 
+        SHOW TABLES;
+        """
 
-def show_tables() -> str:
-    return """
-    --sql 
-    SHOW TABLES;
-    """
-
-
-def show_schemas() -> str:
-    return """--sql
-    SHOW SCHEMAS;
-    """
+    SHOW_SCHEMAS = """--sql
+        SHOW SCHEMAS;
+        """
 
 
 @dataclass(slots=True, frozen=True)
@@ -52,7 +48,7 @@ class Queries:
     def insert_into(self) -> str:
         return f"""
         --sql
-        INSERT INTO {self.name} SELECT * FROM _;
+        INSERT INTO {self.name} SELECT * FROM {DATA};
         """
 
     def drop(self) -> str:
@@ -70,13 +66,13 @@ class Queries:
     def insert_or_replace(self) -> str:
         return f"""
         --sql
-        INSERT OR REPLACE INTO {self.name} SELECT * FROM _;
+        INSERT OR REPLACE INTO {self.name} SELECT * FROM {DATA};
         """
 
     def insert_or_ignore(self) -> str:
         return f"""
         --sql
-        INSERT OR IGNORE INTO {self.name} SELECT * FROM _;
+        INSERT OR IGNORE INTO {self.name} SELECT * FROM {DATA};
         """
 
     def summarize(self) -> str:
