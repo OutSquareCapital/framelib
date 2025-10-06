@@ -54,6 +54,10 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
         """
         return self.query(DBQueries.SHOW_TABLES)
 
+    def show_views(self) -> DuckFrame:
+        """Shows all views in the database."""
+        return self.query(DBQueries.SHOW_VIEWS)
+
     def show_types(self) -> DuckFrame:
         """
         Shows all data types, including user-defined ENUMs.
@@ -65,6 +69,18 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
         Shows all schemas in the database.
         """
         return self.query(DBQueries.SHOW_SCHEMAS)
+
+    def show_settings(self) -> DuckFrame:
+        """Shows all settings in the current database session."""
+        return self.query(DBQueries.SHOW_SETTINGS)
+
+    def show_extensions(self) -> DuckFrame:
+        """Shows all installed and loaded extensions."""
+        return self.query(DBQueries.SHOW_EXTENSIONS)
+
+    def show_all_constraints(self) -> DuckFrame:
+        """Shows all constraints across all tables in the database."""
+        return self.query(DBQueries.ALL_CONSTRAINTS)
 
     @property
     def source(self) -> Path:

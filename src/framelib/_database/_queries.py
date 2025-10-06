@@ -15,7 +15,20 @@ class DBQueries(StrEnum):
         """
 
     SHOW_SCHEMAS = """--sql
-        SHOW SCHEMAS;
+        SELECT * FROM information_schema.schemata;
+        """
+
+    SHOW_SETTINGS = """--sql
+        SELECT * FROM duckdb_settings();
+        """
+    SHOW_EXTENSIONS = """--sql
+        SELECT * FROM duckdb_extensions();
+        """
+    SHOW_VIEWS = """--sql
+        SELECT * FROM duckdb_views();
+        """
+    ALL_CONSTRAINTS = """--sql
+        SELECT * FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS;
         """
 
 
@@ -91,4 +104,22 @@ class Queries:
         --sql
         INSERT INTO {self.name} SELECT * FROM {_DATA}
         ON CONFLICT {conflict_target} DO UPDATE SET {update_clause};
+        """
+
+    def columns_schema(self) -> str:
+        return f"""
+        --sql
+        SELECT column_name, data_type, is_nullable, column_default
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE table_name = '{self.name}';
+        """
+
+    def constraints(self) -> str:
+        return f"""
+        --sql
+        SELECT constraint_name, constraint_type, constraint_column_usage.column_name
+        FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+        JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE AS constraint_column_usage
+            USING (constraint_name, table_name)
+        WHERE table_name = '{self.name}';
         """
