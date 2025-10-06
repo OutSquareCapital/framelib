@@ -85,11 +85,21 @@ def run_tests() -> None:
         print("\n🧹 Nettoyage terminé.")
 
 
+def test_file_operations() -> None:
+    """Teste la lecture et l'écriture de fichiers."""
+    print("▶️ Test: CSV read_cast...")
+    assert TestData.sales_file.read_cast().shape == (3, 3)
+    print("✅ OK")
+
+
 def test_database_operations() -> None:
     with TestData.db as db:
         print("▶️ Test: create_or_replace_from & scan...")
         assert db.sales.scan().collect().shape == (3, 3)
         print("✅ OK")
+
+        print(db.sales.describe_columns_())
+        print(db.sales.describe_columns())
 
         print("\n▶️ Test: insert_into (conflit PK)...")
         try:
@@ -127,13 +137,6 @@ def test_database_operations() -> None:
             db.sales.drop().scan()
         except CatalogException:
             print("✅ OK")
-
-
-def test_file_operations() -> None:
-    """Teste la lecture et l'écriture de fichiers."""
-    print("▶️ Test: CSV read_cast...")
-    assert TestData.sales_file.read_cast().shape == (3, 3)
-    print("✅ OK")
 
 
 if __name__ == "__main__":

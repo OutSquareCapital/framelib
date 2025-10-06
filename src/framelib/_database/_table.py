@@ -118,11 +118,19 @@ class Table(Entry[Schema, Path]):
         """Summarizes the table, returning statistics about its columns."""
         return nw.from_native(self._con.sql(self._qry.summarize()))
 
+    def describe_columns_(self) -> DuckFrame:
+        """
+        Returns detailed information about the columns of this table from the INFORMATION_SCHEMA.
+        """
+        return nw.from_native(self._con.sql(self._qry.columns_schema_()))
+
     def describe_columns(self) -> DuckFrame:
         """
         Returns detailed information about the columns of this table from the INFORMATION_SCHEMA.
         """
-        return nw.from_native(self._con.sql(self._qry.columns_schema()))
+        return nw.from_native(self._con.sql(self._qry.columns_schema())).select(
+            "column_name", "data_type", "is_nullable", "column_default"
+        )
 
     def describe_constraints(self) -> DuckFrame:
         """
