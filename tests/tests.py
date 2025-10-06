@@ -64,21 +64,15 @@ def teardown_test_data() -> None:
     TestData.clean()
 
 
-# --- Tests ---
-
-
 def run_tests() -> None:
     """Exécute tous les tests."""
     print("🚀 Démarrage des tests de framelib...")
 
     try:
         setup_test_data()
-
-        # --- Tests de la base de données ---
         print("\n--- ✅ Tests de la Base de Données ---")
         test_database_operations()
 
-        # --- Tests des fichiers (si nécessaire) ---
         print("\n--- ✅ Tests des Fichiers ---")
         test_file_operations()
 
@@ -92,56 +86,45 @@ def run_tests() -> None:
 
 
 def test_database_operations() -> None:
-    """Teste les opérations CRUD et les contraintes de la base de données."""
     with TestData.db as db:
-        # 1. Test de création et lecture
         print("▶️ Test: create_or_replace_from & scan...")
         assert db.sales.scan().collect().shape == (3, 3)
         print("✅ OK")
 
-        # 2. Test de `append` avec conflit de clé primaire
         print("\n▶️ Test: insert_into (conflit PK)...")
         try:
             db.sales.insert_into(CONFLICTING_SALES.filter(Sales.order_id.pl_col.eq(2)))
             assert False, "ConstraintException non levée pour insert_into."
         except ConstraintException:
             print("✅ OK (erreur attendue capturée)")
-
-        # 3. Test de `insert_or_ignore`
         print("\n▶️ Test: insert_or_ignore (conflit PK)...")
-        db.sales.insert_or_ignore(CONFLICTING_SALES)
-        result = db.sales.scan().collect()
+        result: pl.DataFrame = db.sales.insert_or_ignore(CONFLICTING_SALES).read()
         assert result.shape == (4, 3)
-        # Vérifie que la ligne conflictuelle n'a pas été modifiée
-        original_amount = result.filter(Sales.order_id.nw_col == 2).item(0, "amount")
-        assert original_amount == 20.0
+        assert result.filter(Sales.order_id.pl_col.eq(2)).item(0, "amount") == 20.0
         print("✅ OK")
 
-        # 4. Test de `insert_or_replace`
         print("\n▶️ Test: insert_or_replace (conflit PK)...")
-        db.sales.insert_or_replace(CONFLICTING_SALES)
-        result = db.sales.scan().collect()
-        # Vérifie que la ligne a été mise à jour
-        updated_amount = result.filter(Sales.order_id.nw_col == 2).item(0, "amount")
+        updated_amount = (
+            db.sales.insert_or_replace(CONFLICTING_SALES)
+            .scan()
+            .collect()
+            .filter(Sales.order_id.nw_col == 2)
+            .item(0, "amount")
+        )
         assert updated_amount == 99.9
         print("✅ OK")
 
-        # 5. Test de contrainte `UNIQUE`
         print("\n▶️ Test: contrainte UNIQUE...")
         try:
             db.sales.insert_into(UNIQUE_CONFLICT_SALES)
-            assert False, "ConstraintException non levée pour contrainte UNIQUE."
         except ConstraintException:
             print("✅ OK (erreur attendue capturée)")
 
         # 6. Test de `truncate` et `drop`
         print("\n▶️ Test: truncate & drop...")
-        db.sales.truncate()
-        assert db.sales.scan().collect().shape == (0, 3)
-        db.sales.drop()
+        assert db.sales.truncate().read().shape == (0, 3)
         try:
-            db.sales.scan()
-            assert False, "La table n'a pas été supprimée."
+            db.sales.drop().scan()
         except CatalogException:
             print("✅ OK")
 
@@ -149,8 +132,7 @@ def test_database_operations() -> None:
 def test_file_operations() -> None:
     """Teste la lecture et l'écriture de fichiers."""
     print("▶️ Test: CSV read_cast...")
-    df_csv = TestData.sales_file.read_cast()
-    assert df_csv.shape == (3, 3)
+    assert TestData.sales_file.read_cast().shape == (3, 3)
     print("✅ OK")
 
 

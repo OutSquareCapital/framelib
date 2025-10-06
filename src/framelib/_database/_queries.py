@@ -5,10 +5,6 @@ _DATA = "_"
 """Placeholder table name for duckdb scope."""
 
 
-def _join_keys(*keys: str) -> str:
-    return ", ".join(f'"{k}"' for k in keys)
-
-
 class DBQueries(StrEnum):
     """General SQL queries not tied to a specific table."""
 
@@ -34,12 +30,6 @@ class Queries:
         --sql
         CREATE TABLE {self.name} AS SELECT * FROM _;
         """
-
-    def add_primary_key(self, *keys: str) -> str:
-        return f"""ALTER TABLE {self.name} ADD PRIMARY KEY ({_join_keys(*keys)});"""
-
-    def add_unique_key(self, *keys: str) -> str:
-        return f"""ALTER TABLE {self.name} ADD UNIQUE ({_join_keys(*keys)});"""
 
     def create_or_replace(self, schema_sql: str) -> str:
         return f"""
@@ -81,4 +71,24 @@ class Queries:
         return f"""
         --sql 
         SUMMARIZE {self.name};
+        """
+
+    def insert_on_conflict_update(
+        self, conflict_keys: list[str], update_keys: list[str]
+    ) -> str:
+        conflict_target: str = f"({', '.join(f'"{k}"' for k in conflict_keys)})"
+        if not update_keys:
+            return f"""
+            --sql
+            INSERT INTO {self.name} SELECT * FROM {_DATA}
+            ON CONFLICT {conflict_target} DO NOTHING;
+            """
+
+        update_clause: str = ", ".join(
+            f'"{col}" = excluded."{col}"' for col in update_keys
+        )
+        return f"""
+        --sql
+        INSERT INTO {self.name} SELECT * FROM {_DATA}
+        ON CONFLICT {conflict_target} DO UPDATE SET {update_clause};
         """
