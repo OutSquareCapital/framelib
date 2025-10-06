@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import overload
+from typing import Self, overload
 
 import narwhals as nw
 import polars as pl
@@ -24,14 +24,40 @@ class Schema(BaseLayout[Column]):
     """
 
     _entry_type = EntryType.COLUMN
+    _primary_keys: pc.Iter[str]
+    _unique_keys: pc.Iter[str]
+    _constraint_keys: pc.Iter[str]
 
     def __init_subclass__(cls) -> None:
+        super().__init_subclass__()
+        cls._set_keys()._set_schema()
+        return
+
+    @classmethod
+    def _set_keys(cls) -> type[Self]:
+        cls._primary_keys = (
+            cls.columns()
+            .filter(lambda col: col.primary_key)
+            .map(lambda col: col.name)
+            .to_list()
+        )
+        cls._unique_keys = (
+            cls.columns()
+            .filter(lambda col: col.unique)
+            .map(lambda col: col.name)
+            .to_list()
+        )
+        cls._constraint_keys: pc.Iter[str] = (
+            cls._primary_keys.concat(cls._unique_keys.unwrap()).unique().to_list()
+        )
+        return cls
+
+    @classmethod
+    def _set_schema(cls) -> type[Self]:
         """
         Initializes the schema by collecting columns from parent classes
         and then adding the columns from the current class, preserving order.
         """
-        super().__init_subclass__()
-
         final_schema: dict[str, Column] = {}
 
         # Iterate over the MRO in reverse to build the schema from the base classes downwards
@@ -43,6 +69,7 @@ class Schema(BaseLayout[Column]):
                         final_schema[name] = obj
 
         cls._schema = final_schema
+        return cls
 
     @classmethod
     def columns(cls) -> pc.Iter[Column]:
@@ -59,23 +86,17 @@ class Schema(BaseLayout[Column]):
     @classmethod
     def primary_keys(cls) -> pc.Iter[str]:
         """The primary key columns of this schema."""
-        return (
-            cls.columns().filter(lambda col: col.primary_key).map(lambda col: col.name)
-        )
+        return cls._primary_keys
 
     @classmethod
     def unique_keys(cls) -> pc.Iter[str]:
         """The unique key columns of this schema."""
-        return cls.columns().filter(lambda col: col.unique).map(lambda col: col.name)
+        return cls._unique_keys
 
     @classmethod
     def constraint_keys(cls) -> pc.Iter[str]:
         """The primary and unique key columns of this schema."""
-        return (
-            cls.columns()
-            .filter(lambda col: col.primary_key or col.unique)
-            .map(lambda col: col.name)
-        )
+        return cls._constraint_keys
 
     @classmethod
     def sql_schema(cls) -> str:
