@@ -53,15 +53,6 @@ class Table(Entry[Schema, Path]):
 
         return self
 
-    def append(self, df: IntoFrame | IntoLazyFrame) -> Self:
-        """
-        Appends rows to the table.
-        Fails if the table does not exist.
-        """
-        _ = self._from_df(df)
-        self._con.execute(self._qry.insert_into())
-        return self
-
     def create_from(self, df: IntoFrame | IntoLazyFrame) -> Self:
         """
         Creates the table from the dataframe.
@@ -79,6 +70,15 @@ class Table(Entry[Schema, Path]):
     def drop(self) -> Self:
         """Drops the table from the database."""
         self._con.execute(self._qry.drop())
+        return self
+
+    def insert_into(self, df: IntoFrame | IntoLazyFrame) -> Self:
+        """
+        Appends rows to the table.
+        Fails if the table does not exist.
+        """
+        _ = self._from_df(df)
+        self._con.execute(self._qry.insert_into())
         return self
 
     def insert_or_replace(self, df: IntoFrame | IntoLazyFrame) -> Self:

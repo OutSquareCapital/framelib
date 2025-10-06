@@ -209,15 +209,16 @@ def append_data() -> None:
 
     with MyProject.analytics_db as db:
         ## High-level methods simplify common database operations
-        print("\n📦 Sales Data in DB before append:")
+        print("\n📦 Sales Data in DB before insert_into:")
         print(db.sales.scan().to_native())
-        print("\n📦 Sales Data in DB after append:")
-        print(db.sales.append(new_sales).scan().to_native())
+        print("\n📦 Sales Data in DB after insert_into:")
+        print(db.sales.insert_into(new_sales).scan().to_native())
         ## Intelligently insert rows, skipping duplicates based on the primary key
-        print("\n📦 Sales Data in DB after i (no duplicates):")
-        print(db.sales.insert_if_not_exists(new_sales).scan().to_native())
+        print("\n📦 Sales Data in DB after insert_or_ignore (no duplicates):")
+        print(db.sales.insert_or_ignore(new_sales).scan().to_native())
         print("\n📦 Sales Data in DB after truncate:")
         print(db.sales.truncate().scan().to_native())
+
 ```
 
 ```bash

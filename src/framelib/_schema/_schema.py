@@ -69,6 +69,15 @@ class Schema(BaseLayout[Column]):
         return cls.columns().filter(lambda col: col.unique).map(lambda col: col.name)
 
     @classmethod
+    def constraint_keys(cls) -> pc.Iter[str]:
+        """The primary and unique key columns of this schema."""
+        return (
+            cls.columns()
+            .filter(lambda col: col.primary_key or col.unique)
+            .map(lambda col: col.name)
+        )
+
+    @classmethod
     def sql_schema(cls) -> str:
         """
         Generates the SQL schema definition.

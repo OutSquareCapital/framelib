@@ -85,7 +85,7 @@ def run_tests() -> None:
         print("\n🎉 Tous les tests sont passés avec succès!")
 
     except Exception as e:
-        print(f"❌ ERREUR PENDANT LES TESTS: {e}")
+        print(f"❌ ERREUR PENDANT LES TESTS: \n{e}")
     finally:
         teardown_test_data()
         print("\n🧹 Nettoyage terminé.")
@@ -100,10 +100,10 @@ def test_database_operations() -> None:
         print("✅ OK")
 
         # 2. Test de `append` avec conflit de clé primaire
-        print("\n▶️ Test: append (conflit PK)...")
+        print("\n▶️ Test: insert_into (conflit PK)...")
         try:
-            db.sales.append(CONFLICTING_SALES.filter(Sales.order_id.pl_col.eq(2)))
-            assert False, "ConstraintException non levée pour append."
+            db.sales.insert_into(CONFLICTING_SALES.filter(Sales.order_id.pl_col.eq(2)))
+            assert False, "ConstraintException non levée pour insert_into."
         except ConstraintException:
             print("✅ OK (erreur attendue capturée)")
 
@@ -129,7 +129,7 @@ def test_database_operations() -> None:
         # 5. Test de contrainte `UNIQUE`
         print("\n▶️ Test: contrainte UNIQUE...")
         try:
-            db.sales.append(UNIQUE_CONFLICT_SALES)
+            db.sales.insert_into(UNIQUE_CONFLICT_SALES)
             assert False, "ConstraintException non levée pour contrainte UNIQUE."
         except ConstraintException:
             print("✅ OK (erreur attendue capturée)")
