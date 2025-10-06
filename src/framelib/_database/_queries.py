@@ -1,15 +1,17 @@
 from dataclasses import dataclass
 from enum import StrEnum
 
-_SEPARATOR = ", "
-DATA = "_"
+_DATA = "_"
+"""Placeholder table name for duckdb scope."""
 
 
 def _join_keys(*keys: str) -> str:
-    return _SEPARATOR.join(f'"{k}"' for k in keys)
+    return ", ".join(f'"{k}"' for k in keys)
 
 
 class DBQueries(StrEnum):
+    """General SQL queries not tied to a specific table."""
+
     SHOW_TYPES = """SELECT * FROM duckdb_types();"""
 
     SHOW_TABLES = """--sql 
@@ -48,7 +50,7 @@ class Queries:
     def insert_into(self) -> str:
         return f"""
         --sql
-        INSERT INTO {self.name} SELECT * FROM {DATA};
+        INSERT INTO {self.name} SELECT * FROM {_DATA};
         """
 
     def drop(self) -> str:
@@ -66,13 +68,13 @@ class Queries:
     def insert_or_replace(self) -> str:
         return f"""
         --sql
-        INSERT OR REPLACE INTO {self.name} SELECT * FROM {DATA};
+        INSERT OR REPLACE INTO {self.name} SELECT * FROM {_DATA};
         """
 
     def insert_or_ignore(self) -> str:
         return f"""
         --sql
-        INSERT OR IGNORE INTO {self.name} SELECT * FROM {DATA};
+        INSERT OR IGNORE INTO {self.name} SELECT * FROM {_DATA};
         """
 
     def summarize(self) -> str:
