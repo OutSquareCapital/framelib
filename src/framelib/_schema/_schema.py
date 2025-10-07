@@ -104,7 +104,7 @@ class Schema(BaseLayout[Column]):
         Generates the SQL schema definition.
         """
         column_definitions: list[str] = []
-        for col in cls.columns().pipe_unwrap(list):
+        for col in cls.columns().into(list):
             definition: str = f'"{col.name}" {col.sql_type}'
             if col.primary_key:
                 definition += " "

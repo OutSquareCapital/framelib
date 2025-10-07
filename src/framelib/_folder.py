@@ -35,7 +35,7 @@ class Folder(BaseLayout[File[Schema]]):
         chain: list[type[Folder]] = (
             pc.Iter(cls.mro())
             .filter(lambda c: issubclass(c, Folder) and c is not Folder)
-            .pipe_unwrap(list)
+            .into(list)
         )
         root: Path = chain[-1].source()
         return show_tree(root, (f.source for c in chain for f in c._schema.values()))
