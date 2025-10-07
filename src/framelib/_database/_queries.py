@@ -106,14 +106,6 @@ class Queries:
         ON CONFLICT {conflict_target} DO UPDATE SET {update_clause};
         """
 
-    def columns_schema_(self) -> str:
-        return f"""
-        --sql
-        SELECT column_name, data_type, is_nullable, column_default
-        FROM INFORMATION_SCHEMA.COLUMNS
-        WHERE table_name = '{self.name}';
-        """
-
     def columns_schema(self) -> str:
         return f"""
         --sql
