@@ -145,3 +145,17 @@ class Schema(BaseLayout[Column]):
                 cls.columns().map(lambda col: col.nw_col.cast(col.nw_dtype)).unwrap()
             )
         )
+
+    @classmethod
+    def cast_strict_false(cls, df: pl.LazyFrame | pl.DataFrame) -> pl.LazyFrame:
+        """Like `cast`, but with `strict=False`.
+
+        **Warning**
+
+        will only work with polars {Data, Lazy}Frames.
+        """
+        return df.lazy().select(
+            cls.columns()
+            .map(lambda c: c.pl_col.cast(c.pl_dtype, strict=False))
+            .unwrap()
+        )

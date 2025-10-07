@@ -98,7 +98,6 @@ def test_database_operations() -> None:
         assert db.sales.scan().collect().shape == (3, 3)
         print("✅ OK")
 
-        print(db.sales.describe_columns_())
         print(db.sales.describe_columns())
 
         print("\n▶️ Test: insert_into (conflit PK)...")

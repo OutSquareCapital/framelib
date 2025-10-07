@@ -125,8 +125,8 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "duckdb", specifier = "==1.4.0" },
-    { name = "narwhals", specifier = "==2.5.0" },
-    { name = "polars", specifier = "==1.34.0" },
+    { name = "narwhals", specifier = ">=2.5.0" },
+    { name = "polars", specifier = ">=1.34.0" },
     { name = "pyarrow-stubs", specifier = ">=20.0.0.20250928" },
     { name = "pychain", git = "https://github.com/OutSquareCapital/pychain.git" },
 ]
@@ -293,11 +293,11 @@ wheels = [
 
 [[package]]
 name = "narwhals"
-version = "2.5.0"
+version = "2.7.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/7b/b8/3cb005704866f1cc19e8d6b15d0467255821ba12d82f20ea15912672e54c/narwhals-2.5.0.tar.gz", hash = "sha256:8ae0b6f39597f14c0dc52afc98949d6f8be89b5af402d2d98101d2f7d3561418", size = 558573, upload-time = "2025-09-12T10:04:24.436Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/87/76/9ca8f4d03f02b8289807d0c91eeb01fa6b7fdd6273769d5bd1f94773b40b/narwhals-2.7.0.tar.gz", hash = "sha256:e3fff7f1610fd3318ede78c969bc5954ce710d585eefdb689586fb69da3da43c", size = 569315, upload-time = "2025-10-06T09:39:37.69Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f8/5a/22741c5c0e5f6e8050242bfc2052ba68bc94b1735ed5bca35404d136d6ec/narwhals-2.5.0-py3-none-any.whl", hash = "sha256:7e213f9ca7db3f8bf6f7eff35eaee6a1cf80902997e1b78d49b7755775d8f423", size = 407296, upload-time = "2025-09-12T10:04:22.524Z" },
+    { url = "https://files.pythonhosted.org/packages/74/0d/bc630dfd34ad2150d40f9392e94d3803980e71a47e10a709ce9bfcd40ffe/narwhals-2.7.0-py3-none-any.whl", hash = "sha256:010791aa0cee86d90bf2b658264aaec3eeea34fb4ddf2e83746ea4940bcffae3", size = 412767, upload-time = "2025-10-06T09:39:35.564Z" },
 ]
 
 [[package]]
