@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Self, overload
+from typing import NamedTuple, Self, overload
 
 import narwhals as nw
 import polars as pl
@@ -10,6 +10,12 @@ from narwhals.typing import IntoLazyFrameT, LazyFrameT
 
 from .._core import BaseLayout, EntryType
 from ._base import Column
+
+
+class KeysCache(NamedTuple):
+    primary: pc.Iter[str]
+    unique: pc.Iter[str]
+    constraint: pc.Iter[str]
 
 
 class KWord(StrEnum):
@@ -24,31 +30,34 @@ class Schema(BaseLayout[Column]):
     """
 
     _entry_type = EntryType.COLUMN
-    _primary_keys: pc.Iter[str]
-    _unique_keys: pc.Iter[str]
-    _constraint_keys: pc.Iter[str]
+    _cache: KeysCache
 
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
-        cls._set_keys()._set_schema()
+        cls._set_cache()._set_schema()
         return
 
     @classmethod
-    def _set_keys(cls) -> type[Self]:
-        cls._primary_keys = (
+    def _set_cache(cls) -> type[Self]:
+        primary_keys: pc.Iter[str] = (
             cls.columns()
             .filter(lambda col: col.primary_key)
             .map(lambda col: col.name)
-            .to_list()
+            .pipe_into(list)
         )
-        cls._unique_keys = (
+        unique_keys: pc.Iter[str] = (
             cls.columns()
             .filter(lambda col: col.unique)
             .map(lambda col: col.name)
-            .to_list()
+            .pipe_into(list)
         )
-        cls._constraint_keys: pc.Iter[str] = (
-            cls._primary_keys.concat(cls._unique_keys.unwrap()).unique().to_list()
+        constraint_keys: pc.Iter[str] = (
+            primary_keys.concat(unique_keys.unwrap()).unique().pipe_into(list)
+        )
+        cls._cache = KeysCache(
+            primary=primary_keys,
+            unique=unique_keys,
+            constraint=constraint_keys,
         )
         return cls
 
@@ -59,14 +68,16 @@ class Schema(BaseLayout[Column]):
         and then adding the columns from the current class, preserving order.
         """
         final_schema: dict[str, Column] = {}
-
-        # Iterate over the MRO in reverse to build the schema from the base classes downwards
-        for base in reversed(cls.mro()):
-            if issubclass(base, Schema) and hasattr(base, "_schema"):
-                # Use base.__dict__ to get only the columns defined on that specific class
-                for name, obj in base.__dict__.items():
-                    if getattr(obj, base._entry_type, False) is True:
-                        final_schema[name] = obj
+        for base in (
+            pc.Iter(cls.mro())
+            .filter_subclass(Schema)
+            .filter_attr("_schema")
+            .reverse()
+            .unwrap()
+        ):
+            for name, obj in base.__dict__.items():
+                if getattr(obj, base._entry_type, False) is True:
+                    final_schema[name] = obj
 
         cls._schema = final_schema
         return cls
@@ -86,25 +97,25 @@ class Schema(BaseLayout[Column]):
     @classmethod
     def primary_keys(cls) -> pc.Iter[str]:
         """The primary key columns of this schema."""
-        return cls._primary_keys
+        return cls._cache.primary
 
     @classmethod
     def unique_keys(cls) -> pc.Iter[str]:
         """The unique key columns of this schema."""
-        return cls._unique_keys
+        return cls._cache.unique
 
     @classmethod
     def constraint_keys(cls) -> pc.Iter[str]:
         """The primary and unique key columns of this schema."""
-        return cls._constraint_keys
+        return cls._cache.constraint
 
     @classmethod
     def sql_schema(cls) -> str:
         """
         Generates the SQL schema definition.
         """
-        column_definitions: list[str] = []
-        for col in cls.columns().into(list):
+
+        def _convert_col(col: Column) -> str:
             definition: str = f'"{col.name}" {col.sql_type}'
             if col.primary_key:
                 definition += " "
@@ -112,9 +123,9 @@ class Schema(BaseLayout[Column]):
             if col.unique:
                 definition += " "
                 definition += KWord.UNIQUE
-            column_definitions.append(definition)
+            return definition
 
-        return ", ".join(column_definitions)
+        return cls.columns().map(_convert_col).into(", ".join)
 
     @overload
     @classmethod

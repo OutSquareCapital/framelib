@@ -57,6 +57,10 @@ def setup_test_data() -> None:
     TestData.sales_file.write(SALES_DATA)
     with TestData.db as db:
         db.sales.create_or_replace_from(SALES_DATA)
+    try:
+        TestData.show_tree()
+    except Exception as e:
+        print(f"❌ ERREUR PENDANT L'AFFICHAGE DE L'ARBRE: \n{e}")
 
 
 def teardown_test_data() -> None:
