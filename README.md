@@ -6,6 +6,37 @@ Instead of juggling hardcoded paths and implicit data structures, you can define
 
 It leverages **pathlib**, **polars**, **narwhals**, and **duckdb** to provide a robust framework for building maintainable and scalable data pipelines.
 
+## Simple Example
+
+```python
+import polars as pl
+import framelib as fl
+from pathlib import Path
+
+df = pl.DataFrame(
+    {
+        "user_id": [1, 2, 3],
+        "name": ["Alice", "Bob", "Charlie"],
+        "value": [10.5, 20.75, 30.0],
+    }
+)
+
+
+class MySchema(fl.Schema):
+    user_id = fl.UInt16(primary_key=True)
+    name = fl.String()
+    value = fl.Float32()
+
+
+class MyData(fl.Folder):
+    __source__ = Path("data")
+    my_csv = fl.CSV(model=MySchema)
+
+
+MyData.my_csv.write(df)
+MyData.my_csv.scan_cast().select(MySchema.value.pl_col.sum()).collect()
+```
+
 ## Why Framelib?
 
 ### 🏛️ Declare Your Architecture Once

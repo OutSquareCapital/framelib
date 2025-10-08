@@ -42,7 +42,7 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
         self, fn: Callable[Concatenate[Self, P], Any], *args: P.args, **kwargs: P.kwargs
     ) -> Self:
         """
-        Execute a function that takes the database instance and returns its result.
+        Execute a function that takes the database instance and returns self for chaining.
 
         Allow passing additional arguments to the function.
         """
