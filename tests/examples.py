@@ -232,7 +232,6 @@ def _():
             "amount": [200.00, 150.75],
         }
     )
-
     with MyProject.analytics_db as dba:
         print("\n📦 Sales Data in DB before insert_into:")
         print(dba.sales.scan().to_native())

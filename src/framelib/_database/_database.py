@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from abc import ABC
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Final, Self
+from typing import Any, Concatenate, Final, Self
 
 import duckdb
 import narwhals as nw
@@ -22,6 +23,21 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
     _source: Path
     _model: pc.Dict[str, Table]
 
+    def pipe[**P, R](
+        self, fn: Callable[Concatenate[Self, P], R], *args: P.args, **kwargs: P.kwargs
+    ) -> R:
+        """Execute a function with the connection opened and returns its result."""
+        with self:
+            return fn(self, *args, **kwargs)
+
+    def apply[**P](
+        self, fn: Callable[Concatenate[Self, P], Any], *args: P.args, **kwargs: P.kwargs
+    ) -> Self:
+        """Execute a function with the connection opened and returns self for chaining."""
+        with self:
+            fn(self, *args, **kwargs)
+        return self
+
     def __from_source__(self, source: Path) -> None:
         self._source = Path(source, self._name).with_suffix(_DDB)
         self._model = self.schema()
@@ -36,6 +52,12 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
 
     def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
         self._connexion.close()
+
+    def __del__(self) -> None:
+        try:
+            self._connexion.close()
+        except Exception:
+            pass
 
     @property
     def connexion(self) -> duckdb.DuckDBPyConnection:
