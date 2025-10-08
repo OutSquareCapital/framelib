@@ -18,24 +18,43 @@ _DDB = ".ddb"
 
 class DataBase(BaseLayout[Table], BaseEntry, ABC):
     _is_file: Final[bool] = True
+    _is_connected: bool = False
     _connexion: duckdb.DuckDBPyConnection
     _entry_type = EntryType.TABLE
     _source: Path
     _model: pc.Dict[str, Table]
 
-    def pipe[**P, R](
-        self, fn: Callable[Concatenate[Self, P], R], *args: P.args, **kwargs: P.kwargs
-    ) -> R:
-        """Execute a function with the connection opened and returns its result."""
-        with self:
-            return fn(self, *args, **kwargs)
+    def _connect(self) -> Self:
+        """Opens the connection to the database and returns self for chaining."""
+        if not self._is_connected:
+            self._connexion = duckdb.connect(self.source)
+            for table in self._schema.values():
+                table.__from_connexion__(self._connexion)
+            self._is_connected = True
+        return self
 
-    def apply[**P](
+    def close(self) -> None:
+        """Closes the connection to the database."""
+        self._is_connected = False
+        self._connexion.close()
+
+    def pipe[**P](
         self, fn: Callable[Concatenate[Self, P], Any], *args: P.args, **kwargs: P.kwargs
     ) -> Self:
-        """Execute a function with the connection opened and returns self for chaining."""
-        with self:
-            fn(self, *args, **kwargs)
+        """
+        Execute a function that takes the database instance and returns its result.
+
+        Allow passing additional arguments to the function.
+        """
+        self._connect()
+        fn(self, *args, **kwargs)
+        return self
+
+    def apply(self, *fn: Callable[[Self], Any]) -> Self:
+        """Execute multiples functions with the instance and returns self for chaining."""
+        self._connect()
+        for f in fn:
+            f(self)
         return self
 
     def __from_source__(self, source: Path) -> None:
@@ -45,17 +64,14 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
             table.source = self.source
 
     def __enter__(self) -> Self:
-        self._connexion = duckdb.connect(self.source)
-        for table in self._schema.values():
-            table.__from_connexion__(self._connexion)
-        return self
+        return self._connect()
 
     def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
-        self._connexion.close()
+        self.close()
 
     def __del__(self) -> None:
         try:
-            self._connexion.close()
+            self.close()
         except Exception:
             pass
 

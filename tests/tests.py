@@ -63,13 +63,15 @@ UNIQUE_CONFLICT_SALES = pl.DataFrame(
 )
 
 
-def setup_test_data() -> None:
+def setup_folder() -> None:
     """Crée les fichiers et la base de données de test."""
     TestData.source().mkdir(parents=True, exist_ok=True)
     TestData.sales_file.write(SALES_DATA)
-    TestData.db.apply(lambda d: d.customers.create_or_replace_from(CUSTOMER_DATA)).pipe(
-        lambda d: d.sales.create_or_replace_from(SALES_DATA)
-    )
+
+
+def setup_test_data(db: TestDB) -> None:
+    db.customers.create_or_replace_from(CUSTOMER_DATA)
+    db.sales.create_or_replace_from(SALES_DATA)
     try:
         TestData.show_tree()
     except Exception as e:
@@ -89,34 +91,28 @@ def test_file_operations() -> None:
     print("✅ OK")
 
 
-def test_database_operations() -> None:
+def test_database_operations(db: TestDB) -> None:
     print("▶️ Test: create_or_replace_from & scan...")
-    assert TestData.db.pipe(lambda d: d.sales.read().shape == (3, 3))
+    assert db.sales.read().shape == (3, 3)
     print("✅ OK")
 
-    TestData.db.pipe(lambda d: d.sales.describe_columns().collect("polars").pipe(print))
+    db.sales.describe_columns().collect("polars").pipe(print)
 
     print("\n▶️ Test: insert_into (conflit PK)...")
     try:
-        TestData.db.pipe(
-            lambda d: d.sales.insert_into(
-                CONFLICTING_SALES.filter(Sales.order_id.pl_col.eq(2))
-            )
-        )
+        db.sales.insert_into(CONFLICTING_SALES.filter(Sales.order_id.pl_col.eq(2)))
         assert False, "ConstraintException non levée pour insert_into."
     except ConstraintException:
         print("✅ OK (erreur attendue capturée)")
     print("\n▶️ Test: insert_or_ignore (conflit PK)...")
-    result: pl.DataFrame = TestData.db.pipe(
-        lambda d: d.sales.insert_or_ignore(CONFLICTING_SALES).read()
-    )
+    result: pl.DataFrame = db.sales.insert_or_ignore(CONFLICTING_SALES).read()
     assert result.shape == (4, 3)
     assert result.filter(Sales.order_id.pl_col.eq(2)).item(0, "amount") == 20.0
     print("✅ OK")
 
     print("\n▶️ Test: insert_or_replace (conflit PK)...")
-    updated_amount = TestData.db.pipe(
-        lambda d: d.sales.insert_or_replace(CONFLICTING_SALES)
+    updated_amount = (
+        db.sales.insert_or_replace(CONFLICTING_SALES)
         .scan()
         .filter(Sales.order_id.nw_col == 2)
         .collect()
@@ -127,18 +123,18 @@ def test_database_operations() -> None:
 
     print("\n▶️ Test: contrainte UNIQUE...")
     try:
-        TestData.db.pipe(lambda d: d.sales.insert_into(UNIQUE_CONFLICT_SALES))
+        db.sales.insert_into(UNIQUE_CONFLICT_SALES)
     except ConstraintException:
         print("✅ OK (erreur attendue capturée)")
 
     # 6. Test de `truncate` et `drop`
     print("\n▶️ Test: truncate & drop...")
-    assert TestData.db.pipe(lambda d: d.sales.truncate().read().shape == (0, 3))
+    assert db.sales.truncate().read().shape == (0, 3)
     try:
-        TestData.db.pipe(lambda d: d.sales.drop().scan())
+        db.sales.drop().scan()
     except CatalogException:
         print("✅ OK")
-    TestData.db.pipe(lambda d: d.customers.scan().collect().pipe(print))
+    db.customers.scan().collect().pipe(print)
 
 
 def run_tests() -> None:
@@ -146,15 +142,13 @@ def run_tests() -> None:
     print("🚀 Démarrage des tests de framelib...")
 
     try:
-        setup_test_data()
-        print("\n--- ✅ Tests de la Base de Données ---")
-        test_database_operations()
-
+        setup_folder()
+        print("\n--- ✅ Configuration et Schémas ---")
+        TestData.db.apply(setup_test_data, test_database_operations).close()
         print("\n--- ✅ Tests des Fichiers ---")
         test_file_operations()
 
         print("\n🎉 Tous les tests sont passés avec succès!")
-
     except Exception as e:
         print(f"❌ ERREUR PENDANT LES TESTS: \n{e}")
     finally:

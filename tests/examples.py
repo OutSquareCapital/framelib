@@ -232,7 +232,9 @@ def _():
             "amount": [200.00, 150.75],
         }
     )
-    with MyProject.analytics_db as dba:
+
+
+    def database_op(dba: Analytics):
         print("\n📦 Sales Data in DB before insert_into:")
         print(dba.sales.scan().to_native())
         print("\n📦 Sales Data in DB after insert_into:")
@@ -242,6 +244,9 @@ def _():
         print(dba.sales.insert_or_ignore(new_sales).scan().to_native())
         print("\n📦 Sales Data in DB after truncate:")
         print(dba.sales.truncate().scan().to_native())
+
+
+    MyProject.analytics_db.pipe(database_op).close()
     return
 
 
