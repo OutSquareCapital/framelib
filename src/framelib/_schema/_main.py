@@ -49,10 +49,16 @@ class Array(Column):
     _inner: Column
     _shape: int | tuple[int, ...]
 
-    def __init__(self, inner: Column, shape: int | tuple[int, ...]) -> None:
+    def __init__(
+        self,
+        inner: Column,
+        shape: int | tuple[int, ...],
+        primary_key: bool = False,
+        unique: bool = False,
+    ) -> None:
         self._inner = inner
         self._shape = shape
-        super().__init__()
+        super().__init__(primary_key=primary_key, unique=unique)
 
     @property
     def nw_dtype(self) -> nw.Array:
@@ -66,9 +72,14 @@ class Array(Column):
 class Struct(Column):
     _fields: pc.Dict[str, Column]
 
-    def __init__(self, fields: Mapping[str, Column]) -> None:
+    def __init__(
+        self,
+        fields: Mapping[str, Column],
+        primary_key: bool = False,
+        unique: bool = False,
+    ) -> None:
         self._fields = pc.Dict.from_map(fields)
-        super().__init__()
+        super().__init__(primary_key=primary_key, unique=unique)
 
     @property
     def pl_dtype(self) -> pl.Struct:
@@ -87,9 +98,11 @@ class Struct(Column):
 class List(Column):
     _inner: Column
 
-    def __init__(self, inner: Column) -> None:
+    def __init__(
+        self, inner: Column, primary_key: bool = False, unique: bool = False
+    ) -> None:
         self._inner = inner
-        super().__init__()
+        super().__init__(primary_key=primary_key, unique=unique)
 
     @property
     def nw_dtype(self) -> nw.List:
@@ -118,11 +131,16 @@ class Categorical(Column):
 class Enum(Column):
     _categories: list[str]
 
-    def __init__(self, categories: Iterable[str] | type[enum.Enum]) -> None:
+    def __init__(
+        self,
+        categories: Iterable[str] | type[enum.Enum],
+        primary_key: bool = False,
+        unique: bool = False,
+    ) -> None:
         if isclass(categories):
             categories = (item.value for item in categories)
         self._categories = list(categories)
-        super().__init__()
+        super().__init__(primary_key=primary_key, unique=unique)
 
     @property
     def nw_dtype(self) -> nw.Enum:
