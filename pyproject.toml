@@ -12,7 +12,7 @@ description = "polars and dataframely plugin"
 name = "framelib"
 readme = "README.md"
 requires-python = ">=3.11"
-version = "0.1.4"
+version = "0.1.41"
 [build-system]
 build-backend = "uv_build"
 requires      = ["uv_build>=0.8.15,<0.9.0"]
@@ -21,7 +21,4 @@ requires      = ["uv_build>=0.8.15,<0.9.0"]
 pychain = { git = "https://github.com/OutSquareCapital/pychain.git" }
 
 [dependency-groups]
-dev = [
-    "marimo>=0.16.5",
-    "pyarrow-stubs>=20.0.0.20250928",
-]
+dev = ["marimo>=0.16.5", "pyarrow-stubs>=20.0.0.20250928"]
