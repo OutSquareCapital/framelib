@@ -10,7 +10,7 @@ import narwhals as nw
 import pychain as pc
 
 from .._core import BaseEntry, BaseLayout, EntryType
-from ._queries import DBQueries, drop_many
+from ._queries import DBQueries, drop_table
 from ._table import DuckFrame, Table
 
 _DDB = ".ddb"
@@ -141,7 +141,8 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
         tables_to_drop: list[str] = list(tables_in_db - tables_in_schema)
 
         if tables_to_drop:
-            self.connexion.execute(drop_many(tables_to_drop))
+            for q in tables_to_drop:
+                self.connexion.execute(drop_table(q))
 
         return self
 

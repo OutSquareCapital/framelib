@@ -32,13 +32,10 @@ class DBQueries(StrEnum):
         """
 
 
-def drop_many(table_names: list[str]) -> str:
-    """Generates a query to drop multiple tables at once."""
-
-    tables_to_drop: str = ", ".join(f'"{name}"' for name in table_names)
+def drop_table(name: str) -> str:
     return f"""
     --sql
-    DROP TABLE IF EXISTS {tables_to_drop};
+    DROP TABLE IF EXISTS "{name}";
     """
 
 
@@ -67,10 +64,7 @@ class Queries:
         """
 
     def drop(self) -> str:
-        return f"""
-        --sql
-        DROP TABLE IF EXISTS {self.name};
-        """
+        return drop_table(self.name)
 
     def truncate(self) -> str:
         return f"""
