@@ -32,6 +32,16 @@ class DBQueries(StrEnum):
         """
 
 
+def drop_many(table_names: list[str]) -> str:
+    """Generates a query to drop multiple tables at once."""
+
+    tables_to_drop: str = ", ".join(f'"{name}"' for name in table_names)
+    return f"""
+    --sql
+    DROP TABLE IF EXISTS {tables_to_drop};
+    """
+
+
 @dataclass(slots=True, frozen=True)
 class Queries:
     """SQL queries builder for a specific table."""

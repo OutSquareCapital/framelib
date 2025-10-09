@@ -10,7 +10,7 @@ import narwhals as nw
 import pychain as pc
 
 from .._core import BaseEntry, BaseLayout, EntryType
-from ._queries import DBQueries
+from ._queries import DBQueries, drop_many
 from ._table import DuckFrame, Table
 
 _DDB = ".ddb"
@@ -24,14 +24,14 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
     _source: Path
     _model: pc.Dict[str, Table]
 
-    def _connect(self) -> Self:
-        """Opens the connection to the database and returns self for chaining."""
+    def _connect(self) -> None:
+        """Opens the connection to the database."""
         if not self._is_connected:
             self._connexion = duckdb.connect(self.source)
             for table in self._schema.values():
                 table.__from_connexion__(self._connexion)
             self._is_connected = True
-        return self
+        return
 
     def close(self) -> None:
         """Closes the connection to the database."""
@@ -48,7 +48,20 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
         """
         self._connect()
         fn(self, *args, **kwargs)
+
         return self
+
+    def pipe_into[**P, R](
+        self, fn: Callable[Concatenate[Self, P], R], *args: P.args, **kwargs: P.kwargs
+    ) -> R:
+        """
+        Execute a function that takes the database instance and returns the result.
+
+        Allow passing additional arguments to the function.
+        """
+        self._connect()
+
+        return fn(self, *args, **kwargs)
 
     def apply(self, *fn: Callable[[Self], Any]) -> Self:
         """Execute multiples functions with the instance and returns self for chaining."""
@@ -62,12 +75,6 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
         self._model = self.schema()
         for table in self._schema.values():
             table.source = self.source
-
-    def __enter__(self) -> Self:
-        return self._connect()
-
-    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
-        self.close()
 
     def __del__(self) -> None:
         try:
@@ -84,6 +91,7 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
         """
         Executes a SQL query and returns the result as a DuckDB relation wrapped in a Narwhals LazyFrame.
         """
+        self._connect()
         return nw.from_native(self._connexion.sql(sql_query))
 
     def show_tables(self) -> DuckFrame:
@@ -119,6 +127,23 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
     def show_all_constraints(self) -> DuckFrame:
         """Shows all constraints across all tables in the database."""
         return self.query(DBQueries.ALL_CONSTRAINTS)
+
+    def sync_schema(self) -> Self:
+        """
+        Drops tables from the database that are not present in the schema.
+        """
+        self._connect()
+        tables_in_db: set[str] = set(
+            self.show_tables().collect().get_column("name").to_list()
+        )
+        tables_in_schema: set[str] = self.schema().iter_keys().into(set)
+
+        tables_to_drop: list[str] = list(tables_in_db - tables_in_schema)
+
+        if tables_to_drop:
+            self.connexion.execute(drop_many(tables_to_drop))
+
+        return self
 
     @property
     def source(self) -> Path:
