@@ -99,7 +99,7 @@ uv add git+https://github.com/OutSquareCapital/framelib.git
 
 ## Quickstart
 
-A marimo notebook with more detailed examples is available at <https://static.marimo.app/static/example-qf9n>
+A marimo notebook with more detailed examples is available at <https://static.marimo.app/static/example-etfo>
 
 ## Credits
 

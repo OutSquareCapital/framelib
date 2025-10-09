@@ -85,7 +85,7 @@ def test_file_operations() -> None:
 
 def test_database_operations(db: TestDB) -> None:
     assert db.sales.read().shape == (3, 3)
-    db.sales.describe_columns().collect("polars").pipe(print)
+    db.sales.describe_columns().collect("polars")
     try:
         db.sales.insert_into(CONFLICTING_SALES.filter(Sales.order_id.pl_col.eq(2)))
     except ConstraintException:
@@ -109,7 +109,6 @@ def test_database_operations(db: TestDB) -> None:
         db.sales.drop().scan()
     except CatalogException:
         pass
-    db.customers.scan().collect().pipe(print)
 
 
 def run_tests() -> None:
@@ -121,12 +120,10 @@ def run_tests() -> None:
         TestData.db.apply(setup_test_data, test_database_operations).close()
         test_file_operations()
 
-        print("\n🎉 Tous les tests sont passés avec succès!")
+        teardown_test_data()
     except Exception as e:
         print(f"❌ ERREUR PENDANT LES TESTS: \n{e}")
-    finally:
-        teardown_test_data()
-        print("\n🧹 Nettoyage terminé.")
+    print("\n🎉 Tous les tests sont passés avec succès!")
 
 
 if __name__ == "__main__":

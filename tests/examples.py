@@ -127,13 +127,10 @@ def _():
 
 @app.cell
 def _():
-    raw_df: pl.LazyFrame = MyProject.raw_sales.scan_cast()
-
-    with MyProject.analytics_db as db:
-        db.sales.create_or_replace_from(raw_df)
-
-        report_df: pl.DataFrame = (
-            db.sales.scan()
+    def get_report(db: Analytics) -> pl.DataFrame:
+        return (
+            db.sales.create_or_replace_from(MyProject.raw_sales.scan_cast())
+            .scan()
             .group_by("customer_id")
             .agg(
                 total_spent=nw.col("amount").sum(),
@@ -142,7 +139,9 @@ def _():
             .to_native()
             .pl()
         )
-    mo.as_html(report_df)
+
+
+    MyProject.analytics_db.pipe_into(get_report)
     return
 
 
@@ -246,7 +245,7 @@ def _():
         print(dba.sales.truncate().scan().to_native())
 
 
-    MyProject.analytics_db.pipe(database_op).close()
+    MyProject.analytics_db.apply(database_op).close()
     return
 
 
