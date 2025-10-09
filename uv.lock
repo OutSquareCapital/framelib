@@ -463,8 +463,8 @@ wheels = [
 
 [[package]]
 name = "pychain"
-version = "0.4.0"
-source = { git = "https://github.com/OutSquareCapital/pychain.git#1684a505dc0711e5c40319b69abf9e3869c372cd" }
+version = "0.4.1"
+source = { git = "https://github.com/OutSquareCapital/pychain.git#f465fc7d35b5c77db0ad87661f069aff14203b03" }
 dependencies = [
     { name = "cytoolz" },
     { name = "more-itertools" },
