@@ -38,7 +38,7 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
         self._is_connected = False
         self._connexion.close()
 
-    def pipe[**P](
+    def apply[**P](
         self, fn: Callable[Concatenate[Self, P], Any], *args: P.args, **kwargs: P.kwargs
     ) -> Self:
         """
@@ -51,24 +51,15 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
 
         return self
 
-    def pipe_into[**P, R](
+    def pipe[**P, R](
         self, fn: Callable[Concatenate[Self, P], R], *args: P.args, **kwargs: P.kwargs
     ) -> R:
         """
         Execute a function that takes the database instance and returns the result.
-
-        Allow passing additional arguments to the function.
         """
         self._connect()
 
         return fn(self, *args, **kwargs)
-
-    def apply(self, *fn: Callable[[Self], Any]) -> Self:
-        """Execute multiples functions with the instance and returns self for chaining."""
-        self._connect()
-        for f in fn:
-            f(self)
-        return self
 
     def __from_source__(self, source: Path) -> None:
         self._source = Path(source, self._name).with_suffix(_DDB)

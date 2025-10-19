@@ -117,7 +117,7 @@ def run_tests() -> None:
 
     try:
         setup_folder()
-        TestData.db.apply(setup_test_data, test_database_operations).close()
+        TestData.db.apply(setup_test_data).apply(test_database_operations).close()
         test_file_operations()
 
         teardown_test_data()

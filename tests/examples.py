@@ -1,12 +1,13 @@
 import marimo
 
-__generated_with = "0.16.5"
+__generated_with = "0.17.0"
 app = marimo.App()
 
 with app.setup(hide_code=True):
+    import marimo as mo
     import narwhals as nw
     import polars as pl
-    import marimo as mo
+
     import framelib as fl
 
 
@@ -141,7 +142,7 @@ def _():
         )
 
 
-    MyProject.analytics_db.pipe_into(get_report)
+    MyProject.analytics_db.apply(get_report)
     return
 
 

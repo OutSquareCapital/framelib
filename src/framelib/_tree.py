@@ -40,9 +40,7 @@ def _build_tree(root: Path, expected: Iterable[Path]) -> list[str]:
 
     def recurse(current: Path, prefix: str = "") -> None:
         children: pc.Iter[Path] = (
-            pc.Iter(all_paths)
-            .filter(lambda p: p.parent == current)
-            .sort(key=lambda p: (p not in dir_paths, p.name.lower()))
+            pc.Iter(all_paths).filter(lambda p: p.parent == current).sort()
         )
         children_len: int = children.length()
         for idx, child in children.enumerate().unwrap():

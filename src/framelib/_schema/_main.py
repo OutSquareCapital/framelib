@@ -78,7 +78,7 @@ class Struct(Column):
         primary_key: bool = False,
         unique: bool = False,
     ) -> None:
-        self._fields = pc.Dict.from_(fields)
+        self._fields = pc.Dict(fields)
         super().__init__(primary_key=primary_key, unique=unique)
 
     @property

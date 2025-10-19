@@ -43,16 +43,16 @@ class Schema(BaseLayout[Column]):
             cls.columns()
             .filter(lambda col: col.primary_key)
             .map(lambda col: col.name)
-            .pipe_into(list)
+            .apply(list)
         )
         unique_keys: pc.Iter[str] = (
             cls.columns()
             .filter(lambda col: col.unique)
             .map(lambda col: col.name)
-            .pipe_into(list)
+            .apply(list)
         )
         constraint_keys: pc.Iter[str] = (
-            primary_keys.concat(unique_keys.unwrap()).unique().pipe_into(list)
+            primary_keys.concat(unique_keys.unwrap()).unique().apply(list)
         )
         cls._cache = KeysCache(
             primary=primary_keys,
