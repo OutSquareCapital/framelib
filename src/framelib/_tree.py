@@ -5,10 +5,8 @@ from pathlib import Path
 import pychain as pc
 
 
-def show_tree(path: Path, expected: Iterable[Path] | None = None) -> str:
-    if expected:
-        return f"{path}\n" + "\n".join(_build_tree(path, expected))
-    return f"{path}"
+def show_tree(expected: Iterable[Path], path: Path) -> str:
+    return f"{path}\n" + "\n".join(_build_tree(path, expected))
 
 
 class Tree(StrEnum):

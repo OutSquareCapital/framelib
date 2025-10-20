@@ -25,25 +25,31 @@ class BaseEntry(ABC):
 
     @property
     def name(self) -> str:
+        """Returns the name of the entry as defined in the layout."""
         return self._name
 
     def __name_from_layout__(self, name: str) -> None:
         self._name = name
 
 
+def _add_to_schema(name: str, obj: BaseEntry, schema: dict[str, Any]) -> None:
+    obj.__name_from_layout__(name)
+    schema[name] = obj
+
+
 class BaseLayout[T](ABC):
     _schema: dict[str, T]
-    _entry_type: EntryType
+    __entry_type__: EntryType
 
     def __init_subclass__(cls) -> None:
         cls._schema: dict[str, T] = {}
-        for name, obj in cls.__dict__.items():
-            if getattr(obj, cls._entry_type, False) is True:
-                obj.__name_from_layout__(name)
-                cls._schema[name] = obj
+        pc.Dict(cls.__dict__).filter_values(
+            lambda obj: getattr(obj, cls.__entry_type__, False)
+        ).for_each(_add_to_schema, cls._schema)
 
     @classmethod
     def schema(cls) -> pc.Dict[str, T]:
+        """Returns the schema dictionary of the layout as a pychain.Dict"""
         return pc.Dict(cls._schema)
 
 

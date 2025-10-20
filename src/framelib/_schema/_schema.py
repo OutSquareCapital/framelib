@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import NamedTuple, Self, overload
+from typing import Any, NamedTuple, Self, TypeGuard, overload
 
 import narwhals as nw
 import polars as pl
@@ -23,13 +23,17 @@ class KWord(StrEnum):
     UNIQUE = "UNIQUE"
 
 
+def is_column(obj: Any, base: type[Schema]) -> TypeGuard[Column]:
+    return getattr(obj, base.__entry_type__, False) is True
+
+
 class Schema(BaseLayout[Column]):
     """
     A schema is a layout containing only Column entries.
     Used to define the schema of a Table or a File.
     """
 
-    _entry_type = EntryType.COLUMN
+    __entry_type__ = EntryType.COLUMN
     _cache: KeysCache
 
     def __init_subclass__(cls) -> None:
@@ -68,17 +72,19 @@ class Schema(BaseLayout[Column]):
         and then adding the columns from the current class, preserving order.
         """
         final_schema: dict[str, Column] = {}
-        for base in (
+        (
             pc.Iter(cls.mro())
             .filter_subclass(Schema)
             .filter_attr("_schema")
             .reverse()
-            .unwrap()
-        ):
-            for name, obj in base.__dict__.items():
-                if getattr(obj, base._entry_type, False) is True:
-                    final_schema[name] = obj
-
+            .for_each(
+                lambda base: pc.Dict(base.__dict__)
+                .filter_values(lambda x: is_column(x, base))
+                .for_each(
+                    lambda name, obj: final_schema.setdefault(name, obj),
+                )
+            )
+        )
         cls._schema = final_schema
         return cls
 

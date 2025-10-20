@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -91,9 +92,8 @@ class Queries:
         """
 
     def insert_on_conflict_update(
-        self, conflict_keys: list[str], update_keys: list[str]
+        self, update_keys: Iterable[str], conflict_target: str
     ) -> str:
-        conflict_target: str = f"({', '.join(f'"{k}"' for k in conflict_keys)})"
         if not update_keys:
             return f"""
             --sql

@@ -20,7 +20,7 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
     _is_file: Final[bool] = True
     _is_connected: bool = False
     _connexion: duckdb.DuckDBPyConnection
-    _entry_type = EntryType.TABLE
+    __entry_type__ = EntryType.TABLE
     _source: Path
     _model: pc.Dict[str, Table]
 
@@ -129,11 +129,9 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
         )
         tables_in_schema: set[str] = self.schema().iter_keys().into(set)
 
-        tables_to_drop: list[str] = list(tables_in_db - tables_in_schema)
-
-        if tables_to_drop:
-            for q in tables_to_drop:
-                self.connexion.execute(drop_table(q))
+        pc.Iter(tables_in_db - tables_in_schema).apply(list).for_each(
+            lambda q: self.connexion.execute(drop_table(q))
+        )
 
         return self
 

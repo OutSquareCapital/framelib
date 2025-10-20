@@ -4,6 +4,7 @@ from typing import Final, Self
 import duckdb
 import narwhals as nw
 import polars as pl
+import pychain as pc
 from narwhals.typing import IntoFrame, IntoFrameT, IntoLazyFrame, IntoLazyFrameT
 
 from .._core import Entry
@@ -25,18 +26,25 @@ class Table(Entry[Schema, Path]):
 
     def _on_conflict(self) -> str:
         pks: list[str] = self.model.primary_keys().into(list)
-        uks: list[str] = self.model.unique_keys().into(list)
+        uks: pc.Iter[str] = self.model.unique_keys().apply(list)
 
         has_pk = bool(pks)
-        needs_explicit_conflict: bool = (has_pk and bool(uks)) or len(uks) > 1
+        needs_explicit_conflict: bool = (
+            has_pk and bool(uks.unwrap())
+        ) or uks.length() > 1
 
         if not needs_explicit_conflict:
             return self._qry.insert_or_replace()
         else:
-            conflict_keys: list[str] = pks if has_pk else [uks[0]]
-            all_keys: list[str] = self.model.column_names().into(list)
-            update_keys: list[str] = [k for k in all_keys if k not in conflict_keys]
-            return self._qry.insert_on_conflict_update(conflict_keys, update_keys)
+            conflict_keys: list[str] = pks if has_pk else [uks.first()]
+
+            conflict_target: str = f"({', '.join(f'"{k}"' for k in conflict_keys)})"
+
+            return (
+                self.model.column_names()
+                .filter(lambda k: k not in conflict_keys)
+                .into(self._qry.insert_on_conflict_update, conflict_target)
+            )
 
     @property
     def relation(self) -> duckdb.DuckDBPyRelation:

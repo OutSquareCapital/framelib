@@ -12,7 +12,7 @@ from ._tree import show_tree
 
 
 class Folder(BaseLayout[File[Schema]]):
-    _entry_type = EntryType.FILE
+    __entry_type__ = EntryType.FILE
 
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
@@ -21,8 +21,7 @@ class Folder(BaseLayout[File[Schema]]):
             cls.__source__ = Path()
 
         cls.__source__ = cls.__source__.joinpath(cls.__name__.lower())
-        for file in cls._schema.values():
-            file.__from_source__(cls.source())
+        cls.schema().iter_values().for_each(lambda f: f.__from_source__(cls.source()))
 
     @classmethod
     def source(cls) -> Path:
@@ -32,13 +31,19 @@ class Folder(BaseLayout[File[Schema]]):
     @classmethod
     def show_tree(cls) -> str:
         """Show the folder structure."""
-        chain: list[type[Folder]] = (
+        chain: pc.Iter[type[Folder]] = (
             pc.Iter(cls.mro())
             .filter(lambda c: issubclass(c, Folder) and c is not Folder)
-            .into(list)
+            .apply(list)
         )
-        root: Path = chain[-1].source()
-        return show_tree(root, (f.source for c in chain for f in c._schema.values()))
+        return (
+            chain.map(
+                lambda c: c.schema().iter_values().map(lambda f: f.source).unwrap()
+            )
+            .explode()
+            .apply(list)
+            .into(show_tree, chain.last().source())
+        )
 
     @classmethod
     def _display_(cls) -> str:
