@@ -36,14 +36,8 @@ class Table(Entry[Schema, Path]):
         if not needs_explicit_conflict:
             return self._qry.insert_or_replace()
         else:
-            conflict_keys: list[str] = pks if has_pk else [uks.first()]
-
-            conflict_target: str = f"({', '.join(f'"{k}"' for k in conflict_keys)})"
-
-            return (
-                self.model.column_names()
-                .filter(lambda k: k not in conflict_keys)
-                .into(self._qry.insert_on_conflict_update, conflict_target)
+            return self.model.column_names().pipe(
+                self._qry.insert_on_conflict_update, pks if has_pk else [uks.first()]
             )
 
     @property

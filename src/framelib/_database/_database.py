@@ -28,8 +28,9 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
         """Opens the connection to the database."""
         if not self._is_connected:
             self._connexion = duckdb.connect(self.source)
-            for table in self._schema.values():
-                table.__from_connexion__(self._connexion)
+            self.schema().iter_values().for_each(
+                lambda t: t.__from_connexion__(self._connexion)
+            )
             self._is_connected = True
         return
 

@@ -1,6 +1,7 @@
-from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum
+
+import pychain as pc
 
 _DATA = "_"
 """Placeholder table name for duckdb scope."""
@@ -92,18 +93,26 @@ class Queries:
         """
 
     def insert_on_conflict_update(
-        self, update_keys: Iterable[str], conflict_target: str
+        self, columns: pc.Iter[str], conflict_keys: list[str]
     ) -> str:
-        if not update_keys:
+        update_keys: pc.Iter[str] = columns.filter_notin(conflict_keys)
+        conflict_target: str = (
+            pc.Iter(conflict_keys)
+            .map(lambda k: f'"{k}"')
+            .into(lambda ks: f"({', '.join(ks)})")
+        )
+
+        if not update_keys.unwrap():
             return f"""
             --sql
             INSERT INTO {self.name} SELECT * FROM {_DATA}
             ON CONFLICT {conflict_target} DO NOTHING;
             """
 
-        update_clause: str = ", ".join(
-            f'"{col}" = excluded."{col}"' for col in update_keys
-        )
+        update_clause: str = update_keys.map(
+            lambda col: f'"{col}" = excluded."{col}"'
+        ).into(", ".join)
+
         return f"""
         --sql
         INSERT INTO {self.name} SELECT * FROM {_DATA}
