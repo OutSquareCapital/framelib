@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any, NamedTuple, Self, TypeGuard, overload
+from typing import NamedTuple, Self, overload
 
 import narwhals as nw
 import polars as pl
@@ -21,10 +21,6 @@ class KeysCache(NamedTuple):
 class KWord(StrEnum):
     PRIMARY_KEY = "PRIMARY KEY"
     UNIQUE = "UNIQUE"
-
-
-def is_column(obj: Any, base: type[Schema]) -> TypeGuard[Column]:
-    return getattr(obj, base.__entry_type__, False) is True
 
 
 class Schema(BaseLayout[Column]):
@@ -77,8 +73,8 @@ class Schema(BaseLayout[Column]):
             .filter_subclass(Schema, keep_parent=False)
             .reverse()
             .for_each(
-                lambda base: pc.Dict(base.__dict__)
-                .filter_values(lambda x: is_column(x, base))
+                lambda base: pc.Dict.from_(base)
+                .filter_attr(base.__entry_type__, Column)
                 .for_each(
                     lambda name, obj: final_schema.setdefault(name, obj),
                 )

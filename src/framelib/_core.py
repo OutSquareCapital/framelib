@@ -43,9 +43,9 @@ class BaseLayout[T](ABC):
 
     def __init_subclass__(cls) -> None:
         cls._schema: dict[str, T] = {}
-        pc.Dict(cls.__dict__).filter_values(
-            lambda obj: getattr(obj, cls.__entry_type__, False)
-        ).for_each(_add_to_schema, cls._schema)
+        pc.Dict.from_(cls).filter_attr(cls.__entry_type__, BaseEntry).for_each(
+            _add_to_schema, cls._schema
+        )
 
     @classmethod
     def schema(cls) -> pc.Dict[str, T]:
