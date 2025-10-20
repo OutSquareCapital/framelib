@@ -31,19 +31,7 @@ class Folder(BaseLayout[File[Schema]]):
     @classmethod
     def show_tree(cls) -> str:
         """Show the folder structure."""
-        chain: pc.Iter[type[Folder]] = (
-            pc.Iter(cls.mro())
-            .filter(lambda c: issubclass(c, Folder) and c is not Folder)
-            .apply(list)
-        )
-        return (
-            chain.map(
-                lambda c: c.schema().iter_values().map(lambda f: f.source).unwrap()
-            )
-            .explode()
-            .apply(list)
-            .into(show_tree, chain.last().source())
-        )
+        return show_tree(cls.mro())
 
     @classmethod
     def _display_(cls) -> str:

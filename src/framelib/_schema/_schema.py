@@ -74,8 +74,7 @@ class Schema(BaseLayout[Column]):
         final_schema: dict[str, Column] = {}
         (
             pc.Iter(cls.mro())
-            .filter_subclass(Schema)
-            .filter_attr("_schema")
+            .filter_subclass(Schema, keep_parent=False)
             .reverse()
             .for_each(
                 lambda base: pc.Dict(base.__dict__)

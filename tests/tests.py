@@ -62,9 +62,17 @@ UNIQUE_CONFLICT_SALES = pl.DataFrame(
 
 
 def setup_folder() -> None:
-    """Crée les fichiers et la base de données de test."""
+    """
+    tree should look like this:
+
+    tests\\testdata\n
+    ├── customers_file.ndjson \n
+    ├── db.ddb \n
+    └── sales_file.csv \n
+    """
     TestData.source().mkdir(parents=True, exist_ok=True)
     TestData.sales_file.write(SALES_DATA)
+    print(TestData.show_tree())
 
 
 def setup_test_data(db: TestDB) -> None:
