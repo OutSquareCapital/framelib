@@ -125,14 +125,12 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
         Drops tables from the database that are not present in the schema.
         """
         self._connect()
-        tables_in_db: set[str] = set(
+        tables_in_db: list[str] = (
             self.show_tables().collect().get_column("name").to_list()
         )
-        tables_in_schema: set[str] = self.schema().iter_keys().into(set)
-
-        pc.Iter(tables_in_db - tables_in_schema).apply(list).for_each(
-            lambda q: self.connexion.execute(drop_table(q))
-        )
+        pc.Iter(tables_in_db).diff_unique(self.schema().iter_keys().unwrap()).apply(
+            list
+        ).for_each(lambda q: self.connexion.execute(drop_table(q)))
 
         return self
 

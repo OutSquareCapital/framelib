@@ -56,7 +56,7 @@ def _get_all_paths(hierarchy: Iterable[type]) -> FolderStructure:
             dir_paths.add(root.joinpath(parent))
             parent = parent.parent
     dir_paths.add(root)
-    return FolderStructure(pc.Iter(set(relatives) | dir_paths), dir_paths, root)
+    return FolderStructure(pc.Iter(relatives).union(dir_paths), dir_paths, root)
 
 
 def show_tree(hierarchy: Iterable[type]) -> str:
