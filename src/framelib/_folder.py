@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Self
 
-import pychain as pc
+import pyochain as pc
 
 from ._core import BaseLayout, EntryType
 from ._filehandlers import File

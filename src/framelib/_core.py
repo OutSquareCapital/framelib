@@ -4,7 +4,7 @@ from abc import ABC
 from enum import StrEnum
 from typing import Any, Protocol, Self
 
-import pychain as pc
+import pyochain as pc
 
 
 class EntryType(StrEnum):

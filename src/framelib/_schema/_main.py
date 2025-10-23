@@ -8,7 +8,7 @@ from inspect import isclass
 
 import narwhals as nw
 import polars as pl
-import pychain as pc
+import pyochain as pc
 
 from ._base import Column, TimeUnit
 

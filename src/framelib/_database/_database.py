@@ -7,7 +7,7 @@ from typing import Any, Concatenate, Final, Self
 
 import duckdb
 import narwhals as nw
-import pychain as pc
+import pyochain as pc
 
 from .._core import BaseEntry, BaseLayout, EntryType
 from ._queries import DBQueries, drop_table

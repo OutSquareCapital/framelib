@@ -196,7 +196,7 @@ dependencies = [
     { name = "duckdb" },
     { name = "narwhals" },
     { name = "polars" },
-    { name = "pychain" },
+    { name = "pyochain" },
 ]
 
 [package.dev-dependencies]
@@ -211,7 +211,7 @@ requires-dist = [
     { name = "duckdb", specifier = ">=1.4.1" },
     { name = "narwhals", specifier = ">=2.5.0" },
     { name = "polars", specifier = ">=1.34.0" },
-    { name = "pychain", git = "https://github.com/OutSquareCapital/pychain.git" },
+    { name = "pyochain", specifier = ">=0.5.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -496,16 +496,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pychain"
-version = "0.4.1"
-source = { git = "https://github.com/OutSquareCapital/pychain.git#ab1fe3fe9c64be302b94e69612b8844f39a8ba57" }
-dependencies = [
-    { name = "cytoolz" },
-    { name = "more-itertools" },
-    { name = "rolling" },
-]
-
-[[package]]
 name = "pygments"
 version = "2.19.2"
 source = { registry = "https://pypi.org/simple" }
@@ -525,6 +515,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/55/b3/6d2b3f149bc5413b0a29761c2c5832d8ce904a1d7f621e86616d96f505cc/pymdown_extensions-10.16.1.tar.gz", hash = "sha256:aace82bcccba3efc03e25d584e6a22d27a8e17caa3f4dd9f207e49b787aa9a91", size = 853277, upload-time = "2025-07-28T16:19:34.167Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e4/06/43084e6cbd4b3bc0e80f6be743b2e79fbc6eed8de9ad8c629939fa55d972/pymdown_extensions-10.16.1-py3-none-any.whl", hash = "sha256:d6ba157a6c03146a7fb122b2b9a121300056384eafeec9c9f9e584adfdb2a32d", size = 266178, upload-time = "2025-07-28T16:19:31.401Z" },
+]
+
+[[package]]
+name = "pyochain"
+version = "0.5.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cytoolz" },
+    { name = "more-itertools" },
+    { name = "rolling" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/18/81/f2c7d56c94e2660db10ce1349f37442aaf7a3dec23de622ba44172d3c121/pyochain-0.5.0.tar.gz", hash = "sha256:6c711a257c07fae6cc17a73fb249db267accec22056ce3fe335f265a435aa8a9", size = 41902, upload-time = "2025-10-23T12:13:55.392Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ed/e9/a154eb9b19e44c9979f0f1d5a0a24fe86d9c4316959295ea0b670e0a8fe9/pyochain-0.5.0-py3-none-any.whl", hash = "sha256:f570255d01695b13e33711191aeb72e2a89fb204fd7d9a805b6491a31f4d8d9b", size = 57426, upload-time = "2025-10-23T12:13:54.474Z" },
 ]
 
 [[package]]
@@ -576,7 +580,10 @@ wheels = [
 [[package]]
 name = "rolling"
 version = "0.5.0"
-source = { git = "https://github.com/OutSquareCapital/rolling.git?rev=add-type-stubs#70e8e6616fe400eda9739b29dff6d9b34321b550" }
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/64/94/f9d34899f0484839be8afa0a636a3a362e545fb6455039db460766f36ff6/rolling-0.5.0-py3-none-any.whl", hash = "sha256:68862be701c3a1cbf0c2fab391f8f29984b80371ac36ebbfd22056dc3604e60e", size = 29322, upload-time = "2023-09-16T20:30:15.206Z" },
+]
 
 [[package]]
 name = "sniffio"

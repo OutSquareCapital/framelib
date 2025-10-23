@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from enum import StrEnum
 
-import pychain as pc
+import pyochain as pc
 
 _DATA = "_"
 """Placeholder table name for duckdb scope."""

@@ -5,7 +5,7 @@ from typing import NamedTuple, Self, overload
 
 import narwhals as nw
 import polars as pl
-import pychain as pc
+import pyochain as pc
 from narwhals.typing import IntoLazyFrameT, LazyFrameT
 
 from .._core import BaseLayout, EntryType

@@ -4,7 +4,7 @@ from typing import Final, Self
 import duckdb
 import narwhals as nw
 import polars as pl
-import pychain as pc
+import pyochain as pc
 from narwhals.typing import IntoFrame, IntoFrameT, IntoLazyFrame, IntoLazyFrameT
 
 from .._core import Entry

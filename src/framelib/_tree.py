@@ -5,7 +5,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
-import pychain as pc
+import pyochain as pc
 
 if TYPE_CHECKING:
     from framelib._folder import Folder
