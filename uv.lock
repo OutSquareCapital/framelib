@@ -155,6 +155,11 @@ wheels = [
 ]
 
 [[package]]
+name = "doctester"
+version = "0.1.1"
+source = { git = "https://github.com/OutSquareCapital/doctester.git#a0845bcf168af77a07602e0d064e28ee19814cac" }
+
+[[package]]
 name = "docutils"
 version = "0.22.2"
 source = { registry = "https://pypi.org/simple" }
@@ -196,6 +201,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "doctester" },
     { name = "marimo" },
     { name = "pyarrow-stubs" },
 ]
@@ -210,6 +216,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "doctester", git = "https://github.com/OutSquareCapital/doctester.git" },
     { name = "marimo", specifier = ">=0.16.5" },
     { name = "pyarrow-stubs", specifier = ">=20.0.0.20250928" },
 ]
