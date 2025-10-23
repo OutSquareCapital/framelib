@@ -128,9 +128,9 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
         tables_in_db: list[str] = (
             self.show_tables().collect().get_column("name").to_list()
         )
-        pc.Iter(tables_in_db).diff_unique(self.schema().iter_keys().unwrap()).apply(
-            list
-        ).for_each(lambda q: self.connexion.execute(drop_table(q)))
+        pc.Iter.from_(tables_in_db).diff_unique(
+            self.schema().iter_keys().unwrap()
+        ).iter().for_each(lambda q: self.connexion.execute(drop_table(q)))
 
         return self
 

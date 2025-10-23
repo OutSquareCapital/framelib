@@ -13,9 +13,9 @@ from ._base import Column
 
 
 class KeysCache(NamedTuple):
-    primary: pc.Iter[str]
-    unique: pc.Iter[str]
-    constraint: pc.Iter[str]
+    primary: pc.Seq[str]
+    unique: pc.Seq[str]
+    constraint: pc.Seq[str]
 
 
 class KWord(StrEnum):
@@ -39,20 +39,20 @@ class Schema(BaseLayout[Column]):
 
     @classmethod
     def _set_cache(cls) -> type[Self]:
-        primary_keys: pc.Iter[str] = (
+        primary_keys: pc.Seq[str] = (
             cls.columns()
             .filter(lambda col: col.primary_key)
             .map(lambda col: col.name)
-            .apply(list)
+            .collect()
         )
-        unique_keys: pc.Iter[str] = (
+        unique_keys: pc.Seq[str] = (
             cls.columns()
             .filter(lambda col: col.unique)
             .map(lambda col: col.name)
-            .apply(list)
+            .collect()
         )
-        constraint_keys: pc.Iter[str] = (
-            primary_keys.concat(unique_keys.unwrap()).unique().apply(list)
+        constraint_keys: pc.Seq[str] = (
+            primary_keys.iter().chain(unique_keys.unwrap()).unique().collect()
         )
         cls._cache = KeysCache(
             primary=primary_keys,
@@ -69,11 +69,11 @@ class Schema(BaseLayout[Column]):
         """
         final_schema: dict[str, Column] = {}
         (
-            pc.Iter(cls.mro())
+            pc.Iter.from_(cls.mro())
             .filter_subclass(Schema, keep_parent=False)
             .reverse()
             .for_each(
-                lambda base: pc.Dict.from_(base)
+                lambda base: pc.Dict.from_object(base)
                 .filter_attr(base.__entry_type__, Column)
                 .for_each(
                     lambda name, obj: final_schema.setdefault(name, obj),
@@ -88,25 +88,25 @@ class Schema(BaseLayout[Column]):
         """
         Returns an iterator over the Column instances in the folder.
         """
-        return pc.Iter(cls._schema.values())
+        return pc.Iter.from_(cls._schema.values())
 
     @classmethod
     def column_names(cls) -> pc.Iter[str]:
         """The column names of this schema."""
-        return pc.Iter(cls._schema.keys())
+        return pc.Iter.from_(cls._schema.keys())
 
     @classmethod
-    def primary_keys(cls) -> pc.Iter[str]:
+    def primary_keys(cls) -> pc.Seq[str]:
         """The primary key columns of this schema."""
         return cls._cache.primary
 
     @classmethod
-    def unique_keys(cls) -> pc.Iter[str]:
+    def unique_keys(cls) -> pc.Seq[str]:
         """The unique key columns of this schema."""
         return cls._cache.unique
 
     @classmethod
-    def constraint_keys(cls) -> pc.Iter[str]:
+    def constraint_keys(cls) -> pc.Seq[str]:
         """The primary and unique key columns of this schema."""
         return cls._cache.constraint
 

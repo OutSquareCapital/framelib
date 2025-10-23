@@ -97,7 +97,7 @@ class Queries:
     ) -> str:
         update_keys: pc.Iter[str] = columns.filter_notin(conflict_keys)
         conflict_target: str = (
-            pc.Iter(conflict_keys)
+            pc.Iter.from_(conflict_keys)
             .map(lambda k: f'"{k}"')
             .into(lambda ks: f"({', '.join(ks)})")
         )

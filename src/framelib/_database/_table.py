@@ -26,12 +26,12 @@ class Table(Entry[Schema, Path]):
 
     def _on_conflict(self) -> str:
         pks: list[str] = self.model.primary_keys().into(list)
-        uks: pc.Iter[str] = self.model.unique_keys().apply(list)
+        uks: pc.Seq[str] = self.model.unique_keys().collect()
 
         has_pk = bool(pks)
         needs_explicit_conflict: bool = (
             has_pk and bool(uks.unwrap())
-        ) or uks.length() > 1
+        ) or uks.count() > 1
 
         if not needs_explicit_conflict:
             return self._qry.insert_or_replace()

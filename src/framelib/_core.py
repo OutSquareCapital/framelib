@@ -43,7 +43,7 @@ class BaseLayout[T](ABC):
 
     def __init_subclass__(cls) -> None:
         cls._schema: dict[str, T] = {}
-        pc.Dict.from_(cls).filter_attr(cls.__entry_type__, BaseEntry).for_each(
+        pc.Dict.from_object(cls).filter_attr(cls.__entry_type__, BaseEntry).for_each(
             _add_to_schema, cls._schema
         )
 

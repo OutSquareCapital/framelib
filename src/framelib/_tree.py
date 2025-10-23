@@ -19,25 +19,26 @@ class Tree(StrEnum):
 
 
 class FolderStructure(NamedTuple):
-    all_paths: pc.Iter[Path]
+    all_paths: pc.Seq[Path]
     dir_paths: set[Path]
     root: Path
 
 
-def _folders_from_hierarchy(hierarchy: Iterable[type]) -> pc.Iter[type[Folder]]:
+def _folders_from_hierarchy(hierarchy: Iterable[type]) -> pc.Seq[type[Folder]]:
     from ._folder import Folder
 
-    return pc.Iter(hierarchy).filter_subclass(Folder, keep_parent=False).apply(list)
+    return pc.Iter.from_(hierarchy).filter_subclass(Folder, keep_parent=False).collect()
 
 
 def _source_from_schema(folder: type[Folder]) -> Iterable[Path]:
     return folder.schema().iter_values().map(lambda f: f.source).unwrap()
 
 
-def _relative_to_root(folders: pc.Iter[type[Folder]], root: Path) -> list[Path]:
+def _relative_to_root(folders: pc.Seq[type[Folder]], root: Path) -> list[Path]:
     return (
-        folders.map(_source_from_schema)
-        .explode()
+        folders.iter()
+        .map(_source_from_schema)
+        .flatten()
         .filter_except(lambda p: p.relative_to(root), ValueError)
         .into(list)
     )
@@ -56,7 +57,7 @@ def _get_all_paths(hierarchy: Iterable[type]) -> FolderStructure:
             dir_paths.add(root.joinpath(parent))
             parent = parent.parent
     dir_paths.add(root)
-    return FolderStructure(pc.Iter(relatives).union(dir_paths), dir_paths, root)
+    return FolderStructure(pc.Iter.from_(relatives).union(dir_paths), dir_paths, root)
 
 
 def show_tree(hierarchy: Iterable[type]) -> str:
@@ -65,16 +66,18 @@ def show_tree(hierarchy: Iterable[type]) -> str:
     lines: list[str] = []
 
     def recurse(current: Path, prefix: str = "") -> None:
-        children = structure.all_paths.filter(lambda p: p.parent == current).sort()
-        children_len: int = children.length()
-        for idx, child in children.enumerate().unwrap():
+        children = (
+            structure.all_paths.iter().filter(lambda p: p.parent == current).sort()
+        )
+        children_len: int = children.count()
+        for idx, child in children.iter().enumerate().unwrap():
             is_last: bool = idx == children_len - 1
             lines.append(f"{prefix}{_connector(is_last)}{child.name}")
             if child in structure.dir_paths:
                 recurse(child, prefix + _continuation(is_last))
 
     recurse(structure.root)
-    return pc.Iter(lines).into(lambda x: f"{structure.root}\n" + "\n".join(x))
+    return pc.Iter.from_(lines).into(lambda x: f"{structure.root}\n" + "\n".join(x))
 
 
 def _connector(is_last: bool) -> Tree:
