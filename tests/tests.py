@@ -132,7 +132,3 @@ def run_tests() -> None:
     except Exception as e:
         print(f"❌ ERREUR PENDANT LES TESTS: \n{e}")
     print("\n🎉 Tous les tests sont passés avec succès!")
-
-
-if __name__ == "__main__":
-    run_tests()

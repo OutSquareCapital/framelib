@@ -26,7 +26,7 @@ class Table(Entry[Schema, Path]):
 
     def _on_conflict(self) -> str:
         pks: list[str] = self.model.primary_keys().into(list)
-        uks: pc.Seq[str] = self.model.unique_keys().collect()
+        uks: pc.Seq[str] = self.model.unique_keys()
 
         has_pk = bool(pks)
         needs_explicit_conflict: bool = (

@@ -97,6 +97,12 @@ Get back your DuckDB queries as narwhals lazyframe, and write your queries with 
 uv add git+https://github.com/OutSquareCapital/framelib.git
 ```
 
+## Development
+
+```bash
+uv run -m tests.main
+```
+
 ## Quickstart
 
 A marimo notebook with more detailed examples is available at <https://static.marimo.app/static/example-z9f2>
