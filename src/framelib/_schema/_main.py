@@ -11,6 +11,7 @@ import polars as pl
 import pyochain as pc
 
 from ._base import Column, TimeUnit
+from ._schema import Schema
 
 
 @dataclass(slots=True)
@@ -74,11 +75,14 @@ class Struct(Column):
 
     def __init__(
         self,
-        fields: Mapping[str, Column],
+        fields: Mapping[str, Column] | type[Schema],
         primary_key: bool = False,
         unique: bool = False,
     ) -> None:
-        self._fields = pc.Dict.from_(fields)
+        if isclass(fields):
+            self._fields = fields.schema()
+        else:
+            self._fields = pc.Dict.from_(fields)
         super().__init__(primary_key=primary_key, unique=unique)
 
     @property
