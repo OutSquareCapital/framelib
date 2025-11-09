@@ -19,7 +19,7 @@ class File[T: Schema](Entry[T, Path], ABC):
     def __init__(self, model: type[T] = Schema) -> None:
         self.model = model
 
-    def __from_source__(self, source: Path | str) -> None:
+    def __set_source__(self, source: Path | str) -> None:
         self.source = Path(source, self._name)
         if self.__class__._with_suffix:
             self.source = self.source.with_suffix(f".{self._cls_name.lower()}")

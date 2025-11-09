@@ -21,7 +21,15 @@ class Folder(BaseLayout[File[Schema]]):
             cls.__source__ = Path()
 
         cls.__source__ = cls.__source__.joinpath(cls.__name__.lower())
-        cls.schema().iter_values().for_each(lambda f: f.__from_source__(cls.source()))
+        cls._set_files_source()
+
+    @classmethod
+    def _set_files_source(cls) -> None:
+        return (
+            cls.schema()
+            .iter_values()
+            .for_each(lambda file: file.__set_source__(cls.source()))
+        )
 
     @classmethod
     def source(cls) -> Path:

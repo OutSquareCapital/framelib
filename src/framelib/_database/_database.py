@@ -28,11 +28,16 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
         """Opens the connection to the database."""
         if not self._is_connected:
             self._connexion = duckdb.connect(self.source)
-            self.schema().iter_values().for_each(
-                lambda t: t.__from_connexion__(self._connexion)
-            )
+            self._set_tables_connexion()
             self._is_connected = True
         return
+
+    def _set_tables_connexion(self) -> None:
+        return (
+            self.schema()
+            .iter_values()
+            .for_each(lambda table: table.__set_connexion__(self._connexion))
+        )
 
     def close(self) -> None:
         """Closes the connection to the database."""
@@ -62,7 +67,7 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
 
         return fn(self, *args, **kwargs)
 
-    def __from_source__(self, source: Path) -> None:
+    def __set_source__(self, source: Path) -> None:
         self._source = Path(source, self._name).with_suffix(_DDB)
         self._model = self.schema()
         for table in self._schema.values():
@@ -125,14 +130,18 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
         Drops tables from the database that are not present in the schema.
         """
         self._connect()
-        tables_in_db: list[str] = (
-            self.show_tables().collect().get_column("name").to_list()
-        )
-        pc.Iter.from_(tables_in_db).diff_unique(
-            self.schema().iter_keys().unwrap()
-        ).iter().for_each(lambda q: self.connexion.execute(drop_table(q)))
+        self._drop_tables()
 
         return self
+
+    def _drop_tables(self) -> None:
+        tables_in_db = self.show_tables().collect().get_column("name").to_list()
+        return (
+            pc.Seq(tables_in_db)
+            .diff_unique(self.schema().iter_keys().unwrap())
+            .iter()
+            .for_each(lambda qry: self.connexion.execute(drop_table(qry)))
+        )
 
     @property
     def source(self) -> Path:

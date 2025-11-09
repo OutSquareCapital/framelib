@@ -19,7 +19,7 @@ class Table(Entry[Schema, Path]):
     _is_table: Final[bool] = True
     _qry: Queries
 
-    def __from_connexion__(self, con: duckdb.DuckDBPyConnection) -> Self:
+    def __set_connexion__(self, con: duckdb.DuckDBPyConnection) -> Self:
         self._con: duckdb.DuckDBPyConnection = con
         self._qry = Queries(self._name)
         return self

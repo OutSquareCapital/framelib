@@ -43,8 +43,14 @@ class BaseLayout[T](ABC):
 
     def __init_subclass__(cls) -> None:
         cls._schema: dict[str, T] = {}
-        pc.Dict.from_object(cls).filter_attr(cls.__entry_type__, BaseEntry).for_each(
-            _add_to_schema, cls._schema
+        cls._add_entries()
+
+    @classmethod
+    def _add_entries(cls):
+        return (
+            pc.Dict.from_object(cls)
+            .filter_attr(cls.__entry_type__, BaseEntry)
+            .for_each(_add_to_schema, cls._schema)
         )
 
     @classmethod
@@ -60,7 +66,7 @@ class Entry[T, U](BaseEntry):
     def __init__(self, model: type[T] = object) -> None:
         self.model = model
 
-    def __from_source__(self, source: U) -> None:
+    def __set_source__(self, source: U) -> None:
         self.source = source
 
     def __repr__(self) -> str:
