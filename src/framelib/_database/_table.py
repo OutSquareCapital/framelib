@@ -15,7 +15,7 @@ type DuckFrame = nw.LazyFrame[duckdb.DuckDBPyRelation]
 """Syntactic sugar for narwhals.LazyFrame[duckdb.DuckDBPyRelation]"""
 
 
-class Table(Entry[Schema, Path]):
+class Table[T: Schema](Entry[T, Path]):
     _is_table: Final[bool] = True
     _qry: Queries
 

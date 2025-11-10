@@ -16,13 +16,13 @@ from ._table import DuckFrame, Table
 _DDB = ".ddb"
 
 
-class DataBase(BaseLayout[Table], BaseEntry, ABC):
+class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
     _is_file: Final[bool] = True
     _is_connected: bool = False
     _connexion: duckdb.DuckDBPyConnection
     __entry_type__ = EntryType.TABLE
     _source: Path
-    _model: pc.Dict[str, Table]
+    _model: pc.Dict[str, Table[Any]]
 
     def _connect(self) -> None:
         """Opens the connection to the database."""
@@ -149,6 +149,6 @@ class DataBase(BaseLayout[Table], BaseEntry, ABC):
         return self._source
 
     @property
-    def model(self) -> pc.Dict[str, Table]:
+    def model(self) -> pc.Dict[str, Table[Any]]:
         """Returns the model of the database."""
         return self._model

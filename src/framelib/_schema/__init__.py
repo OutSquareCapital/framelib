@@ -16,7 +16,7 @@ from ._basictypes import (
     UInt64,
     UInt128,
 )
-from ._main import Array, Categorical, Datetime, Decimal, Enum, List, Struct
+from ._composedtypes import Array, Categorical, Datetime, Decimal, Enum, List, Struct
 from ._schema import Schema
 
 __all__ = [
