@@ -25,8 +25,8 @@ class Table[T: Schema](Entry[T, Path]):
         return self
 
     def _on_conflict(self) -> str:
-        pks: list[str] = self.model.primary_keys().into(list)
-        uks: pc.Seq[str] = self.model.unique_keys()
+        pks: list[str] = self.model.constraints().primary.into(list)
+        uks: pc.Seq[str] = self.model.constraints().unique
 
         has_pk = bool(pks)
         needs_explicit_conflict: bool = (
@@ -36,8 +36,13 @@ class Table[T: Schema](Entry[T, Path]):
         if not needs_explicit_conflict:
             return self._qry.insert_or_replace()
         else:
-            return self.model.column_names().pipe(
-                self._qry.insert_on_conflict_update, pks if has_pk else [uks.first()]
+            return (
+                self.model.schema()
+                .iter_keys()
+                .pipe(
+                    self._qry.insert_on_conflict_update,
+                    pks if has_pk else [uks.first()],
+                )
             )
 
     @property

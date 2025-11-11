@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC
 from enum import StrEnum
-from typing import Any, Protocol, Self
+from typing import Any
 
 import pyochain as pc
 
@@ -13,11 +13,6 @@ class EntryType(StrEnum):
     REQUEST = "_is_request"
     COLUMN = "_is_column"
     SOURCE = "__source__"
-
-
-class PathLike(Protocol):
-    def joinpath(self, *other: Any) -> Self: ...
-    def with_suffix(self, suffix: str) -> Self: ...
 
 
 class BaseEntry(ABC):

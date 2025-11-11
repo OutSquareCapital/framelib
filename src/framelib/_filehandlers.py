@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Any, Final
 
 import duckdb
-import narwhals as nw
 import polars as pl
 
 from ._core import Entry
@@ -181,12 +180,11 @@ class NDJson[T: Schema](File[T]):
 class Json[T: Schema](File[T]):
     """
     Json file handler
-    Note that the scan method return a duckdb relation wrapped in a narwhals LazyFrame.
     """
 
     @property
-    def scan(self) -> nw.LazyFrame[duckdb.DuckDBPyRelation]:
-        return nw.from_native(duckdb.read_json(self.source.as_posix()))
+    def scan(self) -> pl.LazyFrame:
+        return duckdb.read_json(self.source.as_posix()).pl(lazy=True)  # type: ignore
 
     @property
     def read(self):

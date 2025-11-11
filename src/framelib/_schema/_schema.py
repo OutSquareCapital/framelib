@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+from dataclasses import dataclass
 from enum import StrEnum
-from typing import NamedTuple, Self, overload
+from typing import overload
 
 import narwhals as nw
 import polars as pl
@@ -12,15 +14,57 @@ from .._core import BaseLayout, EntryType
 from ._base import Column
 
 
-class KeysCache(NamedTuple):
-    primary: pc.Seq[str]
-    unique: pc.Seq[str]
-    constraint: pc.Seq[str]
-
-
 class KWord(StrEnum):
     PRIMARY_KEY = "PRIMARY KEY"
     UNIQUE = "UNIQUE"
+
+
+def _cols_name(
+    cols: pc.Iter[Column], predicate: Callable[[Column], bool]
+) -> pc.Seq[str]:
+    return cols.filter(predicate).map(lambda col: col.name).collect()
+
+
+def _cache_from_cols(cols: pc.Iter[Column]) -> KeysConstraints:
+    return KeysConstraints(
+        primary=cols.pipe(_cols_name, lambda col: col.primary_key),
+        unique=cols.pipe(_cols_name, lambda col: col.unique),
+    )
+
+
+@dataclass(slots=True, frozen=True)
+class KeysConstraints:
+    """Holds the keys constraints of a schema."""
+
+    primary: pc.Seq[str]
+    unique: pc.Seq[str]
+
+    @property
+    def all(self) -> pc.Seq[str]:
+        return self.primary.iter().chain(self.unique.unwrap()).unique().collect()
+
+
+def _col_from_base(
+    base: type[Schema], final_schema: dict[str, Column]
+) -> pc.Dict[str, Column]:
+    return (
+        pc.Dict.from_object(base)
+        .filter_attr(base.__entry_type__, Column)
+        .for_each(
+            lambda name, obj: final_schema.setdefault(name, obj),
+        )
+    )
+
+
+def _schema_from_mro(mro: list[type[Schema]]) -> dict[str, Column]:
+    final_schema: dict[str, Column] = {}
+    (
+        pc.Iter.from_(mro)
+        .filter_subclass(Schema, keep_parent=False)
+        .reverse()
+        .for_each(_col_from_base, final_schema)
+    )
+    return final_schema
 
 
 class Schema(BaseLayout[Column]):
@@ -30,85 +74,18 @@ class Schema(BaseLayout[Column]):
     """
 
     __entry_type__ = EntryType.COLUMN
-    _cache: KeysCache
+    _cache: KeysConstraints
 
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
-        cls._set_cache()._set_schema()
+        cls._cache = cls.schema().iter_values().pipe(_cache_from_cols)
+        cls._schema = _schema_from_mro(cls.mro())
         return
 
     @classmethod
-    def _set_cache(cls) -> type[Self]:
-        primary_keys: pc.Seq[str] = (
-            cls.columns()
-            .filter(lambda col: col.primary_key)
-            .map(lambda col: col.name)
-            .collect()
-        )
-        unique_keys: pc.Seq[str] = (
-            cls.columns()
-            .filter(lambda col: col.unique)
-            .map(lambda col: col.name)
-            .collect()
-        )
-        constraint_keys: pc.Seq[str] = (
-            primary_keys.iter().chain(unique_keys.unwrap()).unique().collect()
-        )
-        cls._cache = KeysCache(
-            primary=primary_keys,
-            unique=unique_keys,
-            constraint=constraint_keys,
-        )
-        return cls
-
-    @classmethod
-    def _set_schema(cls) -> type[Self]:
-        """
-        Initializes the schema by collecting columns from parent classes
-        and then adding the columns from the current class, preserving order.
-        """
-        final_schema: dict[str, Column] = {}
-        (
-            pc.Iter.from_(cls.mro())
-            .filter_subclass(Schema, keep_parent=False)
-            .reverse()
-            .for_each(
-                lambda base: pc.Dict.from_object(base)
-                .filter_attr(base.__entry_type__, Column)
-                .for_each(
-                    lambda name, obj: final_schema.setdefault(name, obj),
-                )
-            )
-        )
-        cls._schema = final_schema
-        return cls
-
-    @classmethod
-    def columns(cls) -> pc.Iter[Column]:
-        """
-        Returns an iterator over the Column instances in the folder.
-        """
-        return pc.Iter.from_(cls._schema.values())
-
-    @classmethod
-    def column_names(cls) -> pc.Iter[str]:
-        """The column names of this schema."""
-        return pc.Iter.from_(cls._schema.keys())
-
-    @classmethod
-    def primary_keys(cls) -> pc.Seq[str]:
-        """The primary key columns of this schema."""
-        return cls._cache.primary
-
-    @classmethod
-    def unique_keys(cls) -> pc.Seq[str]:
-        """The unique key columns of this schema."""
-        return cls._cache.unique
-
-    @classmethod
-    def constraint_keys(cls) -> pc.Seq[str]:
-        """The primary and unique key columns of this schema."""
-        return cls._cache.constraint
+    def constraints(cls) -> KeysConstraints:
+        """Returns the keys constraints of the schema."""
+        return cls._cache
 
     @classmethod
     def sql_schema(cls) -> str:
@@ -126,7 +103,12 @@ class Schema(BaseLayout[Column]):
                 definition += KWord.UNIQUE
             return definition
 
-        return cls.columns().map(_convert_col).into(", ".join)
+        return cls.schema().iter_values().map(_convert_col).into(", ".join)
+
+    @classmethod
+    def pl_schema(cls) -> pl.Schema:
+        """Returns the Polars schema defined by this Schema."""
+        return cls.schema().map_values(lambda c: c.pl_dtype).into(pl.Schema)
 
     @overload
     @classmethod
@@ -154,7 +136,10 @@ class Schema(BaseLayout[Column]):
             nw.from_native(df)
             .lazy()
             .select(
-                cls.columns().map(lambda col: col.nw_col.cast(col.nw_dtype)).unwrap()
+                cls.schema()
+                .iter_values()
+                .map(lambda col: col.nw_col.cast(col.nw_dtype))
+                .unwrap()
             )
         )
 
@@ -167,7 +152,8 @@ class Schema(BaseLayout[Column]):
         will only work with polars {Data, Lazy}Frames.
         """
         return df.lazy().select(
-            cls.columns()
+            cls.schema()
+            .iter_values()
             .map(lambda c: c.pl_col.cast(c.pl_dtype, strict=False))
             .unwrap()
         )
