@@ -29,12 +29,30 @@ class MySchema(fl.Schema):
 
 
 class MyData(fl.Folder):
-    __source__ = Path("data")
     my_csv = fl.CSV(model=MySchema)
 
 
 MyData.my_csv.write(df)
 MyData.my_csv.scan_cast().select(MySchema.value.pl_col.sum()).collect()
+
+
+
+class MyJsonData(fl.Folder):
+    __source__ = Path(__file__).parent  # override inferred source path if needed
+    infos = fl.Json()
+    sales = fl.Json()
+    clients = fl.Json()
+
+# Lots of convenient methods availables thanks to framelib + pyochain working together
+# Rewrite all JSON files to NDJSON format conveniently using the schema API
+def rewrite_json_to_ndjson() -> None:
+    return (
+        MyJsonData.schema()
+        .map_values(lambda x: x.read().write_ndjson(x.source.with_suffix(".ndjson")))
+        .pipe(lambda _: print(f"success: {MyJsonData.show_tree()}"))
+    )
+
+
 ```
 
 ## Why Framelib?
