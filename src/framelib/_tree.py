@@ -31,7 +31,7 @@ def _folders_from_hierarchy(hierarchy: Iterable[type]) -> pc.Seq[type[Folder]]:
 
 
 def _source_from_schema(folder: type[Folder]) -> Iterable[Path]:
-    return folder.schema().iter_values().map(lambda f: f.source).unwrap()
+    return folder.schema().iter_values().map(lambda f: f.source).inner()
 
 
 def _relative_to_root(folders: pc.Seq[type[Folder]], root: Path) -> list[Path]:
@@ -70,7 +70,7 @@ def show_tree(hierarchy: Iterable[type]) -> str:
             structure.all_paths.iter().filter(lambda p: p.parent == current).sort()
         )
         children_len: int = children.count()
-        for idx, child in children.iter().enumerate().unwrap():
+        for idx, child in children.iter().enumerate().inner():
             is_last: bool = idx == children_len - 1
             lines.append(f"{prefix}{_connector(is_last)}{child.name}")
             if child in structure.dir_paths:

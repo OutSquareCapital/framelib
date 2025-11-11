@@ -190,7 +190,7 @@ wheels = [
 
 [[package]]
 name = "framelib"
-version = "0.1.41"
+version = "0.1.43"
 source = { editable = "." }
 dependencies = [
     { name = "duckdb" },
@@ -387,11 +387,11 @@ wheels = [
 
 [[package]]
 name = "narwhals"
-version = "2.10.2"
+version = "2.11.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/c5/dc/8db74daf8c2690ec696c1d772a33cc01511559ee8a9e92d7ed85a18e3c22/narwhals-2.10.2.tar.gz", hash = "sha256:ff738a08bc993cbb792266bec15346c1d85cc68fdfe82a23283c3713f78bd354", size = 584954, upload-time = "2025-11-04T16:36:42.281Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7d/a2/25208347aa4c2d82a265cf4bc0873aaf5069f525c0438146821e7fc19ef5/narwhals-2.11.0.tar.gz", hash = "sha256:d23f3ea7efc6b4d0355444a72de6b8fa3011175585246c3400c894a7583964af", size = 589233, upload-time = "2025-11-10T16:28:35.675Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/47/a9/9e02fa97e421a355fc5e818e9c488080fce04a8e0eebb3ed75a84f041c4a/narwhals-2.10.2-py3-none-any.whl", hash = "sha256:059cd5c6751161b97baedcaf17a514c972af6a70f36a89af17de1a0caf519c43", size = 419573, upload-time = "2025-11-04T16:36:40.574Z" },
+    { url = "https://files.pythonhosted.org/packages/c0/a1/4d21933898e23b011ae0528151b57a9230a62960d0919bf2ee48c7f5c20a/narwhals-2.11.0-py3-none-any.whl", hash = "sha256:a9795e1e44aa94e5ba6406ef1c5ee4c172414ced4f1aea4a79e5894f0c7378d4", size = 423069, upload-time = "2025-11-10T16:28:33.522Z" },
 ]
 
 [[package]]
@@ -543,16 +543,16 @@ wheels = [
 
 [[package]]
 name = "pyochain"
-version = "0.5.31"
+version = "0.5.42"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cytoolz" },
     { name = "more-itertools" },
     { name = "rolling" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4b/df/2df2c99edc3ac8f449608a59a4b4051bdbb940a82bd307578896f0721d00/pyochain-0.5.31.tar.gz", hash = "sha256:d60e718ef2f0ff750ac2611276f3ff5fdfc4c06bb6ce0efa0aea8afaebafeb72", size = 41865, upload-time = "2025-11-08T23:28:39.131Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2d/fb/9fbd1b48135d334ce05d5b6a55d4d580bbfe3c84208e31fed68e326b19aa/pyochain-0.5.42.tar.gz", hash = "sha256:7be1f1800d5b3abb9bdd7a5d55ad5314240f4fe3f17e11f4dec8529b38512a74", size = 46211, upload-time = "2025-11-11T17:35:43.376Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1c/9a/e6758d046bee2de23caf4fd409623c53c04f04ab213137f804a1e4e8cf07/pyochain-0.5.31-py3-none-any.whl", hash = "sha256:0e731fdecc2f2623d5dd8ffe71ad92fdc7745351916f0379a20b2069ad58af64", size = 57206, upload-time = "2025-11-08T23:28:38.188Z" },
+    { url = "https://files.pythonhosted.org/packages/ef/81/1e94011559861b67bfce2022c96dfbd6b59cac840090338cec8a09e21407/pyochain-0.5.42-py3-none-any.whl", hash = "sha256:788c44420bdc64b9a9a07faedecf091046a8f6e73cf03545b1deda1880db96d3", size = 63170, upload-time = "2025-11-11T17:35:42.289Z" },
 ]
 
 [[package]]

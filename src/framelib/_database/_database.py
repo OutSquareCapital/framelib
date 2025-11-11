@@ -136,7 +136,7 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
         tables_in_db = self.show_tables().collect().get_column("name").to_list()
         return (
             pc.Seq(tables_in_db)
-            .diff_unique(self.schema().iter_keys().unwrap())
+            .diff_unique(self.schema().iter_keys().inner())
             .iter()
             .for_each(lambda qry: self.connexion.execute(drop_table(qry)))
         )

@@ -87,11 +87,11 @@ class Struct(Column):
 
     @property
     def pl_dtype(self) -> pl.Struct:
-        return pl.Struct(self.fields.map_values(lambda col: col.pl_dtype).unwrap())
+        return pl.Struct(self.fields.map_values(lambda col: col.pl_dtype).inner())
 
     @property
     def nw_dtype(self) -> nw.Struct:
-        return nw.Struct(self.fields.map_values(lambda col: col.nw_dtype).unwrap())
+        return nw.Struct(self.fields.map_values(lambda col: col.nw_dtype).inner())
 
     @property
     def fields(self) -> pc.Dict[str, Column]:
