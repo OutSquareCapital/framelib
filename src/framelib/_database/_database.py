@@ -22,7 +22,6 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
     _connexion: duckdb.DuckDBPyConnection
     __entry_type__ = EntryType.TABLE
     _source: Path
-    _model: pc.Dict[str, Table[Any]]
 
     def _connect(self) -> None:
         """Opens the connection to the database."""
@@ -69,7 +68,6 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
 
     def __set_source__(self, source: Path) -> None:
         self._source = Path(source, self._name).with_suffix(_DDB)
-        self._model = self.schema()
         for table in self._schema.values():
             table.source = self.source
 
@@ -147,8 +145,3 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
     def source(self) -> Path:
         """Returns the source path of the database."""
         return self._source
-
-    @property
-    def model(self) -> pc.Dict[str, Table[Any]]:
-        """Returns the model of the database."""
-        return self._model
