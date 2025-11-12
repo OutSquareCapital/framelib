@@ -57,10 +57,10 @@ class Folder(BaseLayout[File[Schema]]):
         ```python
         >>> import framelib as fl
         >>> class MyFolder(fl.Folder):
-        ...     data = fl.CsvFile()
-        ...     logs = fl.JsonFile()
+        ...     data = fl.CSV()
+        ...     logs = fl.Json()
         >>> print(MyFolder.show_tree())
-        MyFolder
+        myfolder
         ├── data.csv
         └── logs.json
 
