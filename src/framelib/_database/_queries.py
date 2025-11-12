@@ -52,22 +52,20 @@ class Queries:
         def _(kc: KeysConstraints) -> str:
             msg = "At least one constraint expected"
             conflict_keys = kc.primary.unwrap_or(kc.uniques.expect(msg))
-            conflict_target: str = (
-                conflict_keys.iter()
-                .map(lambda k: f'"{k}"')
-                .into(lambda ks: f"({', '.join(ks)})")
-            )
+            target: str = conflict_keys.iter().map(lambda k: f'"{k}"').join(", ")
+            conflict_target: str = f"({target})"
+
             update_clause: str = (
                 model.schema()
                 .iter_keys()
                 .filter(lambda k: k not in conflict_keys.inner())
                 .map(lambda col: f'"{col}" = excluded."{col}"')
-                .into(", ".join)
+                .join(", ")
             )
 
             return self.insert_on_conflict_update(conflict_target, update_clause)
 
-        return model.constraints().map_or(self.insert_or_replace(), _)
+        return model.constraints().map_or(_, self.insert_or_replace())
 
     def create_from(self) -> str:
         return f"""

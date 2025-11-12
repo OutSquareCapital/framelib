@@ -73,7 +73,7 @@ class Schema(BaseLayout[Column]):
         Returns:
             str: The SQL schema definition.
         """
-        return cls.schema().iter_values().map(col_to_sql).into(", ".join)
+        return cls.schema().iter_values().map(col_to_sql).join(", ")
 
     @classmethod
     def pl_schema(cls) -> pl.Schema:
