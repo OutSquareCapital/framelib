@@ -8,7 +8,7 @@ import duckdb
 import polars as pl
 
 from ._core import Entry
-from ._schema import Schema
+from ._database import Schema
 
 
 class File[T: Schema](Entry[T, Path], ABC):

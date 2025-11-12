@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -93,31 +94,32 @@ class Queries:
         """
 
     def insert_on_conflict_update(
-        self, columns: pc.Iter[str], conflict_keys: list[str]
+        self, update_keys: pc.Option[pc.Iter[str]], conflict_keys: Sequence[str]
     ) -> str:
-        update_keys: pc.Iter[str] = columns.filter_notin(conflict_keys)
         conflict_target: str = (
             pc.Iter.from_(conflict_keys)
             .map(lambda k: f'"{k}"')
             .into(lambda ks: f"({', '.join(ks)})")
         )
+        match update_keys.is_some():
+            case False:
+                return f"""
+                --sql
+                INSERT INTO {self.name} SELECT * FROM {_DATA}
+                ON CONFLICT {conflict_target} DO NOTHING;
+                """
+            case _:
+                update_clause: str = (
+                    update_keys.unwrap()
+                    .map(lambda col: f'"{col}" = excluded."{col}"')
+                    .into(", ".join)
+                )
 
-        if not update_keys.unwrap():
-            return f"""
-            --sql
-            INSERT INTO {self.name} SELECT * FROM {_DATA}
-            ON CONFLICT {conflict_target} DO NOTHING;
-            """
-
-        update_clause: str = update_keys.map(
-            lambda col: f'"{col}" = excluded."{col}"'
-        ).into(", ".join)
-
-        return f"""
-        --sql
-        INSERT INTO {self.name} SELECT * FROM {_DATA}
-        ON CONFLICT {conflict_target} DO UPDATE SET {update_clause};
-        """
+                return f"""
+                --sql
+                INSERT INTO {self.name} SELECT * FROM {_DATA}
+                ON CONFLICT {conflict_target} DO UPDATE SET {update_clause};
+                """
 
     def columns_schema(self) -> str:
         return f"""

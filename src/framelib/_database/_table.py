@@ -1,5 +1,6 @@
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Final, Self
+from typing import Final, Never, Self
 
 import duckdb
 import narwhals as nw
@@ -8,8 +9,8 @@ import pyochain as pc
 from narwhals.typing import IntoFrame, IntoFrameT, IntoLazyFrame, IntoLazyFrameT
 
 from .._core import Entry
-from .._schema import Schema
 from ._queries import Queries
+from ._schema import Schema
 
 type DuckFrame = nw.LazyFrame[duckdb.DuckDBPyRelation]
 """Syntactic sugar for narwhals.LazyFrame[duckdb.DuckDBPyRelation]"""
@@ -25,25 +26,36 @@ class Table[T: Schema](Entry[T, Path]):
         return self
 
     def _on_conflict(self) -> str:
-        pks: list[str] = self.model.constraints().primary.into(list)
-        uks: pc.Seq[str] = self.model.constraints().unique
-
-        has_pk = bool(pks)
-        needs_explicit_conflict: bool = (
-            has_pk and bool(uks.unwrap())
-        ) or uks.count() > 1
-
-        if not needs_explicit_conflict:
+        constraints = self.model.constraints()
+        if constraints.all.is_none():
             return self._qry.insert_or_replace()
-        else:
-            return (
+
+        conflict_keys: Sequence[str] = (
+            constraints.primary.map(lambda c: c.inner())
+            .or_else(lambda: constraints.uniques.map(lambda u: u.inner()))
+            .unwrap_or_else(lambda: self._raise_ambiguous_constraints(constraints.all))
+        )
+        return self._qry.insert_on_conflict_update(
+            (
                 self.model.schema()
                 .iter_keys()
-                .pipe(
-                    self._qry.insert_on_conflict_update,
-                    pks if has_pk else [uks.first()],
-                )
+                .filter(lambda k: k not in conflict_keys)
+                .pipe(lambda it: pc.Some(it) if it.count() > 0 else pc.NONE)
+            ),
+            conflict_keys,
+        )
+
+    def _raise_ambiguous_constraints(
+        self, constraints: pc.Option[pc.Seq[str]]
+    ) -> Never:
+        raise ValueError(
+            (
+                f"Ambiguous unique constraints for table '{self._name}': "
+                f"{constraints.unwrap().inner()}. "
+                "Define a primary_key or a single unique column to use "
+                "`insert_or_replace` upsert semantics."
             )
+        )
 
     @property
     def relation(self) -> duckdb.DuckDBPyRelation:

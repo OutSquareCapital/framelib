@@ -17,11 +17,9 @@ from ._basictypes import (
     UInt128,
 )
 from ._composedtypes import Array, Categorical, Datetime, Decimal, Enum, List, Struct
-from ._schema import Schema
 
 __all__ = [
     "Column",
-    "Schema",
     "Array",
     "Boolean",
     "Date",

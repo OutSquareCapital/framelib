@@ -10,8 +10,8 @@ import narwhals as nw
 import polars as pl
 import pyochain as pc
 
+from .._core import BaseLayout
 from ._base import Column, TimeUnit
-from ._schema import Schema
 
 
 @dataclass(slots=True)
@@ -75,7 +75,7 @@ class Struct(Column):
 
     def __init__(
         self,
-        fields: Mapping[str, Column] | type[Schema],
+        fields: Mapping[str, Column] | type[BaseLayout[Column]],
         primary_key: bool = False,
         unique: bool = False,
     ) -> None:

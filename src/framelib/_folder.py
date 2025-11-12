@@ -6,8 +6,8 @@ from typing import Self
 import pyochain as pc
 
 from ._core import BaseLayout, EntryType
+from ._database import Schema
 from ._filehandlers import File
-from ._schema import Schema
 from ._tree import show_tree
 
 

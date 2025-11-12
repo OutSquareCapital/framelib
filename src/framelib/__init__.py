@@ -1,7 +1,4 @@
-from ._database import DataBase, DuckFrame, Table
-from ._filehandlers import CSV, Json, NDJson, Parquet, ParquetPartitioned
-from ._folder import Folder
-from ._schema import (
+from ._columns import (
     Array,
     Boolean,
     Categorical,
@@ -18,7 +15,6 @@ from ._schema import (
     Int64,
     Int128,
     List,
-    Schema,
     String,
     Struct,
     UInt8,
@@ -27,6 +23,9 @@ from ._schema import (
     UInt64,
     UInt128,
 )
+from ._database import DataBase, DuckFrame, Schema, Table
+from ._filehandlers import CSV, Json, NDJson, Parquet, ParquetPartitioned
+from ._folder import Folder
 
 __all__ = [
     "DuckFrame",
