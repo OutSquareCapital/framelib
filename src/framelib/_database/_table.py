@@ -10,8 +10,11 @@ from .._core import Entry
 from ._queries import Queries
 from ._schema import Schema
 
-type DuckFrame = nw.LazyFrame[duckdb.DuckDBPyRelation]
-"""Syntactic sugar for `narwhals.LazyFrame[duckdb.DuckDBPyRelation]`"""
+type DuckRelation = duckdb.DuckDBPyRelation
+"""Syntactic sugar for `DuckRelation`"""
+
+type DuckFrame = nw.LazyFrame[DuckRelation]
+"""Syntactic sugar for `narwhals.LazyFrame[DuckRelation]`"""
 
 
 class Table[T: Schema](Entry[T, Path]):
@@ -33,14 +36,22 @@ class Table[T: Schema](Entry[T, Path]):
         return self
 
     @property
-    def relation(self) -> duckdb.DuckDBPyRelation:
+    def relation(self) -> DuckRelation:
         """
         Returns:
-            out (duckdb.DuckDBPyRelation): The DuckDBPyRelation of the table.
+            out (DuckRelation): The DuckDBPyRelation of the table.
         """
         return self._con.table(self._name)
 
     def _from_df(self, df: IntoFrameT | IntoLazyFrameT) -> IntoFrameT | IntoLazyFrameT:
+        """
+        Cast the input frame to this table's `Schema` and return the native frame.
+
+        The caller **must** bind the result to a local variable named "_"
+        so `DuckDB` can resolve it in SQL queries like `SELECT * FROM _`.
+
+        See https://duckdb.org/docs/stable/guides/python/sql_on_pandas for details.
+        """
         return nw.from_native(df).lazy().pipe(self.model.cast).to_native()
 
     def read(self) -> pl.DataFrame:
