@@ -40,12 +40,16 @@ class File[T: Schema](Entry[T, Path], ABC):
     def read_cast(self) -> pl.DataFrame:
         """
         Read the file and cast it to the defined schema.
+        Returns:
+            out (polars.LazyFrame): The read and casted DataFrame.
         """
         return self.read().pipe(self.model.cast).to_native().collect()
 
     def scan_cast(self) -> pl.LazyFrame:
         """
         Scan the file and cast it to the defined schema.
+        Returns:
+            out (polars.LazyFrame): The scanned and casted LazyFrame.
         """
         return self.scan().pipe(self.model.cast).to_native()
 
@@ -54,6 +58,12 @@ class File[T: Schema](Entry[T, Path], ABC):
     ) -> None:
         """
         Cast the dataframe to the defined schema and write it to the file.
+        Args:
+            df (pl.LazyFrame | pl.DataFrame): The dataframe to write.
+            *args: Additional positional arguments to pass to the write function.
+            **kwargs: Additional keyword arguments to pass to the write function.
+        Returns:
+            None
         """
         self.model.cast(df.lazy().collect()).to_native().pipe(
             self.write, *args, **kwargs
@@ -184,6 +194,11 @@ class Json[T: Schema](File[T]):
 
     @property
     def scan(self) -> pl.LazyFrame:
+        """
+        Scan the file, using DuckDB.
+        Returns:
+            out (polars.LazyFrame): The scanned LazyFrame.
+        """
         return duckdb.read_json(self.source.as_posix()).pl(lazy=True)  # type: ignore
 
     @property

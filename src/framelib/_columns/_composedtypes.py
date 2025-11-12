@@ -95,7 +95,10 @@ class Struct(Column):
 
     @property
     def fields(self) -> pc.Dict[str, Column]:
-        """The fields of this struct."""
+        """
+        Returns:
+            out (pyochain.Dict[str, Column]): The fields of this struct.
+        """
         return self._fields
 
 
@@ -118,7 +121,10 @@ class List(Column):
 
     @property
     def inner(self) -> Column:
-        """The inner column of this list."""
+        """
+        Returns:
+            Column: The inner column of this list.
+        """
         return self._inner
 
 
@@ -156,5 +162,8 @@ class Enum(Column):
 
     @property
     def categories(self) -> list[str]:
-        """The categories of this enum."""
+        """
+        Returns:
+            list[str]: The categories of this enum.
+        """
         return self._categories

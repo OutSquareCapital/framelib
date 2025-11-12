@@ -20,27 +20,45 @@ class Column(BaseEntry, ABC):
 
     @property
     def nw_col(self) -> nw.Expr:
-        """Return `narwhals.col(self._name)`"""
+        """
+        Equivalent to `narwhals.col(self._name)`.
+
+        Returns:
+            out (narwhals.Expr): The `Narwhals` column expression corresponding to this column.
+        """
         return nw.col(self._name)
 
     @property
     def pl_col(self) -> pl.Expr:
-        """Return `polars.col(self._name)`"""
+        """
+        Equivalent to `polars.col(self._name)`.
+        Returns:
+            out (polars.Expr): The `Polars` column expression corresponding to this column.
+        """
         return pl.col(self._name)
 
     @property
     @abstractmethod
     def nw_dtype(self) -> nw.dtypes.DType:
-        """The Narwhals dtype corresponding to this column."""
+        """
+        Returns:
+            out (narwhals.dtypes.DType): The Narwhals dtype corresponding to this column.
+        """
         raise NotImplementedError
 
     @property
     @abstractmethod
     def pl_dtype(self) -> pl.DataType:
-        """The Polars dtype corresponding to this column."""
+        """
+        Returns:
+            out (polars.DataType): The Polars dtype corresponding to this column.
+        """
         raise NotImplementedError
 
     @property
     def sql_type(self) -> str:
-        """The SQL type corresponding to this column."""
+        """
+        Returns:
+            str: The SQL type corresponding to this column.
+        """
         raise NotImplementedError

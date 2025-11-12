@@ -33,12 +33,33 @@ class Folder(BaseLayout[File[Schema]]):
 
     @classmethod
     def source(cls) -> Path:
-        """Returns the source path of the folder."""
+        """
+        Returns:
+            Path: the source path of the folder.
+        """
         return cls.__source__
 
     @classmethod
     def show_tree(cls) -> str:
-        """Show the folder structure."""
+        """
+        Show the folder structure as a tree.
+
+        Returns:
+            str: The folder structure.
+
+        Example:
+        ```python
+        >>> import framelib as fl
+        >>> class MyFolder(fl.Folder):
+        ...     data = fl.CsvFile()
+        ...     logs = fl.JsonFile()
+        >>> print(MyFolder.show_tree())
+        MyFolder
+        ├── data.csv
+        └── logs.json
+
+        ```
+        """
         return show_tree(cls.mro())
 
     @classmethod
@@ -48,7 +69,8 @@ class Folder(BaseLayout[File[Schema]]):
     @classmethod
     def iter_dir(cls) -> pc.Iter[Path]:
         """
-        Returns an iterator over the File instances in the folder.
+        Returns:
+            out (pyochain.Iter[Path]): an iterator over the File instances in the folder.
         """
         return pc.Iter(cls.__source__.iterdir())
 
@@ -56,6 +78,8 @@ class Folder(BaseLayout[File[Schema]]):
     def clean(cls) -> type[Self]:
         """
         Delete all files in the folder and recreate the directory.
+        Returns:
+            type[Self]: The Folder class.
         """
         import shutil
 

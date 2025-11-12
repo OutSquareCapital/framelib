@@ -20,7 +20,10 @@ class BaseEntry(ABC):
 
     @property
     def name(self) -> str:
-        """Returns the name of the entry as defined in the layout."""
+        """
+        Returns:
+            str: the name of the entry as defined in the layout.
+        """
         return self._name
 
     def __name_from_layout__(self, name: str) -> None:
@@ -50,7 +53,17 @@ class BaseLayout[T](ABC):
 
     @classmethod
     def schema(cls) -> pc.Dict[str, T]:
-        """Returns the schema dictionary of the layout as a pychain.Dict"""
+        """
+        Gets the schema dictionary of the layout.
+
+        Each value is an Entry instance.
+
+        For example, for a `Folder` layout, the schema will contain `File` instances.
+
+        For a `Database` layout, the schema will contain `Table` instances.
+        Returns:
+            out (Dict[str, T]): the schema dictionary of the layout as a pychain.Dict
+        """
         return pc.Dict(cls._schema)
 
 
