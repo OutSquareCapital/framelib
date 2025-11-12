@@ -69,6 +69,22 @@ class Array(Column):
     def pl_dtype(self) -> pl.Array:
         return pl.Array(self._inner.pl_dtype, self._shape)
 
+    @property
+    def inner(self) -> Column:
+        """
+        Returns:
+            Column: The inner column of this array.
+        """
+        return self._inner
+
+    @property
+    def shape(self) -> int | tuple[int, ...]:
+        """
+        Returns:
+            out (int | tuple[int, ...]): The shape of this array.
+        """
+        return self._shape
+
 
 class Struct(Column):
     _fields: pc.Dict[str, Column]

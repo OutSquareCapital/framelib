@@ -15,6 +15,15 @@ type DuckFrame = nw.LazyFrame[duckdb.DuckDBPyRelation]
 
 
 class Table[T: Schema](Entry[T, Path]):
+    """
+    A `Table` represents a table in a `DuckDB` database.
+
+    This is the main interface for interacting with database tables.
+
+    The specifity is that a `Table` is both a `Schema` (of `Columns`), and an Entry (of a `DataBase` `Schema`).
+
+    """
+
     _is_table: Final[bool] = True
     _qry: Queries
 
@@ -25,6 +34,10 @@ class Table[T: Schema](Entry[T, Path]):
 
     @property
     def relation(self) -> duckdb.DuckDBPyRelation:
+        """
+        Returns:
+            out (duckdb.DuckDBPyRelation): The DuckDBPyRelation of the table.
+        """
         return self._con.table(self._name)
 
     def _from_df(self, df: IntoFrameT | IntoLazyFrameT) -> IntoFrameT | IntoLazyFrameT:
@@ -40,7 +53,8 @@ class Table[T: Schema](Entry[T, Path]):
         return self.relation.pl()
 
     def scan(self) -> DuckFrame:
-        """Scan the table from the database
+        """
+        Scan the table from the database
         Returns:
             DuckFrame: The table as a Narwhals LazyFrame.
         """
@@ -59,6 +73,11 @@ class Table[T: Schema](Entry[T, Path]):
         """
         Creates or replaces the table from the dataframe, defining the schema
         and constraints directly from the model.
+        Args:
+            df (IntoFrame | IntoLazyFrame): The dataframe to create or replace the table from.
+
+        Returns:
+            Self: The table instance.
         """
         _ = self._from_df(df)
         create_q = self._qry.create_or_replace(self.model.sql_schema())
@@ -72,6 +91,7 @@ class Table[T: Schema](Entry[T, Path]):
         Fails if the table already exists.
         Args:
             df (IntoFrame | IntoLazyFrame): The dataframe to create the table from.
+
         Returns:
             Self: The table instance.
         """
@@ -82,6 +102,7 @@ class Table[T: Schema](Entry[T, Path]):
     def truncate(self) -> Self:
         """
         Removes all rows from the table.
+
         Returns:
             Self: The table instance.
         """
@@ -89,7 +110,9 @@ class Table[T: Schema](Entry[T, Path]):
         return self
 
     def drop(self) -> Self:
-        """Drops the table from the database.
+        """
+        Drops the table from the database.
+
         Returns:
             Self: The table instance.
         """
@@ -99,9 +122,11 @@ class Table[T: Schema](Entry[T, Path]):
     def insert_into(self, df: IntoFrame | IntoLazyFrame) -> Self:
         """
         Appends rows to the table.
+
         Fails if the table does not exist.
         Args:
             df (IntoFrame | IntoLazyFrame): The dataframe to insert into the table.
+
         Returns:
             Self: The table instance.
         """
@@ -115,6 +140,7 @@ class Table[T: Schema](Entry[T, Path]):
         primary key conflict.
         Args:
             df (IntoFrame | IntoLazyFrame): The dataframe to insert or replace.
+
         Returns:
             Self: The table instance.
         """
@@ -126,8 +152,10 @@ class Table[T: Schema](Entry[T, Path]):
         """
         Inserts rows from the dataframe, ignoring any rows that cause a
         primary key conflict.
+
         Args:
             df (IntoFrame | IntoLazyFrame): The dataframe to insert or ignore.
+
         Returns:
             Self: The table instance.
         """
@@ -138,6 +166,7 @@ class Table[T: Schema](Entry[T, Path]):
     def summarize(self) -> DuckFrame:
         """
         Summarizes the table, returning statistics about its columns.
+
         Returns:
             DuckFrame: The summary as a Narwhals LazyFrame.
         """
@@ -146,6 +175,7 @@ class Table[T: Schema](Entry[T, Path]):
     def describe_columns(self) -> DuckFrame:
         """
         Returns detailed information about the columns of this table from the INFORMATION_SCHEMA.
+
         Returns:
             DuckFrame: The columns information as a Narwhals LazyFrame.
         """
@@ -156,6 +186,7 @@ class Table[T: Schema](Entry[T, Path]):
     def describe_constraints(self) -> DuckFrame:
         """
         Returns the constraints (PRIMARY KEY, UNIQUE) applied to this table.
+
         Returns:
             DuckFrame: The constraints information as a Narwhals LazyFrame.
         """

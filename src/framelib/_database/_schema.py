@@ -9,7 +9,7 @@ from narwhals.typing import IntoLazyFrameT, LazyFrameT
 
 from .._columns import Column
 from .._core import BaseLayout, EntryType
-from ._constraints import KeysConstraints, col_to_sql, cols_to_constraints
+from ._constraints import KeysConstraints, cols_to_constraints
 
 
 def _schema_from_mro(cls: type) -> dict[str, Column]:
@@ -73,7 +73,7 @@ class Schema(BaseLayout[Column]):
         Returns:
             str: The SQL schema definition.
         """
-        return cls.schema().iter_values().map(col_to_sql).join(", ")
+        return cls.schema().iter_values().map(lambda col: col.to_sql()).join(", ")
 
     @classmethod
     def pl_schema(cls) -> pl.Schema:

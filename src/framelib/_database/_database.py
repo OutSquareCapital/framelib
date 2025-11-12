@@ -17,6 +17,14 @@ _DDB = ".ddb"
 
 
 class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
+    """
+    A DataBase represents a DuckDB database.
+
+    It's a `Schema` of `Table` entries.
+
+    It's itself a `BaseEntry` that can be used as an entry in a `Folder` (thanks to _is_file attribute).
+    """
+
     _is_file: Final[bool] = True
     _is_connected: bool = False
     _connexion: duckdb.DuckDBPyConnection

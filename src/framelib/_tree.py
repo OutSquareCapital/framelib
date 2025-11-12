@@ -34,30 +34,31 @@ def _source_from_schema(folder: type[Folder]) -> Iterable[Path]:
     return folder.schema().iter_values().map(lambda f: f.source).inner()
 
 
-def _relative_to_root(folders: pc.Seq[type[Folder]], root: Path) -> list[Path]:
+def _relative_to_root(folders: pc.Seq[type[Folder]], root: Path) -> pc.Seq[Path]:
     return (
         folders.iter()
         .map(_source_from_schema)
         .flatten()
         .filter_except(lambda p: p.relative_to(root), ValueError)
-        .into(list)
+        .collect()
     )
 
 
 def _get_all_paths(hierarchy: Iterable[type]) -> FolderStructure:
+    dir_paths: set[Path] = set()
     folders = _folders_from_hierarchy(hierarchy)
     root = folders.last().source()
     relatives = folders.pipe(_relative_to_root, root)
 
-    dir_paths: set[Path] = set()
-    for p in relatives:
-        rel: Path = p.relative_to(root)
-        parent: Path = rel.parent
+    def _add_to_root(p: Path) -> None:
+        parent: Path = p.relative_to(root).parent
         while str(parent) != ".":
             dir_paths.add(root.joinpath(parent))
             parent = parent.parent
+
+    relatives.iter().for_each(_add_to_root)
     dir_paths.add(root)
-    return FolderStructure(pc.Iter.from_(relatives).union(dir_paths), dir_paths, root)
+    return relatives.union(dir_paths).pipe(FolderStructure, dir_paths, root)
 
 
 def show_tree(hierarchy: Iterable[type]) -> str:

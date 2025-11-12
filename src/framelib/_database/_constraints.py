@@ -1,26 +1,9 @@
 from collections.abc import Callable
-from enum import StrEnum
 from typing import NamedTuple
 
 import pyochain as pc
 
 from .._columns import Column
-
-
-class _KWord(StrEnum):
-    PRIMARY_KEY = "PRIMARY KEY"
-    UNIQUE = "UNIQUE"
-
-
-def col_to_sql(col: Column) -> str:
-    definition: str = f'"{col.name}" {col.sql_type}'
-    if col.primary_key:
-        definition += " "
-        definition += _KWord.PRIMARY_KEY
-    if col.unique:
-        definition += " "
-        definition += _KWord.UNIQUE
-    return definition
 
 
 def _constraint_type(

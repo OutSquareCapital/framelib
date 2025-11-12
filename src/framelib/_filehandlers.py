@@ -12,6 +12,15 @@ from ._database import Schema
 
 
 class File[T: Schema](Entry[T, Path], ABC):
+    """
+    A `File` represents a file in a folder.
+
+    It's an `Entry` in a `Folder`.
+
+    It can be associated with a `Schema` of `Columns` to define the structure of the data within the file.
+
+    """
+
     _is_file: Final[bool] = True
     _with_suffix: bool = True
 
@@ -71,6 +80,8 @@ class File[T: Schema](Entry[T, Path], ABC):
 
 
 class Parquet[T: Schema](File[T]):
+    """A Parquet file handler."""
+
     @property
     def scan(self):
         return partial(pl.scan_parquet, self.source)
@@ -156,6 +167,8 @@ class ParquetPartitioned[T: Schema](Parquet[T]):
 
 
 class CSV[T: Schema](File[T]):
+    """A CSV file handler."""
+
     @property
     def scan(self):
         return partial(pl.scan_csv, self.source)

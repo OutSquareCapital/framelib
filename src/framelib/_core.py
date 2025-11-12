@@ -36,6 +36,14 @@ def _add_to_schema(name: str, obj: BaseEntry, schema: dict[str, Any]) -> None:
 
 
 class BaseLayout[T](ABC):
+    """
+    A BaseLayout represents a static layout containing multiple entries.
+    Each entry is of type T, which is typically a subclass of BaseEntry.
+    The layout can be a Folder (containing File entries) or a Database (containing Table entries).
+
+    It has a schema method that returns a dictionary of its entries.
+    """
+
     _schema: dict[str, T]
     __entry_type__: EntryType
 
@@ -68,10 +76,20 @@ class BaseLayout[T](ABC):
 
 
 class Entry[T, U](BaseEntry):
+    """
+    An `Entry` represents any class that can be instantiated and used as an attribute in a `Layout`.
+
+    It has a `source` attribute representing its location (Path, str, etc.) and a `model` attribute representing its schema or data model.
+    """
+
     model: type[T]
     source: U
 
     def __init__(self, model: type[T] = object) -> None:
+        """Initializes the Entry with an optional model type.
+        Args:
+            model (type[T], optional): The model type associated with the entry. Defaults to object.
+        """
         self.model = model
 
     def __set_source__(self, source: U) -> None:

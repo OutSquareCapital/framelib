@@ -12,6 +12,12 @@ from ._tree import show_tree
 
 
 class Folder(BaseLayout[File[Schema]]):
+    """
+    A Folder represents a directory containing files.
+    It's a `Schema` of `File` entries.
+
+    """
+
     __entry_type__ = EntryType.FILE
 
     def __init_subclass__(cls) -> None:
