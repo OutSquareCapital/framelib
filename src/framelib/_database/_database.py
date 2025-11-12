@@ -50,6 +50,12 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
         Execute a function that takes the database instance and returns self for chaining.
 
         Allow passing additional arguments to the function.
+        Args:
+            fn (Callable[Concatenate[Self, P], Any]): The function to execute.
+            *args (P.args): Positional arguments to pass to the function.
+            **kwargs (P.kwargs): Keyword arguments to pass to the function.
+        Returns:
+            Self: The database instance.
         """
         self._connect()
         fn(self, *args, **kwargs)
@@ -61,6 +67,14 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
     ) -> R:
         """
         Execute a function that takes the database instance and returns the result.
+
+        Allow passing additional arguments to the function.
+        Args:
+            fn (Callable[Concatenate[Self, P], R]): The function to execute.
+            *args (P.args): Positional arguments to pass to the function.
+            **kwargs (P.kwargs): Keyword arguments to pass to the function.
+        Returns:
+            R: The result of the function.
         """
         self._connect()
 
@@ -84,7 +98,11 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
 
     def query(self, sql_query: str) -> DuckFrame:
         """
-        Executes a SQL query and returns the result as a DuckDB relation wrapped in a Narwhals LazyFrame.
+        Executes a SQL query and returns the result.
+        Args:
+            sql_query (str): The SQL query to execute.
+        Returns:
+            DuckFrame: The result of the query as a Narwhals LazyFrame.
         """
         self._connect()
         return nw.from_native(self._connexion.sql(sql_query))
@@ -92,40 +110,60 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
     def show_tables(self) -> DuckFrame:
         """
         Shows all tables in the database.
+        Returns:
+            DuckFrame: The tables as a Narwhals LazyFrame.
         """
         return self.query(DBQueries.SHOW_TABLES)
 
     def show_views(self) -> DuckFrame:
-        """Shows all views in the database."""
+        """Shows all views in the database.
+        Returns:
+            DuckFrame: The views as a Narwhals LazyFrame.
+        """
         return self.query(DBQueries.SHOW_VIEWS)
 
     def show_types(self) -> DuckFrame:
         """
         Shows all data types, including user-defined ENUMs.
+        Returns:
+            DuckFrame: The data types as a Narwhals LazyFrame.
         """
         return self.query(DBQueries.SHOW_TYPES)
 
     def show_schemas(self) -> DuckFrame:
         """
         Shows all schemas in the database.
+        Returns:
+            DuckFrame: The schemas as a Narwhals LazyFrame.
         """
         return self.query(DBQueries.SHOW_SCHEMAS)
 
     def show_settings(self) -> DuckFrame:
-        """Shows all settings in the current database session."""
+        """Shows all settings in the current database session.
+        Returns:
+            DuckFrame: The settings as a Narwhals LazyFrame.
+        """
         return self.query(DBQueries.SHOW_SETTINGS)
 
     def show_extensions(self) -> DuckFrame:
-        """Shows all installed and loaded extensions."""
+        """Shows all installed and loaded extensions.
+        Returns:
+            DuckFrame: The extensions as a Narwhals LazyFrame.
+        """
         return self.query(DBQueries.SHOW_EXTENSIONS)
 
     def show_all_constraints(self) -> DuckFrame:
-        """Shows all constraints across all tables in the database."""
+        """Shows all constraints across all tables in the database.
+        Returns:
+            DuckFrame: The constraints as a Narwhals LazyFrame.
+        """
         return self.query(DBQueries.ALL_CONSTRAINTS)
 
     def sync_schema(self) -> Self:
         """
         Drops tables from the database that are not present in the schema.
+        Returns:
+            Self: The database instance.
         """
         self._connect()
         self._drop_tables()
@@ -143,5 +181,8 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
 
     @property
     def source(self) -> Path:
-        """Returns the source path of the database."""
+        """
+        Returns:
+            Path: The source path of the database.
+        """
         return self._source
