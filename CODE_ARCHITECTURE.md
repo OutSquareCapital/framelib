@@ -5,211 +5,220 @@ This document provides a deep dive into the internal architecture of `framelib`.
 ## Table of Contents
 
 - [Core Concepts](#core-concepts)
+- [The Startup Process: Class Definition as Configuration](#the-startup-process-class-definition-as-configuration)
 - [High-Level Architecture](#high-level-architecture)
   - [Component Diagram](#component-diagram)
-- [Design Philosophy](#design-philosophy)
-  - [Declarative Layouts](#declarative-layouts)
-  - [The Role of `pyochain`](#the-role-of-pyochain)
+- [Architectural Subtleties and Interactions](#architectural-subtleties-and-interactions)
+  - [`Schema`: An Agnostic Data Blueprint](#schema-an-agnostic-data-blueprint)
+  - [`Folder`: A Versatile Container](#folder-a-versatile-container)
+  - [`ParquetPartitioned`: A File that is a Folder](#parquetpartitioned-a-file-that-is-a-folder)
 - [Component Deep Dive](#component-deep-dive)
-  - [`BaseLayout`: The Foundation](#baselayout-the-foundation)
-  - [`Folder` and `File`](#folder-and-file)
-  - [`DataBase` and `Table`](#database-and-table)
-  - [`Schema` and `Column`](#schema-and-column)
+  - [`BaseLayout` and the Role of `pyochain`](#baselayout-and-the-role-of-pyochain)
+  - [`Folder` and `File` Interaction](#folder-and-file-interaction)
+  - [`DataBase` and `Table` Interaction](#database-and-table-interaction)
 
 ## Core Concepts
 
 The entire library is built upon a few fundamental abstract classes defined in `_core.py`:
 
-1. **`BaseEntry`**: The most basic building block. It's an abstract class that simply requires a `_name` attribute. Any component that can be part of a layout (like a `File` or a `Table`) inherits from it.
+- **`BaseEntry`**: The most basic building block. It's an abstract class that simply requires a `_name` attribute. Any component that can be part of a layout (like a `File` or a `Table`) inherits from it.
 
-2. **`Entry[T, U]`**: A more specialized `BaseEntry`. It represents a component that has a `source` (e.g., a file path, a database connection string) and a `model` (a data schema, typically a `framelib.Schema` subclass). `File` and `Table` are implementations of `Entry`.
+- **`Entry[T, U]`**: A more specialized `BaseEntry`. It represents a component that has a `source` (e.g., a file path) and a `model` (a data schema, typically a `framelib.Schema` subclass). `File` and `Table` are implementations of `Entry`.
 
-3. **`BaseLayout[T]`**: An abstract container for `Entry` objects. It represents a static collection of entries, like a directory of files or a database of tables. Its main responsibility is to collect all its `Entry` members into a `_schema` dictionary upon class definition. `Folder` and `DataBase` are implementations of `BaseLayout`.
+- **`BaseLayout[T]`**: An abstract container for `Entry` objects. It represents a static collection of entries, like a directory of files or a database of tables. `Folder`, `DataBase`, and `Schema` are implementations of `BaseLayout`.
 
-## High-Level Architecture
+## The Startup Process: Class Definition as Configuration
 
-`framelib` is designed around the concept of **declarative data layouts**. You define the structure of your project (folders, files, databases, tables) as Python classes, and `framelib` uses this declaration to provide a functional API for interacting with your data.
+A core principle of `framelib` is that **configuration happens at class definition time, not at instantiation time**. The library leverages the `__init_subclass__` hook to automatically set up the entire data layout the moment you define a class.
 
-The main components are:
+Here is the step-by-step process:
 
-- **`Folder`**: Represents a directory on the filesystem. It is a layout containing `File` entries.
-- **`File`**: Represents a single file (e.g., `Parquet`, `CSV`). It is an entry within a `Folder`.
-- **`DataBase`**: Represents a DuckDB database file. It is a layout containing `Table` entries. It also behaves like a `File` so it can be placed within a `Folder`.
-- **`Table`**: Represents a table within a `DataBase`. It is an entry within a `DataBase`.
-- **`Schema`**: A collection of `Column` definitions that describes the structure of the data within a `File` or `Table`.
-- **`Column`**: The smallest unit, representing a column's name, data type, and constraints.
+1. **A user defines a class** inheriting from `Folder`, `DataBase`, or `Schema`.
 
-### Component Diagram
+    ```python
+    class MyData(fl.Folder):
+        raw_data = fl.Parquet()
+    ```
 
-This Mermaid diagram illustrates the inheritance and composition relationships between the core components.
+2. **`__init_subclass__` is triggered.** When the `MyData` class object is created by the Python interpreter, the `__init_subclass__` method on its parent class (`Folder`, which inherits it from `BaseLayout`) is called.
 
-```mermaid
-classDiagram
-    direction LR
+3. **Introspection via `pyochain`**. Inside `__init_subclass__`, the `_add_entries` method is called. This method uses `pyochain` to introspect the attributes of the newly defined class (`MyData`).
 
-    class BaseEntry {
-        <<abstract>>
-        _name: str
-    }
-    class Entry {
-        <<abstract>>
-        model: type
-        source: any
-    }
-    class BaseLayout {
-        <<abstract>>
-        _schema: dict
-        schema()
-    }
-    class Column {
-        <<abstract>>
-    }
-    class Schema {
-        <<metaclass>>
-    }
-
-    BaseEntry <|-- Entry
-    BaseEntry <|-- Column
-    BaseLayout <|-- Folder
-    BaseLayout <|-- DataBase
-    Entry <|-- File
-    Entry <|-- Table
-    Entry <|-- DataBase
-
-    Folder o-- "many" File : contains
-    DataBase o-- "many" Table : contains
-    File *-- "1" Schema : uses
-    Table *-- "1" Schema : uses
-    Schema o-- "many" Column : defines
-
-    class File {
-        read()
-        write()
-    }
-    class Table {
-        scan()
-        insert_into()
-    }
-    class Folder
-    class DataBase {
-        query()
-        close()
-    }
-```
-
-## Design Philosophy
-
-### Declarative Layouts
-
-The core design pattern is to let the user declare the layout of their data assets using simple Python class syntax.
-
-**Example:**
-
-```python
-class MyData(fl.Folder):
-    raw_data = fl.Parquet(model=RawSchema)
-    processed = fl.CSV()
-
-class MyDatabase(fl.DataBase):
-    users = fl.Table(model=UsersSchema)
-```
-
-This declarative approach serves as a single source of truth for the project's structure. The library introspects these class definitions at creation time (not instantiation time) to build its internal representation.
-
-### The Role of `pyochain`
-
-`pyochain` is central to the introspection mechanism. It allows for a clean, functional, and chainable way to process class attributes without writing complex loops or metaclasses from scratch.
-
-This is best illustrated by the `_add_entries` method in `BaseLayout`:
-
-```python
-# framelib/_core.py
-
-class BaseLayout[T](ABC):
-    # ...
-    def __init_subclass__(cls) -> None:
-        cls._schema: dict[str, T] = {}
-        cls._add_entries()
-
+    ```python
+    # framelib/_core.py
     @classmethod
     def _add_entries(cls):
         return (
             pc.Dict.from_object(cls)
-            .filter_attr(cls.__entry_type__, BaseEntry)
+            .filter_attr(cls.__entry_type__, BaseEntry) # Filters for Files, Tables, or Columns
             .for_each(_add_to_schema, cls._schema)
         )
+    ```
+
+    - It finds all attributes that are instances of a specific `BaseEntry` type (e.g., for a `Folder`, it looks for attributes with `_is_file=True`).
+    - It populates the layout's `_schema` dictionary, mapping the attribute name (`"raw_data"`) to the entry instance (`Parquet()`).
+    - Crucially, it injects the attribute name into the entry itself, so the `Parquet` instance now knows its name is `raw_data`.
+
+4. **Source Path Injection**. For `Folder` and `DataBase` layouts, `__init_subclass__` performs an additional step: it calculates and injects the source path into each of its child entries.
+
+    ```python
+    # framelib/_folder.py
+    class Folder(...):
+        def __init_subclass__(cls) -> None:
+            super().__init_subclass__()
+            # ...
+            cls.__source__ = cls.__source__.joinpath(cls.__name__.lower())
+            cls._set_files_source() # This calls file.__set_source__(...) for each file
+    ```
+
+    The `MyData.raw_data` object now automatically knows its full path is `.../mydata/raw_data.parquet` without any explicit path manipulation from the user.
+
+This "on-definition" configuration makes the API clean and declarative, turning classes themselves into the single source of truth for the data layout.
+
+## High-Level Architecture
+
+### Component Diagram
+
+To make the architecture clearer, let's break down the relationships into three separate diagrams.
+
+#### 1. Core Abstract Hierarchy
+
+This diagram shows the fundamental abstract classes that form the building blocks of the library. `BaseLayout` is the foundation for any class that acts as a container, while `BaseEntry` is the base for any component that can be placed *inside* a layout.
+
+```mermaid
+graph TD
+    subgraph Core Abstractions
+        direction LR
+        ABC
+        BaseEntry(BaseEntry<br/>&lt;&lt;abstract&gt;&gt;)
+        BaseLayout(BaseLayout<br/>&lt;&lt;abstract&gt;&gt;)
+        Entry(Entry<br/>&lt;&lt;abstract&gt;&gt;)
+    end
+
+    ABC --> BaseEntry
+    ABC --> BaseLayout
+    BaseEntry --> Entry
 ```
 
-Here is the breakdown of the chain:
+#### 2. Concrete Class Inheritance
 
-1. **`pc.Dict.from_object(cls)`**: Introspects the class `cls` and creates a `pyochain.Dict` of its attributes (`{attribute_name: attribute_value}`).
-2. **`.filter_attr(cls.__entry_type__, BaseEntry)`**: This is the magic step. It filters the attributes to keep only those that are instances of `BaseEntry` (or its subclasses like `File`, `Table`) and have a specific flag (e.g., `_is_file=True` for `Folder` layouts). This is how a `Folder` knows to only collect `File`s and a `DataBase` knows to only collect `Table`s.
-3. **`.for_each(_add_to_schema, cls._schema)`**: For each filtered attribute, it calls the `_add_to_schema` function, which populates the `cls._schema` dictionary. This function also injects the attribute name into the entry instance (e.g., the `File` instance gets `_name = 'raw_data'`).
+This diagram shows how the concrete classes you use (`Folder`, `File`, `Table`, etc.) inherit from the core abstract classes. Notice how `DataBase` inherits from both `BaseLayout` (to contain tables) and `Entry` (to be placeable inside a `Folder`).
 
-This elegant use of `pyochain` in `__init_subclass__` allows `framelib` to configure itself the moment a class is defined, making the setup transparent and automatic.
+```mermaid
+graph TD
+    subgraph Inheritance
+        direction TB
+
+        BaseLayout --> Folder
+        BaseLayout --> DataBase
+        BaseLayout --> Schema
+
+        BaseEntry --> Column
+        Entry --> File
+        Entry --> Table
+        Entry --> DataBase
+    end
+```
+
+#### 3. Composition and Relationships
+
+This diagram illustrates how instances of these classes are composed. It shows what "contains" what and what "uses" what. This represents the structure of your data layout declaration.
+
+```mermaid
+graph TD
+    subgraph Composition
+        Folder -- "contains" --> File
+        Folder -- "contains" --> DataBase
+
+        DataBase -- "contains" --> Table
+
+        Table -- "uses" --> Schema
+        File -- "uses" --> Schema
+
+        Schema -- "defines" --> Column
+    end
+```
+
+## Architectural Subtleties and Interactions
+
+### `Schema`: An Agnostic Data Blueprint
+
+A `framelib.Schema` is fundamentally just a `BaseLayout` of `Column` entries. It is completely agnostic of its usage context.
+
+- **Decoupling**: A `Schema` definition does not know whether it will be used to structure a `Parquet` file, a `CSV` file, or a `Table` in a database.
+- **Reusability**: This makes schemas highly reusable. The same `UserSchema` can define the structure of a table and the structure of a parquet file used for backups.
+
+```python
+class UserSchema(fl.Schema):
+    id = fl.Int64()
+    name = fl.String()
+
+# The same schema is used for a database table and a file
+class MyDatabase(fl.DataBase):
+    users = fl.Table(model=UserSchema)
+
+class Backups(fl.Folder):
+    users_backup = fl.Parquet(model=UserSchema)
+```
+
+### `Folder`: A Versatile Container
+
+A `Folder` is designed to contain any entry that identifies as a "file". This is controlled by the `_is_file: Final[bool] = True` attribute on an entry class.
+
+Both `File` and `DataBase` have this attribute set to `True`. This is a deliberate design choice that allows a `DataBase` to be treated as a file within a `Folder` layout.
+
+```python
+class ProjectData(fl.Folder):
+    # A Folder can contain regular files...
+    raw_logs = fl.NDJson()
+
+    # ...and it can also contain an entire database.
+    analytics = fl.DataBase()
+```
+
+When this layout is defined, `framelib` will correctly resolve the paths:
+
+- `ProjectData.raw_logs.source` will point to `.../projectdata/raw_logs.ndjson`.
+- `ProjectData.analytics.source` will point to `.../projectdata/analytics.ddb`.
+
+### `ParquetPartitioned`: A File that is a Folder
+
+The `ParquetPartitioned` file handler is a special case. While declared as a file, it instructs the underlying engine (Polars) to write a directory structure based on the partition keys.
+
+```python
+class Output(fl.Folder):
+    # This looks like a single file entry
+    partitioned_data = fl.ParquetPartitioned(partition_by=["year", "month"])
+```
+
+If you write data for `year=2023` and `month=12`, the actual output on the filesystem will be a nested directory structure, not a single file:
+
+```text
+output/
+└── partitioned_data/
+    └── year=2023/
+        └── month=12/
+            └── *.parquet
+```
+
+`framelib` abstracts this away. You interact with `partitioned_data` as if it were a single entity, but on disk, it's a managed directory tree.
 
 ## Component Deep Dive
 
-### `BaseLayout`: The Foundation
+### `BaseLayout` and the Role of `pyochain`
 
-`BaseLayout` is the parent of `Folder` and `DataBase`. Its primary role is to automatically discover and register its children entries (`File` or `Table`) during class definition using the `pyochain` mechanism described above.
+As explained in the startup process, `BaseLayout` is the parent of `Folder`, `DataBase`, and `Schema`. Its primary role is to automatically discover and register its children entries during class definition. `pyochain` is the key tool that makes this introspection clean and functional, avoiding the need for complex metaclass logic.
 
-### `Folder` and `File`
+### `Folder` and `File` Interaction
 
 - A `Folder` is a `BaseLayout` for `File` entries.
-- When a `Folder` class is defined, it automatically sets the `source` path for all its `File` children. It constructs the path from its own name and the name of the `File` entry.
+- When a `Folder` class is defined, its `__init_subclass__` hook automatically sets the `source` path for all its `File` children. It constructs the path from its own name and the name of the `File` entry.
 - The `__set_source__` method on the `File` object is called by the `Folder` to inject this path. This is how a `File` instance knows where it lives on the filesystem without the user having to specify the full path repeatedly.
 
-```python
-# framelib/_folder.py
-class Folder(BaseLayout[File[Schema]]):
-    # ...
-    def __init_subclass__(cls) -> None:
-        super().__init_subclass__()
-        # ...
-        cls.__source__ = cls.__source__.joinpath(cls.__name__.lower())
-        cls._set_files_source() # This calls __set_source__ on each file
-
-# framelib/_filehandlers.py
-class File[T: Schema](Entry[T, Path], ABC):
-    # ...
-    def __set_source__(self, source: Path | str) -> None:
-        self.source = Path(source, self._name)
-        # ...
-```
-
-### `DataBase` and `Table`
+### `DataBase` and `Table` Interaction
 
 - The relationship between `DataBase` and `Table` is analogous to `Folder` and `File`.
 - A `DataBase` is a `BaseLayout` for `Table` entries.
 - When a method on the `DataBase` is called (e.g., `db.query(...)`), it first establishes a connection to the DuckDB database file.
 - It then iterates through its registered `Table` entries and injects the active `duckdb.DuckDBPyConnection` into each one by calling the `__set_connexion__` method.
 - This allows a `Table` object to execute queries (`table.scan()`, `table.insert_into(...)`) on the correct database without needing to manage the connection itself. The `DataBase` acts as a connection manager for its tables.
-
-```python
-# framelib/_database/_database.py
-class DataBase(...):
-    # ...
-    def _connect(self) -> None:
-        if not self._is_connected:
-            self._connexion = duckdb.connect(self.source)
-            self._set_tables_connexion() # Calls __set_connexion__ on each table
-            self._is_connected = True
-
-# framelib/_database/_table.py
-class Table[T: Schema](Entry[T, Path]):
-    # ...
-    def __set_connexion__(self, con: duckdb.DuckDBPyConnection) -> Self:
-        self._con: duckdb.DuckDBPyConnection = con
-        self._qry = Queries(self._name)
-        return self
-```
-
-### `Schema` and `Column`
-
-- A `Schema` is a declarative collection of `Column`s, using a `SchemaMeta` metaclass for setup.
-- Similar to `BaseLayout`, `SchemaMeta` introspects the class attributes to collect all `Column` instances into a `_schema` dictionary.
-- The `Schema` class provides two key functionalities:
-    1. **Data Casting (`.cast`)**: It provides a method to cast a Narwhals DataFrame to the data types defined in the schema.
-    2. **SQL DDL Generation (`.sql_schema`)**: It can generate the `CREATE TABLE` SQL statement, including column types and constraints (like `PRIMARY KEY`), directly from the `Column` definitions. This is used by `Table` to create itself in DuckDB.
-- `Column` is the base for specific data types (`Integer`, `String`, etc.) and holds metadata like `primary_key` and `unique` status.
