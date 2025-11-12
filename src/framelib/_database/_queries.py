@@ -1,8 +1,8 @@
-from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 
-import pyochain as pc
+from ._constraints import KeysConstraints
+from ._schema import Schema
 
 _DATA = "_"
 """Placeholder table name for duckdb scope."""
@@ -48,6 +48,27 @@ class Queries:
 
     name: str
 
+    def on_conflict(self, model: type[Schema]) -> str:
+        def _(kc: KeysConstraints) -> str:
+            msg = "At least one constraint expected"
+            conflict_keys = kc.primary.unwrap_or(kc.uniques.expect(msg))
+            conflict_target: str = (
+                conflict_keys.iter()
+                .map(lambda k: f'"{k}"')
+                .into(lambda ks: f"({', '.join(ks)})")
+            )
+            update_clause: str = (
+                model.schema()
+                .iter_keys()
+                .filter(lambda k: k not in conflict_keys.inner())
+                .map(lambda col: f'"{col}" = excluded."{col}"')
+                .into(", ".join)
+            )
+
+            return self.insert_on_conflict_update(conflict_target, update_clause)
+
+        return model.constraints().map_or(self.insert_or_replace(), _)
+
     def create_from(self) -> str:
         return f"""
         --sql
@@ -87,39 +108,20 @@ class Queries:
         INSERT OR IGNORE INTO {self.name} SELECT * FROM {_DATA};
         """
 
+    def insert_on_conflict_update(
+        self, conflict_target: str, update_clause: str
+    ) -> str:
+        return f"""
+            --sql
+            INSERT INTO {self.name} SELECT * FROM {_DATA}
+            ON CONFLICT {conflict_target} DO UPDATE SET {update_clause};
+            """
+
     def summarize(self) -> str:
         return f"""
         --sql 
         SUMMARIZE {self.name};
         """
-
-    def insert_on_conflict_update(
-        self, update_keys: pc.Option[pc.Iter[str]], conflict_keys: Sequence[str]
-    ) -> str:
-        conflict_target: str = (
-            pc.Iter.from_(conflict_keys)
-            .map(lambda k: f'"{k}"')
-            .into(lambda ks: f"({', '.join(ks)})")
-        )
-        match update_keys.is_some():
-            case False:
-                return f"""
-                --sql
-                INSERT INTO {self.name} SELECT * FROM {_DATA}
-                ON CONFLICT {conflict_target} DO NOTHING;
-                """
-            case _:
-                update_clause: str = (
-                    update_keys.unwrap()
-                    .map(lambda col: f'"{col}" = excluded."{col}"')
-                    .into(", ".join)
-                )
-
-                return f"""
-                --sql
-                INSERT INTO {self.name} SELECT * FROM {_DATA}
-                ON CONFLICT {conflict_target} DO UPDATE SET {update_clause};
-                """
 
     def columns_schema(self) -> str:
         return f"""

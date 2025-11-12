@@ -1,6 +1,6 @@
-from collections.abc import Callable, Iterable, Sequence
-from dataclasses import dataclass
+from collections.abc import Callable
 from enum import StrEnum
+from typing import NamedTuple
 
 import pyochain as pc
 
@@ -23,18 +23,6 @@ def col_to_sql(col: Column) -> str:
     return definition
 
 
-class ConstraintsError(ValueError):
-    """Raised when there is an error with schema constraints."""
-
-    def __init__(self, constraint_keys: Iterable[str], name: str) -> None:
-        super().__init__(
-            f"Ambiguous unique constraints for table '{name}': "
-            f"{constraint_keys}. "
-            "Define a primary_key or a single unique column to use "
-            "`insert_or_replace` upsert semantics."
-        )
-
-
 def _constraint_type(
     cols: pc.Iter[Column], predicate: Callable[[Column], bool]
 ) -> pc.Option[pc.Seq[str]]:
@@ -46,8 +34,7 @@ def _constraint_type(
             return pc.Some(constraint_cols)
 
 
-@dataclass(slots=True, init=False)
-class KeysConstraints:
+class KeysConstraints(NamedTuple):
     """
     Holds the optional keys constraints of a schema.
 
@@ -62,26 +49,19 @@ class KeysConstraints:
     uniques: pc.Option[pc.Seq[str]]
     """The unique key columns, if any."""
 
-    def __init__(self, cols: pc.Iter[Column]) -> None:
-        self.primary = _constraint_type(cols, lambda c: c.primary_key)
-        self.uniques = _constraint_type(cols, lambda c: c.unique)
 
-    @property
-    def all(self) -> pc.Option[pc.Seq[str]]:
-        """Returns all unique keys (primary + uniques) as a single Option."""
+def _constraints_to_result(
+    primary: pc.Option[pc.Seq[str]], uniques: pc.Option[pc.Seq[str]]
+) -> pc.Option[KeysConstraints]:
+    match primary.is_some(), uniques.is_some():
+        case False, False:
+            return pc.NONE
+        case _:
+            return pc.Some(KeysConstraints(primary=primary, uniques=uniques))
 
-        return self.primary.zip_with(
-            self.uniques, lambda p, u: p.iter().chain(u.iter().inner()).collect()
-        )
 
-    def on_conflict(self, name: str) -> pc.Result[Sequence[str], ValueError]:
-        return (
-            self.primary.map(lambda c: c.inner())
-            .or_else(lambda: self.uniques.map(lambda u: u.inner()))
-            .ok_or(
-                self.all.expect("No unique constraints found").into(
-                    ConstraintsError,
-                    name,
-                )
-            )
-        )
+def cols_to_constraints(cols: pc.Iter[Column]) -> pc.Option[KeysConstraints]:
+    return _constraints_to_result(
+        cols.pipe(_constraint_type, lambda c: c.primary_key),
+        cols.pipe(_constraint_type, lambda c: c.unique),
+    )
