@@ -9,7 +9,7 @@ from narwhals.typing import IntoLazyFrameT, LazyFrameT
 
 from .._columns import Column
 from .._core import BaseLayout, EntryType
-from ._constraints import KeysConstraints, col_to_sql
+from ._constraints import KeysConstraints, col_to_sql, cols_to_constraints
 
 
 def _schema_from_mro(cls: type) -> dict[str, Column]:
@@ -51,19 +51,19 @@ class Schema(BaseLayout[Column]):
     """
 
     __entry_type__ = EntryType.COLUMN
-    _constraints: KeysConstraints
+    _constraints: pc.Option[KeysConstraints]
 
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
         cls._schema = _schema_from_mro(cls)
-        cls._constraints = cls.schema().iter_values().pipe(KeysConstraints)
+        cls._constraints = cls.schema().iter_values().pipe(cols_to_constraints)
         return
 
     @classmethod
-    def constraints(cls) -> KeysConstraints:
+    def constraints(cls) -> pc.Option[KeysConstraints]:
         """
         Returns:
-            KeysConstraints: the keys constraints of the schema.
+            out (pyochain.Option[KeysConstraints]): the keys constraints of the schema, if any.
         """
         return cls._constraints
 
@@ -83,7 +83,7 @@ class Schema(BaseLayout[Column]):
         Equivalent to: `Foo.schema().map_values(lambda c: c.pl_dtype).into(pl.Schema)`
 
         Returns:
-            pl.Schema: The Polars schema definition.
+            out (polars.Schema): The Polars schema definition.
         """
         return cls.schema().map_values(lambda c: c.pl_dtype).into(pl.Schema)
 
@@ -169,7 +169,7 @@ class Schema(BaseLayout[Column]):
         Args:
             df (pl.LazyFrame | pl.DataFrame): The input DataFrame.
         Returns:
-            pl.LazyFrame: The casted `polars.LazyFrame`.
+            out (polars.LazyFrame): The casted `polars.LazyFrame`.
         """
         return df.lazy().select(
             cls.schema()
