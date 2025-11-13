@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import StrEnum
-from typing import Final, Literal
+from typing import Literal
 
 import narwhals as nw
 import polars as pl
@@ -29,7 +29,6 @@ class Column(BaseEntry, ABC):
         unique (bool): Whether this column has a unique constraint.
     """
 
-    _is_column: Final[bool] = field(init=False, default=True)
     primary_key: bool = False
     """Whether this column is part of the primary key."""
     unique: bool = False

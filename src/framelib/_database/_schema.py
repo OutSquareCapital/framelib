@@ -8,7 +8,7 @@ import pyochain as pc
 from narwhals.typing import IntoLazyFrameT, LazyFrameT
 
 from .._columns import Column
-from .._core import BaseLayout, EntryType
+from .._core import BaseLayout
 from ._constraints import KeysConstraints, cols_to_constraints
 
 
@@ -32,10 +32,7 @@ def _schema_from_mro(cls: type) -> dict[str, Column]:
         .reverse()
         .map(
             lambda base: (
-                pc.Dict.from_object(base)
-                .filter_attr(base.__entry_type__, Column)
-                .iter_items()
-                .inner()
+                pc.Dict.from_object(base).filter_type(Column).iter_items().inner()
             )
         )
         .flatten()
@@ -50,7 +47,6 @@ class Schema(BaseLayout[Column]):
     Used to define the schema of a Table or a File.
     """
 
-    __entry_type__ = EntryType.COLUMN
     _constraints: pc.Option[KeysConstraints]
 
     def __init_subclass__(cls) -> None:

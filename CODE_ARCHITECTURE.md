@@ -163,8 +163,7 @@ class Backups(fl.Folder):
 
 ### `Folder`: A Versatile Container
 
-A `Folder` is designed to contain any entry that identifies as a "file". This is controlled by the `_is_file: Final[bool] = True` attribute on an entry class.
-
+A `Folder` is designed to contain any entry that identifies as a "file".
 Both `File` and `DataBase` have this attribute set to `True`. This is a deliberate design choice that allows a `DataBase` to be treated as a file within a `Folder` layout.
 
 ```python

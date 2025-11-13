@@ -3,13 +3,13 @@ from __future__ import annotations
 from abc import ABC
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Concatenate, Final, Self
+from typing import Any, Concatenate, Self
 
 import duckdb
 import narwhals as nw
 import pyochain as pc
 
-from .._core import BaseEntry, BaseLayout, EntryType
+from .._core import BaseEntry, BaseLayout
 from ._queries import DBQueries, drop_table
 from ._table import DuckFrame, Table
 
@@ -25,11 +25,8 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
     It's itself a `BaseEntry` that can be used as an entry in a `Folder` (thanks to _is_file attribute).
     """
 
-    _is_file: Final[bool] = True
     _is_connected: bool = False
     _connexion: duckdb.DuckDBPyConnection
-    __entry_type__ = EntryType.TABLE
-    _source: Path
 
     def _connect(self) -> None:
         """Opens the connection to the database."""
@@ -89,9 +86,10 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
         return fn(self, *args, **kwargs)
 
     def __set_source__(self, source: Path) -> None:
-        self._source = Path(source, self._name).with_suffix(_DDB)
-        for table in self._schema.values():
-            table.source = self.source
+        self.__source__ = Path(source, self._name).with_suffix(_DDB)
+        self.schema().iter_values().for_each(
+            lambda table: table.__set_source__(self.__source__)
+        )
 
     def __del__(self) -> None:
         try:
@@ -193,4 +191,4 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
         Returns:
             Path: The source path of the database.
         """
-        return self._source
+        return self.__source__

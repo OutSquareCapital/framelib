@@ -5,25 +5,25 @@ from typing import Self
 
 import pyochain as pc
 
-from ._core import BaseLayout, EntryType
+from ._core import BaseLayout
 from ._database import Schema
 from ._filehandlers import File
 from ._tree import show_tree
+
+SOURCE = "__source__"
 
 
 class Folder(BaseLayout[File[Schema]]):
     """
     A Folder represents a directory containing files.
+
     It's a `Schema` of `File` entries.
-
     """
-
-    __entry_type__ = EntryType.FILE
 
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
 
-        if not hasattr(cls, EntryType.SOURCE):
+        if not hasattr(cls, SOURCE):
             cls.__source__ = Path()
 
         cls.__source__ = cls.__source__.joinpath(cls.__name__.lower())
@@ -69,10 +69,6 @@ class Folder(BaseLayout[File[Schema]]):
         return show_tree(cls.mro())
 
     @classmethod
-    def _display_(cls) -> str:
-        return cls.show_tree()
-
-    @classmethod
     def iter_dir(cls) -> pc.Iter[Path]:
         """
         Returns:
@@ -83,7 +79,7 @@ class Folder(BaseLayout[File[Schema]]):
     @classmethod
     def clean(cls) -> type[Self]:
         """
-        Delete all files in the folder and recreate the directory.
+        Delete all files in the folder.
         Returns:
             type[Self]: The Folder class.
         """

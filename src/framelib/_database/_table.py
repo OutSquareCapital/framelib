@@ -1,5 +1,4 @@
-from pathlib import Path
-from typing import Final, Self
+from typing import Self
 
 import duckdb
 import narwhals as nw
@@ -17,7 +16,7 @@ type DuckFrame = nw.LazyFrame[DuckRelation]
 """Syntactic sugar for `narwhals.LazyFrame[DuckRelation]`"""
 
 
-class Table[T: Schema](Entry[T, Path]):
+class Table[T: Schema](Entry[T]):
     """
     A `Table` represents a DuckDB table whose logical schema is defined by model (a Schema subclass).
 
@@ -25,7 +24,6 @@ class Table[T: Schema](Entry[T, Path]):
 
     """
 
-    _is_table: Final[bool] = True
     _qry: Queries
 
     def __set_connexion__(self, con: duckdb.DuckDBPyConnection) -> Self:

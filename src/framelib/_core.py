@@ -1,18 +1,10 @@
 from __future__ import annotations
 
 from abc import ABC
-from enum import StrEnum
+from pathlib import Path
 from typing import Any
 
 import pyochain as pc
-
-
-class EntryType(StrEnum):
-    FILE = "_is_file"
-    TABLE = "_is_table"
-    REQUEST = "_is_request"
-    COLUMN = "_is_column"
-    SOURCE = "__source__"
 
 
 class BaseEntry(ABC):
@@ -45,17 +37,16 @@ class BaseLayout[T](ABC):
     """
 
     _schema: dict[str, T]
-    __entry_type__: EntryType
 
     def __init_subclass__(cls) -> None:
         cls._schema: dict[str, T] = {}
         cls._add_entries()
 
     @classmethod
-    def _add_entries(cls):
+    def _add_entries(cls) -> pc.Dict[str, BaseEntry]:
         return (
             pc.Dict.from_object(cls)
-            .filter_attr(cls.__entry_type__, BaseEntry)
+            .filter_type(BaseEntry)
             .for_each(_add_to_schema, cls._schema)
         )
 
@@ -75,29 +66,45 @@ class BaseLayout[T](ABC):
         return pc.Dict(cls._schema)
 
 
-class Entry[T, U](BaseEntry):
+class Entry[T](BaseEntry):
     """
     An `Entry` represents any class that can be instantiated and used as an attribute in a `Layout`.
 
-    It has a `source` attribute representing its location (Path, str, etc.) and a `model` attribute representing its schema or data model.
+    It has a `source` attribute representing its `Path` location and a `model` of `type[T]` attribute representing its schema or data model.
     """
 
-    model: type[T]
-    source: U
+    _model: type[T]
+    __source__: Path
 
     def __init__(self, model: type[T] = object) -> None:
-        """Initializes the Entry with an optional model type.
+        """
+        Initializes the Entry with an optional model type.
+
         Args:
             model (type[T], optional): The model type associated with the entry. Defaults to object.
         """
-        self.model = model
+        self._model = model
 
-    def __set_source__(self, source: U) -> None:
-        self.source = source
+    def __set_source__(self, source: Path) -> None:
+        self.__source__ = source
 
     def __repr__(self) -> str:
-        return f"{self._cls_name}(\nsource={self.source},\nmodel={self.model}\n)"
+        return (
+            f"{self.__class__.__name__}(\nsource={self.source},\nmodel={self._model}\n)"
+        )
 
     @property
-    def _cls_name(self) -> str:
-        return self.__class__.__name__
+    def model(self) -> type[T]:
+        """
+        Returns:
+            out (type[T]): The model type associated with the entry.
+        """
+        return self._model
+
+    @property
+    def source(self) -> Path:
+        """
+        Returns:
+            Path: The source location of the entry.
+        """
+        return self.__source__

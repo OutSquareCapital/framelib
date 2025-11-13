@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
 from functools import partial
 from pathlib import Path
-from typing import Any, Final
+from typing import Any
 
 import duckdb
 import polars as pl
@@ -11,7 +11,7 @@ from ._core import Entry
 from ._database import Schema
 
 
-class File[T: Schema](Entry[T, Path], ABC):
+class File[T: Schema](Entry[T], ABC):
     """
     A `File` represents a file in a folder.
 
@@ -21,16 +21,17 @@ class File[T: Schema](Entry[T, Path], ABC):
 
     """
 
-    _is_file: Final[bool] = True
     _with_suffix: bool = True
 
     def __init__(self, model: type[T] = Schema) -> None:
-        self.model = model
+        self._model = model
 
     def __set_source__(self, source: Path | str) -> None:
-        self.source = Path(source, self._name)
+        self.__source__ = Path(source, self._name)
         if self.__class__._with_suffix:
-            self.source = self.source.with_suffix(f".{self._cls_name.lower()}")
+            self.__source__ = self.__source__.with_suffix(
+                f".{self.__class__.__name__.lower()}"
+            )
 
     @property
     @abstractmethod
