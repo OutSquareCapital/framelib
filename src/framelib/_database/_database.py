@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 from abc import ABC
 from collections.abc import Callable
 from pathlib import Path
@@ -17,8 +18,7 @@ _DDB = ".ddb"
 
 
 class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
-    """
-    A DataBase represents a DuckDB database.
+    """A DataBase represents a DuckDB database.
 
     It's a `Schema` of `Table` entries.
 
@@ -29,12 +29,15 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
     _connexion: duckdb.DuckDBPyConnection
 
     def _connect(self) -> None:
-        """Opens the connection to the database."""
+        """Opens the connection to the database.
+
+        Returns:
+            None: The connection to the database is opened.
+        """
         if not self._is_connected:
             self._connexion = duckdb.connect(self.source)
             self._set_tables_connexion()
             self._is_connected = True
-        return
 
     def _set_tables_connexion(self) -> None:
         return (
@@ -49,16 +52,20 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
         self._connexion.close()
 
     def apply[**P](
-        self, fn: Callable[Concatenate[Self, P], Any], *args: P.args, **kwargs: P.kwargs
+        self,
+        fn: Callable[Concatenate[Self, P], Any],
+        *args: P.args,
+        **kwargs: P.kwargs,
     ) -> Self:
-        """
-        Execute a function that takes the database instance and returns self for chaining.
+        """Execute a function that takes the database instance and returns self for chaining.
 
         Allow passing additional arguments to the function.
+
         Args:
             fn (Callable[Concatenate[Self, P], Any]): The function to execute.
             *args (P.args): Positional arguments to pass to the function.
             **kwargs (P.kwargs): Keyword arguments to pass to the function.
+
         Returns:
             Self: The database instance.
         """
@@ -68,16 +75,20 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
         return self
 
     def pipe[**P, R](
-        self, fn: Callable[Concatenate[Self, P], R], *args: P.args, **kwargs: P.kwargs
+        self,
+        fn: Callable[Concatenate[Self, P], R],
+        *args: P.args,
+        **kwargs: P.kwargs,
     ) -> R:
-        """
-        Execute a function that takes the database instance and returns the result.
+        """Execute a function that takes the database instance and returns the result.
 
         Allow passing additional arguments to the function.
+
         Args:
             fn (Callable[Concatenate[Self, P], R]): The function to execute.
             *args (P.args): Positional arguments to pass to the function.
             **kwargs (P.kwargs): Keyword arguments to pass to the function.
+
         Returns:
             R: The result of the function.
         """
@@ -88,14 +99,12 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
     def __set_source__(self, source: Path) -> None:
         self.__source__ = Path(source, self._name).with_suffix(_DDB)
         self.schema().iter_values().for_each(
-            lambda table: table.__set_source__(self.__source__)
+            lambda table: table.__set_source__(self.__source__),
         )
 
     def __del__(self) -> None:
-        try:
+        with contextlib.suppress(Exception):
             self.close()
-        except Exception:
-            pass
 
     @property
     def connexion(self) -> duckdb.DuckDBPyConnection:
@@ -103,10 +112,11 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
         return self._connexion
 
     def query(self, sql_query: str) -> DuckFrame:
-        """
-        Executes a SQL query and returns the result.
+        """Executes a SQL query and returns the result.
+
         Args:
             sql_query (str): The SQL query to execute.
+
         Returns:
             DuckFrame: The result of the query as a Narwhals LazyFrame.
         """
@@ -114,8 +124,8 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
         return nw.from_native(self._connexion.sql(sql_query))
 
     def show_tables(self) -> DuckFrame:
-        """
-        Shows all tables in the database.
+        """Shows all tables in the database.
+
         Returns:
             DuckFrame: The tables as a Narwhals LazyFrame.
         """
@@ -123,22 +133,23 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
 
     def show_views(self) -> DuckFrame:
         """Shows all views in the database.
+
         Returns:
             DuckFrame: The views as a Narwhals LazyFrame.
         """
         return self.query(DBQueries.SHOW_VIEWS)
 
     def show_types(self) -> DuckFrame:
-        """
-        Shows all data types, including user-defined ENUMs.
+        """Shows all data types, including user-defined ENUMs.
+
         Returns:
             DuckFrame: The data types as a Narwhals LazyFrame.
         """
         return self.query(DBQueries.SHOW_TYPES)
 
     def show_schemas(self) -> DuckFrame:
-        """
-        Shows all schemas in the database.
+        """Shows all schemas in the database.
+
         Returns:
             DuckFrame: The schemas as a Narwhals LazyFrame.
         """
@@ -146,6 +157,7 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
 
     def show_settings(self) -> DuckFrame:
         """Shows all settings in the current database session.
+
         Returns:
             DuckFrame: The settings as a Narwhals LazyFrame.
         """
@@ -153,6 +165,7 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
 
     def show_extensions(self) -> DuckFrame:
         """Shows all installed and loaded extensions.
+
         Returns:
             DuckFrame: The extensions as a Narwhals LazyFrame.
         """
@@ -160,14 +173,15 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
 
     def show_all_constraints(self) -> DuckFrame:
         """Shows all constraints across all tables in the database.
+
         Returns:
             DuckFrame: The constraints as a Narwhals LazyFrame.
         """
         return self.query(DBQueries.ALL_CONSTRAINTS)
 
     def sync_schema(self) -> Self:
-        """
-        Drops tables from the database that are not present in the schema.
+        """Drops tables from the database that are not present in the schema.
+
         Returns:
             Self: The database instance.
         """
@@ -187,8 +201,5 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
 
     @property
     def source(self) -> Path:
-        """
-        Returns:
-            Path: The source path of the database.
-        """
+        """Gets the source `Path` of the database."""
         return self.__source__

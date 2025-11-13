@@ -1,6 +1,6 @@
 import doctester as dt
 
-from tests.tests import run_tests
+from tests._tests import run_tests
 
 if __name__ == "__main__":
     dt.run_doctester()

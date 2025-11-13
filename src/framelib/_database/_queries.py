@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from enum import StrEnum
 
-from ._constraints import KeysConstraints
 from ._schema import Schema
 
 _DATA = "_"
@@ -13,7 +12,7 @@ class DBQueries(StrEnum):
 
     SHOW_TYPES = """SELECT * FROM duckdb_types();"""
 
-    SHOW_TABLES = """--sql 
+    SHOW_TABLES = """--sql
         SHOW TABLES;
         """
 
@@ -44,28 +43,21 @@ def drop_table(name: str) -> str:
 
 @dataclass(slots=True, frozen=True)
 class Queries:
-    """SQL queries builder for a specific table."""
+    """SQL queries builder for a specific table.
+
+    Attributes:
+        name (str): The table name.
+    """
 
     name: str
 
     def on_conflict(self, model: type[Schema]) -> str:
-        def _(kc: KeysConstraints) -> str:
-            msg = "At least one constraint expected"
-            conflict_keys = kc.primary.unwrap_or(kc.uniques.expect(msg))
-            target: str = conflict_keys.iter().map(lambda k: f'"{k}"').join(", ")
-            conflict_target: str = f"({target})"
-
-            update_clause: str = (
-                model.schema()
-                .iter_keys()
-                .filter(lambda k: k not in conflict_keys.inner())
-                .map(lambda col: f'"{col}" = excluded."{col}"')
-                .join(", ")
-            )
-
-            return self.insert_on_conflict_update(conflict_target, update_clause)
-
-        return model.constraints().map_or(_, self.insert_or_replace())
+        return model.constraints().map_or(
+            lambda kc: self.insert_on_conflict_update(
+                *kc.conflict_keys(model.schema()),
+            ),
+            self.insert_or_replace(),
+        )
 
     def create_from(self) -> str:
         return f"""
@@ -107,7 +99,9 @@ class Queries:
         """
 
     def insert_on_conflict_update(
-        self, conflict_target: str, update_clause: str
+        self,
+        conflict_target: str,
+        update_clause: str,
     ) -> str:
         return f"""
             --sql
@@ -117,7 +111,7 @@ class Queries:
 
     def summarize(self) -> str:
         return f"""
-        --sql 
+        --sql
         SUMMARIZE {self.name};
         """
 

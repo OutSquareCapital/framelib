@@ -1,21 +1,29 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Sequence
 from enum import StrEnum
 from pathlib import Path
-from typing import TYPE_CHECKING, NamedTuple
+from typing import NamedTuple
 
 import pyochain as pc
 
-if TYPE_CHECKING:
-    from framelib._folder import Folder
+
+class Leaf(StrEnum):
+    NEW = "├── "
+    LAST = "└── "
+
+
+def _leaf_line(*is_last: bool) -> Leaf:
+    return Leaf.LAST if is_last else Leaf.NEW
 
 
 class Tree(StrEnum):
-    NODE = "├── "
-    LAST_NODE = "└── "
     BRANCH = "│   "
     SPACE = "    "
+
+
+def _tree_line(*is_last: bool) -> Tree:
+    return Tree.SPACE if is_last else Tree.BRANCH
 
 
 class FolderStructure(NamedTuple):
@@ -24,66 +32,54 @@ class FolderStructure(NamedTuple):
     root: Path
 
 
-def _folders_from_hierarchy(hierarchy: Iterable[type]) -> pc.Seq[type[Folder]]:
+def show_tree(hierarchy: Sequence[type]) -> str:
     from ._folder import Folder
 
-    return pc.Iter.from_(hierarchy).filter_subclass(Folder, keep_parent=False).collect()
+    folders = (
+        pc.Seq(hierarchy).iter().filter_subclass(Folder, keep_parent=False).collect()
+    )
 
-
-def _source_from_schema(folder: type[Folder]) -> Iterable[Path]:
-    return folder.schema().iter_values().map(lambda f: f.source).inner()
-
-
-def _relative_to_root(folders: pc.Seq[type[Folder]], root: Path) -> pc.Seq[Path]:
-    return (
+    root: Path = folders.last().source()
+    relatives: pc.Seq[Path] = (
         folders.iter()
-        .map(_source_from_schema)
+        .map(
+            lambda folder: (
+                folder.schema().iter_values().map(lambda f: f.source).inner()
+            ),
+        )
         .flatten()
         .filter_except(lambda p: p.relative_to(root), ValueError)
         .collect()
     )
-
-
-def _get_all_paths(hierarchy: Iterable[type]) -> FolderStructure:
-    dir_paths: set[Path] = set()
-    folders = _folders_from_hierarchy(hierarchy)
-    root = folders.last().source()
-    relatives = folders.pipe(_relative_to_root, root)
+    dir_paths: set[Path] = {root}
 
     def _add_to_root(p: Path) -> None:
         parent: Path = p.relative_to(root).parent
         while str(parent) != ".":
-            dir_paths.add(root.joinpath(parent))
+            dir_paths.add(root / parent)
             parent = parent.parent
 
     relatives.iter().for_each(_add_to_root)
-    dir_paths.add(root)
-    return relatives.union(dir_paths).pipe(FolderStructure, dir_paths, root)
-
-
-def show_tree(hierarchy: Iterable[type]) -> str:
-    structure = _get_all_paths(hierarchy)
-
+    structure = relatives.union(dir_paths).pipe(FolderStructure, dir_paths, root)
     lines: list[str] = []
 
     def recurse(current: Path, prefix: str = "") -> None:
         children = (
-            structure.all_paths.iter().filter(lambda p: p.parent == current).sort()
+            structure.all_paths.iter()
+            .filter(lambda path: path.parent == current)
+            .sort()
         )
+
         children_len: int = children.count()
-        for idx, child in children.iter().enumerate().inner():
+
+        def _visit(entry: tuple[int, Path]) -> None:
+            idx, child = entry
             is_last: bool = idx == children_len - 1
-            lines.append(f"{prefix}{_connector(is_last)}{child.name}")
+            lines.append(f"{prefix}{_leaf_line(is_last)}{child.name}")
             if child in structure.dir_paths:
-                recurse(child, prefix + _continuation(is_last))
+                recurse(child, prefix + _tree_line(is_last))
+
+        (children.iter().enumerate().for_each(_visit))
 
     recurse(structure.root)
-    return pc.Iter.from_(lines).into(lambda x: f"{structure.root}\n" + "\n".join(x))
-
-
-def _connector(is_last: bool) -> Tree:
-    return Tree.LAST_NODE if is_last else Tree.NODE
-
-
-def _continuation(is_last: bool) -> Tree:
-    return Tree.SPACE if is_last else Tree.BRANCH
+    return pc.Seq(lines).iter().into(lambda xs: f"{structure.root}\n" + "\n".join(xs))

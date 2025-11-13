@@ -5,13 +5,16 @@ import enum
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from inspect import isclass
+from typing import TYPE_CHECKING
 
 import narwhals as nw
 import polars as pl
 import pyochain as pc
 
-from .._core import BaseLayout
 from ._base import Column, TimeUnit
+
+if TYPE_CHECKING:
+    from .._core import BaseLayout
 
 
 @dataclass(slots=True)
@@ -54,6 +57,7 @@ class Array(Column):
         self,
         inner: Column,
         shape: int | tuple[int, ...],
+        *,
         primary_key: bool = False,
         unique: bool = False,
     ) -> None:
@@ -71,18 +75,12 @@ class Array(Column):
 
     @property
     def inner(self) -> Column:
-        """
-        Returns:
-            Column: The inner column of this array.
-        """
+        """Get the inner column of this array."""
         return self._inner
 
     @property
     def shape(self) -> int | tuple[int, ...]:
-        """
-        Returns:
-            out (int | tuple[int, ...]): The shape of this array.
-        """
+        """Get the shape of this array."""
         return self._shape
 
 
@@ -92,6 +90,7 @@ class Struct(Column):
     def __init__(
         self,
         fields: Mapping[str, Column] | type[BaseLayout[Column]],
+        *,
         primary_key: bool = False,
         unique: bool = False,
     ) -> None:
@@ -111,10 +110,7 @@ class Struct(Column):
 
     @property
     def fields(self) -> pc.Dict[str, Column]:
-        """
-        Returns:
-            out (pyochain.Dict[str, Column]): The fields of this struct.
-        """
+        """Get the fields of this struct."""
         return self._fields
 
 
@@ -122,7 +118,11 @@ class List(Column):
     _inner: Column
 
     def __init__(
-        self, inner: Column, primary_key: bool = False, unique: bool = False
+        self,
+        inner: Column,
+        *,
+        primary_key: bool = False,
+        unique: bool = False,
     ) -> None:
         self._inner = inner
         super().__init__(primary_key=primary_key, unique=unique)
@@ -137,10 +137,7 @@ class List(Column):
 
     @property
     def inner(self) -> Column:
-        """
-        Returns:
-            Column: The inner column of this list.
-        """
+        """Get the inner column of this list."""
         return self._inner
 
 
@@ -160,6 +157,7 @@ class Enum(Column):
     def __init__(
         self,
         categories: Iterable[str] | type[enum.Enum],
+        *,
         primary_key: bool = False,
         unique: bool = False,
     ) -> None:
@@ -178,8 +176,5 @@ class Enum(Column):
 
     @property
     def categories(self) -> list[str]:
-        """
-        Returns:
-            list[str]: The categories of this enum.
-        """
+        """Get the categories of this enum as a `list[str]`."""
         return self._categories

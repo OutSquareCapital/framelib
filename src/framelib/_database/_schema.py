@@ -1,30 +1,35 @@
 from __future__ import annotations
 
-from typing import overload
+from typing import TYPE_CHECKING, overload
 
 import narwhals as nw
 import polars as pl
 import pyochain as pc
-from narwhals.typing import IntoLazyFrameT, LazyFrameT
 
 from .._columns import Column
 from .._core import BaseLayout
 from ._constraints import KeysConstraints, cols_to_constraints
 
+if TYPE_CHECKING:
+    from narwhals.typing import IntoLazyFrameT, LazyFrameT
+
 
 def _schema_from_mro(cls: type) -> dict[str, Column]:
-    """
-    Constructs the schema dictionary from the class MRO.
-    - Create an Iterator over the MRO
-    - Filter only Schema subclasses (excluding the parent Schema class itself)
-    - Reverse the order to have the base classes first
-    - For each base class, filter its attributes to keep only Column entries
-    - Extract the items (name, Column) as tuples
-    - Flatten the list of tuples into a single iterable
+    """Constructs the schema dictionary from the class MRO.
+
+    Steps:
+        - Create an Iterator over the MRO
+        - Filter only Schema subclasses (excluding the parent Schema class itself)
+        - Reverse the order to have the base classes first
+        - For each base class, filter its attributes to keep only Column entries
+        - Extract the items (name, Column) as tuples
+        - Flatten the list of tuples into a single iterable
+
     Args:
         cls (type): The schema class.
+
     Returns:
-        out (dict[str, Column]): The final schema as a dictionary.
+        dict[str, Column]: The final schema as a dictionary.
     """
     return (
         pc.Iter.from_(cls.mro())
@@ -33,7 +38,7 @@ def _schema_from_mro(cls: type) -> dict[str, Column]:
         .map(
             lambda base: (
                 pc.Dict.from_object(base).filter_type(Column).iter_items().inner()
-            )
+            ),
         )
         .flatten()
         .into(dict)
@@ -41,8 +46,7 @@ def _schema_from_mro(cls: type) -> dict[str, Column]:
 
 
 class Schema(BaseLayout[Column]):
-    """
-    A schema is a layout containing only Column entries.
+    """A schema is a layout containing only Column entries.
 
     Used to define the schema of a Table or a File.
     """
@@ -53,19 +57,20 @@ class Schema(BaseLayout[Column]):
         super().__init_subclass__()
         cls._schema = _schema_from_mro(cls)
         cls._constraints = cls.schema().iter_values().pipe(cols_to_constraints)
-        return
 
     @classmethod
     def constraints(cls) -> pc.Option[KeysConstraints]:
-        """
+        """Get the eventual keys constraints of the schema.
+
         Returns:
-            out (pyochain.Option[KeysConstraints]): the keys constraints of the schema, if any.
+            pc.Option[KeysConstraints]: the keys constraints of the schema, if any.
         """
         return cls._constraints
 
     @classmethod
     def sql_schema(cls) -> str:
-        """
+        """Get the SQL schema definition.
+
         Returns:
             str: The SQL schema definition.
         """
@@ -73,13 +78,12 @@ class Schema(BaseLayout[Column]):
 
     @classmethod
     def pl_schema(cls) -> pl.Schema:
-        """
-        Syntactic sugar for getting the Polars schema definition.
+        """Syntactic sugar for getting the Polars schema definition.
 
         Equivalent to: `Foo.schema().map_values(lambda c: c.pl_dtype).into(pl.Schema)`
 
         Returns:
-            out (polars.Schema): The Polars schema definition.
+            pl.Schema: The Polars schema definition.
         """
         return cls.schema().map_values(lambda c: c.pl_dtype).into(pl.Schema)
 
@@ -100,17 +104,20 @@ class Schema(BaseLayout[Column]):
         cls,
         df: IntoLazyFrameT | LazyFrameT | pl.DataFrame,
     ) -> LazyFrameT | nw.LazyFrame[IntoLazyFrameT]:
-        """
-        - Selects only the columns defined in the schema
-        - Casts them to the correct dtype
-        - Returns the results wrapped in a narwhals `LazyFrame`.
+        """Casts the input DataFrame to match the schema.
+
+        Steps:
+            - Selects only the columns defined in the schema
+            - Casts them to the correct dtype
+            - Returns the results wrapped in a narwhals `LazyFrame`.
 
         Use `.to_native()` to convert back to the native DataFrame type.
 
         Args:
             df (IntoLazyFrameT | LazyFrameT | pl.DataFrame): The input DataFrame.
+
         Returns:
-            out (LazyFrameT | nw.LazyFrame[IntoLazyFrameT]): The casted narwhals.LazyFrame.
+            LazyFrameT | nw.LazyFrame[IntoLazyFrameT]: The casted narwhals.LazyFrame.
 
         Examples:
         ```python
@@ -150,26 +157,26 @@ class Schema(BaseLayout[Column]):
                 cls.schema()
                 .iter_values()
                 .map(lambda col: col.nw_col.cast(col.nw_dtype))
-                .inner()
+                .inner(),
             )
         )
 
     @classmethod
     def cast_strict_false(cls, df: pl.LazyFrame | pl.DataFrame) -> pl.LazyFrame:
-        """
-        Like `cast`, but with `strict=False`.
+        """Like `cast`, but with `strict=False`.
 
         **Warning**:
             will only work with polars {Data, Lazy}Frames.
 
         Args:
             df (pl.LazyFrame | pl.DataFrame): The input DataFrame.
+
         Returns:
-            out (polars.LazyFrame): The casted `polars.LazyFrame`.
+            pl.LazyFrame: The casted `polars.LazyFrame`.
         """
         return df.lazy().select(
             cls.schema()
             .iter_values()
             .map(lambda c: c.pl_col.cast(c.pl_dtype, strict=False))
-            .inner()
+            .inner(),
         )

@@ -7,7 +7,8 @@ from .._columns import Column
 
 
 def _constraint_type(
-    cols: pc.Iter[Column], predicate: Callable[[Column], bool]
+    cols: pc.Iter[Column],
+    predicate: Callable[[Column], bool],
 ) -> pc.Option[pc.Seq[str]]:
     constraint_cols = cols.filter(predicate).map(lambda c: c.name).collect()
     match constraint_cols.count():
@@ -17,14 +18,22 @@ def _constraint_type(
             return pc.Some(constraint_cols)
 
 
+class OnConflictResult(NamedTuple):
+    conflict_target: str
+    update_clause: str
+
+
 class KeysConstraints(NamedTuple):
-    """
-    Holds the optional keys constraints of a schema.
+    """Holds the optional keys constraints of a schema.
 
     Since a table is not required to have any constraints, both
     `primary` and `uniques` are optional.
 
     Consult `pyochain.Option` documentation for more information about handling Option types.
+
+    Attributes:
+        primary (pc.Option[pc.Seq[str]]): The primary key columns, if any.
+        uniques (pc.Option[pc.Seq[str]]): The unique key columns, if any.
     """
 
     primary: pc.Option[pc.Seq[str]]
@@ -32,9 +41,31 @@ class KeysConstraints(NamedTuple):
     uniques: pc.Option[pc.Seq[str]]
     """The unique key columns, if any."""
 
+    def conflict_keys(self, schema: pc.Dict[str, Column]) -> OnConflictResult:
+        """Obtains the conflict keys for the schema.
+
+        Args:
+            schema (pc.Dict[str, Column]): The schema columns dictionary.
+
+        Returns:
+            OnConflictResult: The conflict keys, prioritizing primary keys over unique keys.
+        """
+        msg = "At least one constraint expected"
+        conflict_keys = self.primary.unwrap_or(self.uniques.expect(msg))
+        target: str = conflict_keys.iter().map(lambda k: f'"{k}"').join(", ")
+
+        update_clause: str = (
+            schema.iter_keys()
+            .filter(lambda k: k not in conflict_keys.inner())
+            .map(lambda col: f'"{col}" = excluded."{col}"')
+            .join(", ")
+        )
+        return OnConflictResult(f"({target})", update_clause)
+
 
 def _constraints_to_result(
-    primary: pc.Option[pc.Seq[str]], uniques: pc.Option[pc.Seq[str]]
+    primary: pc.Option[pc.Seq[str]],
+    uniques: pc.Option[pc.Seq[str]],
 ) -> pc.Option[KeysConstraints]:
     match primary.is_some(), uniques.is_some():
         case False, False:

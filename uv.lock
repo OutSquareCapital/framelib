@@ -549,16 +549,16 @@ wheels = [
 
 [[package]]
 name = "pyochain"
-version = "0.5.43"
+version = "0.5.44"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cytoolz" },
     { name = "more-itertools" },
     { name = "rolling" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/aa/8b/d9680bf636a0219598e3c14f10e80ece7afb9957e0d59429bbaaeb0b7200/pyochain-0.5.43.tar.gz", hash = "sha256:78a16724ba8c85624a30d9451e5c119eb747d5fef2c96a05b8c76d17510b9121", size = 48514, upload-time = "2025-11-12T20:16:12.54Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/cc/99/978c4caa0e5d870591833fc6054e73b6ddb3beaa7c890aab09facd41e958/pyochain-0.5.44.tar.gz", hash = "sha256:724f1887e95c9ce988900fdf40b2fc2e78bbd2d09cfdc1017bac4ed28eb8d86f", size = 52372, upload-time = "2025-11-13T20:29:39.997Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/46/4e/227bae49a681f08849f206ec059ba0cf523d8a2fa9d75d60ca3705368c6c/pyochain-0.5.43-py3-none-any.whl", hash = "sha256:0161ad96f53af8be90914d1e48e7d83cd8058aea294442dee85f2ddc5bcef098", size = 65614, upload-time = "2025-11-12T20:16:11.684Z" },
+    { url = "https://files.pythonhosted.org/packages/94/21/37d400a5d77d136165ff3c0b2c3c3dd0a5c185ffc635afc23d9aec3ac507/pyochain-0.5.44-py3-none-any.whl", hash = "sha256:9e679ba45a75a0ff121c398ea67857728e9115e1d4c2c009f4c5e303a17247f2", size = 70050, upload-time = "2025-11-13T20:29:39.128Z" },
 ]
 
 [[package]]

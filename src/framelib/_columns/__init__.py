@@ -19,11 +19,11 @@ from ._basictypes import (
 from ._composedtypes import Array, Categorical, Datetime, Decimal, Enum, List, Struct
 
 __all__ = [
-    "Column",
     "Array",
     "Boolean",
-    "Date",
     "Categorical",
+    "Column",
+    "Date",
     "Datetime",
     "Decimal",
     "Enum",

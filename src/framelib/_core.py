@@ -12,10 +12,7 @@ class BaseEntry(ABC):
 
     @property
     def name(self) -> str:
-        """
-        Returns:
-            str: the name of the entry as defined in the layout.
-        """
+        """Get the name of the entry."""
         return self._name
 
     def __name_from_layout__(self, name: str) -> None:
@@ -28,8 +25,8 @@ def _add_to_schema(name: str, obj: BaseEntry, schema: dict[str, Any]) -> None:
 
 
 class BaseLayout[T](ABC):
-    """
-    A BaseLayout represents a static layout containing multiple entries.
+    """A BaseLayout represents a static layout containing multiple entries.
+
     Each entry is of type T, which is typically a subclass of BaseEntry.
     The layout can be a Folder (containing File entries) or a Database (containing Table entries).
 
@@ -52,37 +49,33 @@ class BaseLayout[T](ABC):
 
     @classmethod
     def schema(cls) -> pc.Dict[str, T]:
-        """
-        Gets the schema dictionary of the layout.
+        """Gets the schema dictionary of the layout.
 
         Each value is an Entry instance.
 
         For example, for a `Folder` layout, the schema will contain `File` instances.
 
         For a `Database` layout, the schema will contain `Table` instances.
+
         Returns:
-            out (Dict[str, T]): the schema dictionary of the layout as a pychain.Dict
+            pc.Dict[str, T]: the schema dictionary of the layout as a pychain.Dict
         """
         return pc.Dict(cls._schema)
 
 
 class Entry[T](BaseEntry):
-    """
-    An `Entry` represents any class that can be instantiated and used as an attribute in a `Layout`.
+    """An `Entry` represents any class that can be instantiated and used as an attribute in a `Layout`.
 
     It has a `source` attribute representing its `Path` location and a `model` of `type[T]` attribute representing its schema or data model.
+
+    Args:
+        model (type[T], optional): The model type associated with the entry. Defaults to object.
     """
 
     _model: type[T]
     __source__: Path
 
     def __init__(self, model: type[T] = object) -> None:
-        """
-        Initializes the Entry with an optional model type.
-
-        Args:
-            model (type[T], optional): The model type associated with the entry. Defaults to object.
-        """
         self._model = model
 
     def __set_source__(self, source: Path) -> None:
@@ -95,16 +88,10 @@ class Entry[T](BaseEntry):
 
     @property
     def model(self) -> type[T]:
-        """
-        Returns:
-            out (type[T]): The model type associated with the entry.
-        """
+        """Get the model type associated with the entry."""
         return self._model
 
     @property
     def source(self) -> Path:
-        """
-        Returns:
-            Path: The source location of the entry.
-        """
+        """Get the source location of the entry."""
         return self.__source__

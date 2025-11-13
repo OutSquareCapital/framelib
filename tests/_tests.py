@@ -5,6 +5,7 @@ from duckdb import CatalogException, ConstraintException
 
 import framelib as fl
 
+# TODO: refactor avec pyochain Results
 # --- Configuration et Schémas ---
 
 
@@ -43,7 +44,7 @@ CUSTOMER_DATA = pl.DataFrame(
             "bob@example.com",
             "charlie@example.com",
         ],
-    }
+    },
 )
 
 SALES_DATA = pl.DataFrame(
@@ -51,25 +52,17 @@ SALES_DATA = pl.DataFrame(
         "order_id": [1, 2, 3],
         "customer_id": [101, 102, 103],
         "amount": [10.0, 20.0, 30.0],
-    }
+    },
 )
 CONFLICTING_SALES = pl.DataFrame(
-    {"order_id": [2, 4], "customer_id": [102, 104], "amount": [99.9, 40.0]}
+    {"order_id": [2, 4], "customer_id": [102, 104], "amount": [99.9, 40.0]},
 )
 UNIQUE_CONFLICT_SALES = pl.DataFrame(
-    {"order_id": [5], "customer_id": [101], "amount": [50.0]}
+    {"order_id": [5], "customer_id": [101], "amount": [50.0]},
 )
 
 
 def setup_folder() -> None:
-    """
-    tree should look like this:
-
-    tests\\testdata\n
-    ├── customers_file.ndjson \n
-    ├── db.ddb \n
-    └── sales_file.csv \n
-    """
     TestData.source().mkdir(parents=True, exist_ok=True)
     TestData.sales_file.write(SALES_DATA)
     print(TestData.show_tree())
@@ -82,12 +75,10 @@ def setup_test_data(db: TestDB) -> None:
 
 
 def teardown_test_data() -> None:
-    """Nettoie les données de test."""
     TestData.clean()
 
 
 def test_file_operations() -> None:
-    """Teste la lecture et l'écriture de fichiers."""
     assert TestData.sales_file.read_cast().shape == (3, 3)
 
 
@@ -120,7 +111,6 @@ def test_database_operations(db: TestDB) -> None:
 
 
 def run_tests() -> None:
-    """Exécute tous les tests."""
     print("🚀 Démarrage des tests de framelib...")
 
     try:
@@ -129,6 +119,8 @@ def run_tests() -> None:
         test_file_operations()
 
         teardown_test_data()
+
+        print("\n🎉 Tous les tests sont passés avec succès!")
     except Exception as e:
-        print(f"❌ ERREUR PENDANT LES TESTS: \n{e}")
-    print("\n🎉 Tous les tests sont passés avec succès!")
+        msg = f"❌ ERREUR PENDANT LES TESTS: \n{e}"
+        raise ValueError(msg) from e

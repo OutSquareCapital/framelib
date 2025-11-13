@@ -14,8 +14,7 @@ SOURCE = "__source__"
 
 
 class Folder(BaseLayout[File[Schema]]):
-    """
-    A Folder represents a directory containing files.
+    """A Folder represents a directory containing files.
 
     It's a `Schema` of `File` entries.
     """
@@ -39,7 +38,8 @@ class Folder(BaseLayout[File[Schema]]):
 
     @classmethod
     def source(cls) -> Path:
-        """
+        """Get the source path of the folder.
+
         Returns:
             Path: the source path of the folder.
         """
@@ -47,8 +47,7 @@ class Folder(BaseLayout[File[Schema]]):
 
     @classmethod
     def show_tree(cls) -> str:
-        """
-        Show the folder structure as a tree.
+        """Show the folder structure as a tree.
 
         Returns:
             str: The folder structure.
@@ -59,7 +58,7 @@ class Folder(BaseLayout[File[Schema]]):
         >>> class MyFolder(fl.Folder):
         ...     data = fl.CSV()
         ...     logs = fl.Json()
-        >>> print(MyFolder.show_tree())
+        >>> print(MyFolder.show_tree()) # doctest: +NORMALIZE_WHITESPACE
         myfolder
         ├── data.csv
         └── logs.json
@@ -70,16 +69,17 @@ class Folder(BaseLayout[File[Schema]]):
 
     @classmethod
     def iter_dir(cls) -> pc.Iter[Path]:
-        """
+        """Iterate over the files in the folder.
+
         Returns:
-            out (pyochain.Iter[Path]): an iterator over the File instances in the folder.
+            pc.Iter[Path]: an iterator over the File instances in the folder.
         """
         return pc.Iter(cls.__source__.iterdir())
 
     @classmethod
     def clean(cls) -> type[Self]:
-        """
-        Delete all files in the folder.
+        """Delete all files in the folder.
+
         Returns:
             type[Self]: The Folder class.
         """

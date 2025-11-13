@@ -13,6 +13,42 @@ name = "framelib"
 readme = "README.md"
 requires-python = ">=3.12"
 version = "0.1.44"
+
+[tool.ruff]
+ignore = [
+    "D401",
+    "E501",
+    "TID252",
+    "TC003",
+    "TC006",
+    "C417",
+    "PLC0415",
+    "T201",
+    "S608",
+    "SLF001",
+    "FIX002",
+    "TD002",
+    "TD003",
+]
+select = ["ALL"]
+[tool.ruff.format]
+docstring-code-format = true
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+[tool.pydoclint]
+arg-type-hints-in-docstring                   = true
+arg-type-hints-in-signature                   = true
+check-class-attributes                        = false
+check-raises                                  = true
+check-return-types                            = true
+check-yield                                   = true
+require-arg-section                           = true
+require-return-section                        = true
+require-return-section-when-returning-nothing = true
+skip-checking-raises                          = true
+skip-checking-short-docstrings                = true
+style                                         = "google"
+
 [build-system]
 build-backend = "uv_build"
 requires      = ["uv_build>=0.8.15,<0.9.0"]
