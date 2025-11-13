@@ -19,11 +19,9 @@ type DuckFrame = nw.LazyFrame[DuckRelation]
 
 class Table[T: Schema](Entry[T, Path]):
     """
-    A `Table` represents a table in a `DuckDB` database.
+    A `Table` represents a DuckDB table whose logical schema is defined by model (a Schema subclass).
 
-    This is the main interface for interacting with database tables.
-
-    The specifity is that a `Table` is both a `Schema` (of `Columns`), and an Entry (of a `DataBase` `Schema`).
+    It is an `Entry` in a `DataBase` layout.
 
     """
 
