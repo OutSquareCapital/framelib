@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import NamedTuple
 
 import pyochain as pc
@@ -19,11 +20,12 @@ def _constraint_type(
 
 
 class OnConflictResult(NamedTuple):
-    conflict_target: str
     update_clause: str
+    conflict_target: str
 
 
-class KeysConstraints(NamedTuple):
+@dataclass(slots=True)
+class KeysConstraints:
     """Holds the optional keys constraints of a schema.
 
     Since a table is not required to have any constraints, both
@@ -41,26 +43,34 @@ class KeysConstraints(NamedTuple):
     uniques: pc.Option[pc.Seq[str]]
     """The unique key columns, if any."""
 
-    def conflict_keys(self, schema: pc.Dict[str, Column]) -> OnConflictResult:
-        """Obtains the conflict keys for the schema.
-
-        Args:
-            schema (pc.Dict[str, Column]): The schema columns dictionary.
-
-        Returns:
-            OnConflictResult: The conflict keys, prioritizing primary keys over unique keys.
-        """
+    @property
+    def conflict_keys(self) -> pc.Seq[str]:
         msg = "At least one constraint expected"
-        conflict_keys = self.primary.unwrap_or(self.uniques.expect(msg))
-        target: str = conflict_keys.iter().map(lambda k: f'"{k}"').join(", ")
+        return self.primary.unwrap_or(self.uniques.expect(msg))
 
-        update_clause: str = (
-            schema.iter_keys()
-            .filter(lambda k: k not in conflict_keys.inner())
-            .map(lambda col: f'"{col}" = excluded."{col}"')
-            .join(", ")
-        )
-        return OnConflictResult(f"({target})", update_clause)
+
+def on_conflict(
+    conflict_keys: pc.Seq[str],
+    schema: pc.Dict[str, Column],
+) -> OnConflictResult:
+    """Obtains the conflict keys for the schema.
+
+    Args:
+        conflict_keys (pc.Seq[str]): The conflict keys columns.
+        schema (pc.Dict[str, Column]): The schema columns dictionary.
+
+    Returns:
+        OnConflictResult: The conflict keys, prioritizing primary keys over unique keys.
+    """
+    target: str = conflict_keys.iter().map(lambda k: f'"{k}"').join(", ")
+
+    update_clause: str = (
+        schema.iter_keys()
+        .filter(lambda k: k not in conflict_keys.inner())
+        .map(lambda col: f'"{col}" = excluded."{col}"')
+        .join(", ")
+    )
+    return OnConflictResult(f"({target})", update_clause)
 
 
 def _constraints_to_result(

@@ -6,7 +6,8 @@ import polars as pl
 from narwhals.typing import IntoFrame, IntoFrameT, IntoLazyFrame, IntoLazyFrameT
 
 from .._core import Entry
-from ._queries import Queries
+from . import qry
+from ._constraints import on_conflict
 from ._schema import Schema
 
 type DuckFrame = nw.LazyFrame[duckdb.DuckDBPyRelation]
@@ -20,11 +21,8 @@ class Table[T: Schema](Entry[T]):
 
     """
 
-    _qry: Queries
-
     def __set_connexion__(self, con: duckdb.DuckDBPyConnection) -> Self:
         self._con: duckdb.DuckDBPyConnection = con
-        self._qry = Queries(self._name)
         return self
 
     @property
@@ -84,8 +82,8 @@ class Table[T: Schema](Entry[T]):
             Self: The table instance.
         """
         _ = self._from_df(df)
-        create_q = self._qry.create_or_replace(self.model.sql_schema())
-        self._con.execute(create_q).execute(self._qry.insert_into())
+        create_q = qry.create_or_replace(self._name, self.model.sql_schema())
+        self._con.execute(create_q).execute(qry.insert_into(self._name))
 
         return self
 
@@ -101,7 +99,7 @@ class Table[T: Schema](Entry[T]):
             Self: The table instance.
         """
         _ = self._from_df(df)
-        self._con.execute(self._qry.create_from())
+        self._con.execute(qry.create_from(self._name))
         return self
 
     def truncate(self) -> Self:
@@ -110,7 +108,7 @@ class Table[T: Schema](Entry[T]):
         Returns:
             Self: The table instance.
         """
-        self._con.execute(self._qry.truncate())
+        self._con.execute(qry.truncate(self._name))
         return self
 
     def drop(self) -> Self:
@@ -119,7 +117,7 @@ class Table[T: Schema](Entry[T]):
         Returns:
             Self: The table instance.
         """
-        self._con.execute(self._qry.drop())
+        self._con.execute(qry.drop(self._name))
         return self
 
     def insert_into(self, df: IntoFrame | IntoLazyFrame) -> Self:
@@ -134,7 +132,7 @@ class Table[T: Schema](Entry[T]):
             Self: The table instance.
         """
         _ = self._from_df(df)
-        self._con.execute(self._qry.insert_into())
+        self._con.execute(qry.insert_into(self._name))
         return self
 
     def insert_or_replace(self, df: IntoFrame | IntoLazyFrame) -> Self:
@@ -149,7 +147,14 @@ class Table[T: Schema](Entry[T]):
             Self: The table instance.
         """
         _ = self._from_df(df)
-        self._con.execute(self._qry.on_conflict(self.model))
+        q = self.model.constraints().map_or(
+            lambda kc: qry.insert_on_conflict_update(
+                self._name,
+                *on_conflict(kc.conflict_keys, self.model.schema()),
+            ),
+            qry.insert_or_replace(self._name),
+        )
+        self._con.execute(q)
         return self
 
     def insert_or_ignore(self, df: IntoFrame | IntoLazyFrame) -> Self:
@@ -164,7 +169,7 @@ class Table[T: Schema](Entry[T]):
             Self: The table instance.
         """
         _ = self._from_df(df)
-        self._con.execute(self._qry.insert_or_ignore())
+        self._con.execute(qry.insert_or_ignore(self._name))
         return self
 
     def summarize(self) -> DuckFrame:
@@ -173,7 +178,7 @@ class Table[T: Schema](Entry[T]):
         Returns:
             DuckFrame: The summary as a Narwhals LazyFrame.
         """
-        return nw.from_native(self._con.sql(self._qry.summarize()))
+        return nw.from_native(self._con.sql(qry.summarize(self._name)))
 
     def describe_columns(self) -> DuckFrame:
         """Returns detailed information about the columns of this table from the INFORMATION_SCHEMA.
@@ -181,7 +186,7 @@ class Table[T: Schema](Entry[T]):
         Returns:
             DuckFrame: The columns information as a Narwhals LazyFrame.
         """
-        return nw.from_native(self._con.sql(self._qry.columns_schema())).select(
+        return nw.from_native(self._con.sql(qry.columns_schema(self._name))).select(
             "column_name",
             "data_type",
             "is_nullable",
@@ -194,4 +199,4 @@ class Table[T: Schema](Entry[T]):
         Returns:
             DuckFrame: The constraints information as a Narwhals LazyFrame.
         """
-        return nw.from_native(self._con.sql(self._qry.constraints()))
+        return nw.from_native(self._con.sql(qry.constraints(self._name)))

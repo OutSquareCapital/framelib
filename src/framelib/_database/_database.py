@@ -11,7 +11,7 @@ import narwhals as nw
 import pyochain as pc
 
 from .._core import BaseEntry, BaseLayout
-from ._queries import DBQueries, drop_table
+from . import qry
 from ._table import DuckFrame, Table
 
 _DDB = ".ddb"
@@ -129,7 +129,7 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
         Returns:
             DuckFrame: The tables as a Narwhals LazyFrame.
         """
-        return self.query(DBQueries.SHOW_TABLES)
+        return self.query(qry.SHOW_TABLES)
 
     def show_views(self) -> DuckFrame:
         """Shows all views in the database.
@@ -137,7 +137,7 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
         Returns:
             DuckFrame: The views as a Narwhals LazyFrame.
         """
-        return self.query(DBQueries.SHOW_VIEWS)
+        return self.query(qry.SHOW_VIEWS)
 
     def show_types(self) -> DuckFrame:
         """Shows all data types, including user-defined ENUMs.
@@ -145,7 +145,7 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
         Returns:
             DuckFrame: The data types as a Narwhals LazyFrame.
         """
-        return self.query(DBQueries.SHOW_TYPES)
+        return self.query(qry.SHOW_TYPES)
 
     def show_schemas(self) -> DuckFrame:
         """Shows all schemas in the database.
@@ -153,7 +153,7 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
         Returns:
             DuckFrame: The schemas as a Narwhals LazyFrame.
         """
-        return self.query(DBQueries.SHOW_SCHEMAS)
+        return self.query(qry.SHOW_SCHEMAS)
 
     def show_settings(self) -> DuckFrame:
         """Shows all settings in the current database session.
@@ -161,7 +161,7 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
         Returns:
             DuckFrame: The settings as a Narwhals LazyFrame.
         """
-        return self.query(DBQueries.SHOW_SETTINGS)
+        return self.query(qry.SHOW_SETTINGS)
 
     def show_extensions(self) -> DuckFrame:
         """Shows all installed and loaded extensions.
@@ -169,7 +169,7 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
         Returns:
             DuckFrame: The extensions as a Narwhals LazyFrame.
         """
-        return self.query(DBQueries.SHOW_EXTENSIONS)
+        return self.query(qry.SHOW_EXTENSIONS)
 
     def show_all_constraints(self) -> DuckFrame:
         """Shows all constraints across all tables in the database.
@@ -177,7 +177,7 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
         Returns:
             DuckFrame: The constraints as a Narwhals LazyFrame.
         """
-        return self.query(DBQueries.ALL_CONSTRAINTS)
+        return self.query(qry.ALL_CONSTRAINTS)
 
     def sync_schema(self) -> Self:
         """Drops tables from the database that are not present in the schema.
@@ -196,7 +196,7 @@ class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
             pc.Seq(tables_in_db)
             .diff_unique(self.schema().iter_keys().inner())
             .iter()
-            .for_each(lambda qry: self.connexion.execute(drop_table(qry)))
+            .for_each(lambda q: self.connexion.execute(qry.drop_table(q)))
         )
 
     @property
