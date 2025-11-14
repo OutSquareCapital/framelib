@@ -69,11 +69,7 @@ class Schema(BaseLayout[Column]):
 
     @classmethod
     def sql_schema(cls) -> str:
-        """Get the SQL schema definition.
-
-        Returns:
-            str: The SQL schema definition.
-        """
+        """Get the SQL schema definition."""
         return cls.schema().iter_values().map(lambda col: col.to_sql()).join(", ")
 
     @classmethod
@@ -166,7 +162,7 @@ class Schema(BaseLayout[Column]):
         """Like `cast`, but with `strict=False`.
 
         **Warning**:
-            will only work with polars {Data, Lazy}Frames.
+            will only work with polars `{Data, Lazy}Frames`.
 
         Args:
             df (pl.LazyFrame | pl.DataFrame): The input DataFrame.

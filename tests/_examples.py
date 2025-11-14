@@ -1,3 +1,4 @@
+# noqa: ALL
 import marimo
 
 __generated_with = "0.17.0"
@@ -24,7 +25,7 @@ with app.setup(hide_code=True):
 
 
 @app.cell(hide_code=True)
-def _():
+def _() -> None:
     mo.md(
         r"""
     ### Declare Your Data Architecture
@@ -60,7 +61,7 @@ def _():
 
 
 @app.cell(hide_code=True)
-def _():
+def _() -> None:
     mo.md(
         r"""
     ### Create the structure on disk
@@ -71,13 +72,13 @@ def _():
 
 
 @app.cell
-def _():
+def _() -> None:
     MyProject.source().mkdir(parents=True, exist_ok=True)
     MyProject.source().as_posix()
 
 
 @app.cell(hide_code=True)
-def _():
+def _() -> None:
     mo.md(
         r"""
     ### Create mock sales data
@@ -90,7 +91,7 @@ def _():
 
 
 @app.cell
-def _():
+def _() -> None:
     mock_sales_data = pl.DataFrame(
         {
             "transaction_id": [101, 102, 103],
@@ -103,7 +104,7 @@ def _():
 
 
 @app.cell(hide_code=True)
-def _():
+def _() -> None:
     mo.md(
         r"""
     ### Load data into the DuckDB database and generate a report
@@ -118,7 +119,7 @@ def _():
 
 
 @app.cell
-def _():
+def _() -> None:
     def get_report(db: Analytics) -> pl.DataFrame:
         return (
             db.sales.create_or_replace_from(MyProject.raw_sales.scan_cast())
@@ -136,7 +137,7 @@ def _():
 
 
 @app.cell(hide_code=True)
-def _():
+def _() -> None:
     mo.md(
         r"""
     ### Read and cast data
@@ -147,22 +148,22 @@ def _():
 
 
 @app.cell
-def _():
-    MyProject.raw_sales.read().schema
+def _() -> None:
+    MyProject.raw_sales.read().schema  # noqa: B018
 
 
 @app.cell(hide_code=True)
-def _():
+def _() -> None:
     mo.md(r"""Once casted to the defined schema:""")
 
 
 @app.cell
-def _():
-    MyProject.raw_sales.read_cast().schema
+def _() -> None:
+    MyProject.raw_sales.read_cast().schema  # noqa: B018
 
 
 @app.cell(hide_code=True)
-def _():
+def _() -> None:
     mo.md(
         r"""
     ### Show the project structure
@@ -176,7 +177,7 @@ def _():
 
 
 @app.cell
-def _():
+def _() -> None:
     class ProductionData(fl.Folder):
         sales = fl.CSV(model=Sales)
 
@@ -193,7 +194,7 @@ def _():
 
 
 @app.cell(hide_code=True)
-def _():
+def _() -> None:
     mo.md(
         r"""
     ### Append data and perform various database operations
@@ -204,7 +205,7 @@ def _():
 
 
 @app.cell
-def _():
+def _() -> None:
     new_sales = pl.DataFrame(
         {
             "transaction_id": [104, 105],
@@ -213,7 +214,7 @@ def _():
         },
     )
 
-    def database_op(dba: Analytics):
+    def database_op(dba: Analytics) -> None:
         print("\n📦 Sales Data in DB before insert_into:")
         print(dba.sales.scan().to_native())
         print("\n📦 Sales Data in DB after insert_into:")
@@ -228,12 +229,12 @@ def _():
 
 
 @app.cell(hide_code=True)
-def _():
+def _() -> None:
     mo.md(r"""### Clean up the project structure""")
 
 
 @app.cell
-def _():
+def _() -> None:
     MyProject.clean()
     print("\n✅ Project structure cleaned up.")
     try:

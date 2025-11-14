@@ -1,60 +1,60 @@
 [project]
-authors = [
-    { name = "OutSquareCapital", email = "166045166+OutSquareCapital@users.noreply.github.com" },
-]
-dependencies = [
-    "duckdb>=1.4.1",
-    "narwhals>=2.5.0",
-    "polars>=1.34.0",
-    "pyochain>=0.5.0",
-]
-description = "declarative schema for files, dataframes and duckdb databases"
-name = "framelib"
-readme = "README.md"
-requires-python = ">=3.12"
-version = "0.1.44"
+    authors = [
+        { name = "OutSquareCapital", email = "166045166+OutSquareCapital@users.noreply.github.com" },
+    ]
+    dependencies = [
+        "duckdb>=1.4.1",
+        "narwhals>=2.5.0",
+        "polars>=1.34.0",
+        "pyochain>=0.5.0",
+    ]
+    description = "declarative schema for files, dataframes and duckdb databases"
+    name = "framelib"
+    readme = "README.md"
+    requires-python = ">=3.12"
+    version = "0.1.44"
 
 [tool.ruff]
-ignore = [
-    "D401",
-    "E501",
-    "TID252",
-    "TC003",
-    "TC006",
-    "C417",
-    "PLC0415",
-    "T201",
-    "S608",
-    "SLF001",
-    "FIX002",
-    "TD002",
-    "TD003",
-]
-select = ["ALL"]
-[tool.ruff.format]
-docstring-code-format = true
-[tool.ruff.lint.pydocstyle]
-convention = "google"
+    ignore = [
+        "C417",
+        "D401",
+        "E501",
+        "FIX002",
+        "PLC0415",
+        "S608",
+        "SLF001",
+        "T201",
+        "TC003",
+        "TC006",
+        "TD002",
+        "TD003",
+        "TID252",
+    ]
+    select = ["ALL"]
+    [tool.ruff.format]
+        docstring-code-format = true
+    [tool.ruff.lint.pydocstyle]
+        convention = "google"
+
 [tool.pydoclint]
-arg-type-hints-in-docstring                   = true
-arg-type-hints-in-signature                   = true
-check-class-attributes                        = false
-check-raises                                  = true
-check-return-types                            = true
-check-yield                                   = true
-require-arg-section                           = true
-require-return-section                        = true
-require-return-section-when-returning-nothing = true
-skip-checking-raises                          = true
-skip-checking-short-docstrings                = true
-style                                         = "google"
+    arg-type-hints-in-docstring                   = true
+    arg-type-hints-in-signature                   = true
+    check-class-attributes                        = true
+    check-raises                                  = true
+    check-return-types                            = true
+    check-yield                                   = true
+    require-arg-section                           = true
+    require-return-section                        = true
+    require-return-section-when-returning-nothing = false
+    skip-checking-short-docstrings                = true
+    style                                         = "google"
 
 [build-system]
-build-backend = "uv_build"
-requires      = ["uv_build>=0.8.15,<0.9.0"]
+    build-backend = "uv_build"
+    requires      = ["uv_build>=0.8.15,<0.9.0"]
 
 [tool.uv.sources]
-doctester = { git = "https://github.com/OutSquareCapital/doctester.git" }
+    doctester = { git = "https://github.com/OutSquareCapital/doctester.git" }
 
 [dependency-groups]
-dev = ["doctester", "marimo>=0.16.5", "pyarrow-stubs>=20.0.0.20250928"]
+    dev = ["doctester", "marimo>=0.16.5", "pyarrow-stubs>=20.0.0.20250928"]
