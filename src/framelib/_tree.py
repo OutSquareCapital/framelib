@@ -13,7 +13,7 @@ class Leaf(StrEnum):
     LAST = "└── "
 
 
-def _leaf_line(*is_last: bool) -> Leaf:
+def _leaf_line(*, is_last: bool) -> Leaf:
     return Leaf.LAST if is_last else Leaf.NEW
 
 
@@ -22,7 +22,7 @@ class Tree(StrEnum):
     SPACE = "    "
 
 
-def _tree_line(*is_last: bool) -> Tree:
+def _tree_line(*, is_last: bool) -> Tree:
     return Tree.SPACE if is_last else Tree.BRANCH
 
 
@@ -75,9 +75,9 @@ def show_tree(hierarchy: Sequence[type]) -> str:
         def _visit(entry: tuple[int, Path]) -> None:
             idx, child = entry
             is_last: bool = idx == children_len - 1
-            lines.append(f"{prefix}{_leaf_line(is_last)}{child.name}")
+            lines.append(f"{prefix}{_leaf_line(is_last=is_last)}{child.name}")
             if child in structure.dir_paths:
-                recurse(child, prefix + _tree_line(is_last))
+                recurse(child, prefix + _tree_line(is_last=is_last))
 
         (children.iter().enumerate().for_each(_visit))
 
