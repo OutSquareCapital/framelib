@@ -108,7 +108,6 @@ class ParquetPartitioned[T: Schema](Parquet[T]):
     """
 
     _with_suffix: bool = False
-    __slots__ = ("_partition_by",)
 
     def __init__(
         self,

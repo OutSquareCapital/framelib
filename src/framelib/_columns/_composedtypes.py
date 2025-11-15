@@ -3,7 +3,6 @@ from __future__ import annotations
 import datetime
 import enum
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass
 from inspect import isclass
 from typing import TYPE_CHECKING
 
@@ -17,10 +16,21 @@ if TYPE_CHECKING:
     from .._core import BaseLayout
 
 
-@dataclass(slots=True)
 class Datetime(Column):
-    time_unit: TimeUnit = "ns"
-    time_zone: str | datetime.timezone | None = None
+    time_unit: TimeUnit
+    time_zone: str | datetime.timezone | None
+
+    def __init__(
+        self,
+        time_unit: TimeUnit = "ns",
+        time_zone: str | datetime.timezone | None = None,
+        *,
+        primary_key: bool = False,
+        unique: bool = False,
+    ) -> None:
+        self.time_unit = time_unit
+        self.time_zone = time_zone
+        super().__init__(primary_key=primary_key, unique=unique)
 
     @property
     def nw_dtype(self) -> nw.Datetime:
@@ -32,13 +42,26 @@ class Datetime(Column):
 
     @property
     def sql_type(self) -> str:
-        return "TIME"
+        if self.time_zone is None:
+            return "TIMESTAMP"
+        return "TIMESTAMP WITH TIME ZONE"
 
 
-@dataclass(slots=True)
 class Decimal(Column):
-    precision: int | None = None
-    scale: int = 0
+    precision: int | None
+    scale: int
+
+    def __init__(
+        self,
+        precision: int | None = None,
+        scale: int = 0,
+        *,
+        primary_key: bool = False,
+        unique: bool = False,
+    ) -> None:
+        self.precision = precision
+        self.scale = scale
+        super().__init__(primary_key=primary_key, unique=unique)
 
     @property
     def nw_dtype(self) -> nw.Decimal:
@@ -47,6 +70,12 @@ class Decimal(Column):
     @property
     def pl_dtype(self) -> pl.Decimal:
         return pl.Decimal(self.precision, self.scale)
+
+    @property
+    def sql_type(self) -> str:
+        if self.precision is None:
+            return "DECIMAL"
+        return f"DECIMAL({self.precision}, {self.scale})"
 
 
 class Array(Column):
@@ -72,6 +101,14 @@ class Array(Column):
     @property
     def pl_dtype(self) -> pl.Array:
         return pl.Array(self._inner.pl_dtype, self._shape)
+
+    @property
+    def sql_type(self) -> str:
+        base: str = self._inner.sql_type
+        if isinstance(self._shape, int):
+            return f"{base}[{self._shape}]"
+        dims = "".join(f"[{d}]" for d in self._shape)
+        return f"{base}{dims}"
 
     @property
     def inner(self) -> Column:
@@ -109,6 +146,19 @@ class Struct(Column):
         return nw.Struct(self.fields.map_values(lambda col: col.nw_dtype).inner())
 
     @property
+    def sql_type(self) -> str:
+        def format_item(name: str, t: str) -> str:
+            return f"{name} {t}"
+
+        inner = (
+            self.fields.map_values(lambda col: col.sql_type)
+            .iter_items()
+            .map(lambda it: format_item(*it))
+            .join(", ")
+        )
+        return f"STRUCT({inner})"
+
+    @property
     def fields(self) -> pc.Dict[str, Column]:
         """Get the fields of this struct."""
         return self._fields
@@ -136,6 +186,10 @@ class List(Column):
         return pl.List(self._inner.pl_dtype)
 
     @property
+    def sql_type(self) -> str:
+        return f"{self._inner.sql_type}[]"
+
+    @property
     def inner(self) -> Column:
         """Get the inner column of this list."""
         return self._inner
@@ -149,6 +203,16 @@ class Categorical(Column):
     @property
     def pl_dtype(self) -> pl.Categorical:
         return pl.Categorical()
+
+    @property
+    def sql_type(self) -> str:
+        """Return the enum type as `VARCHAR`.
+
+        Duckdb does not have a native categorical type, it would be more similar to an ENUM.
+
+        Which lead to the same situation as the `Enum` column type (see `Enum.sql_type` docstring).
+        """
+        return "VARCHAR"
 
 
 class Enum(Column):
@@ -173,6 +237,16 @@ class Enum(Column):
     @property
     def pl_dtype(self) -> pl.Enum:
         return pl.Enum(self._categories)
+
+    @property
+    def sql_type(self) -> str:
+        """Return the enum type as `VARCHAR`.
+
+        DuckDB requires a separate `CREATE TYPE ... AS ENUM (...)` statement to define true ENUM types.
+
+        Since `Column` role is not responsible for handling table/database level logic, we return `VARCHAR` here.
+        """
+        return "VARCHAR"
 
     @property
     def categories(self) -> list[str]:

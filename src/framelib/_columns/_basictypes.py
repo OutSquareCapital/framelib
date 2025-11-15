@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 import narwhals as nw
 import polars as pl
 
 from ._base import Column
 
 
-@dataclass(slots=True)
 class Boolean(Column):
     @property
     def nw_dtype(self) -> nw.Boolean:
@@ -23,7 +20,6 @@ class Boolean(Column):
         return "BOOLEAN"
 
 
-@dataclass(slots=True)
 class String(Column):
     @property
     def nw_dtype(self) -> nw.String:
@@ -38,7 +34,6 @@ class String(Column):
         return "VARCHAR"
 
 
-@dataclass(slots=True)
 class Date(Column):
     @property
     def nw_dtype(self) -> nw.Date:
@@ -53,7 +48,6 @@ class Date(Column):
         return "DATE"
 
 
-@dataclass(slots=True)
 class Float32(Column):
     @property
     def nw_dtype(self) -> nw.Float32:
@@ -68,7 +62,6 @@ class Float32(Column):
         return "FLOAT"
 
 
-@dataclass(slots=True)
 class Float64(Column):
     @property
     def nw_dtype(self) -> nw.Float64:
@@ -83,7 +76,6 @@ class Float64(Column):
         return "DOUBLE"
 
 
-@dataclass(slots=True)
 class Int8(Column):
     @property
     def nw_dtype(self) -> nw.Int8:
@@ -98,7 +90,6 @@ class Int8(Column):
         return "TINYINT"
 
 
-@dataclass(slots=True)
 class Int16(Column):
     @property
     def nw_dtype(self) -> nw.Int16:
@@ -113,7 +104,6 @@ class Int16(Column):
         return "SMALLINT"
 
 
-@dataclass(slots=True)
 class Int32(Column):
     @property
     def nw_dtype(self) -> nw.Int32:
@@ -128,7 +118,6 @@ class Int32(Column):
         return "INTEGER"
 
 
-@dataclass(slots=True)
 class Int64(Column):
     @property
     def nw_dtype(self) -> nw.Int64:
@@ -143,7 +132,6 @@ class Int64(Column):
         return "BIGINT"
 
 
-@dataclass(slots=True)
 class Int128(Column):
     @property
     def nw_dtype(self) -> nw.Int128:
@@ -158,7 +146,6 @@ class Int128(Column):
         return "HUGEINT"
 
 
-@dataclass(slots=True)
 class UInt8(Column):
     @property
     def nw_dtype(self) -> nw.UInt8:
@@ -173,7 +160,6 @@ class UInt8(Column):
         return "UTINYINT"
 
 
-@dataclass(slots=True)
 class UInt16(Column):
     @property
     def nw_dtype(self) -> nw.UInt16:
@@ -188,7 +174,6 @@ class UInt16(Column):
         return "USMALLINT"
 
 
-@dataclass(slots=True)
 class UInt32(Column):
     @property
     def nw_dtype(self) -> nw.UInt32:
@@ -203,7 +188,6 @@ class UInt32(Column):
         return "UINTEGER"
 
 
-@dataclass(slots=True)
 class UInt64(Column):
     @property
     def nw_dtype(self) -> nw.UInt64:
@@ -218,7 +202,6 @@ class UInt64(Column):
         return "UBIGINT"
 
 
-@dataclass(slots=True)
 class UInt128(Column):
     @property
     def nw_dtype(self) -> nw.UInt128:

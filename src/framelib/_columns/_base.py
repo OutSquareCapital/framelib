@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from enum import StrEnum
 from typing import Literal
 
@@ -19,21 +18,24 @@ class _KWord(StrEnum):
 TimeUnit = Literal["ns", "us", "ms"]
 
 
-@dataclass(slots=True)
 class Column(BaseEntry, ABC):
     """A Column represents a single column in a schema.
 
     This is the most basic building block of framelib.
 
-    Attributes:
+    Args:
         primary_key (bool): Whether this column is part of the primary key.
         unique (bool): Whether this column has a unique constraint.
     """
 
-    primary_key: bool = False
-    """Whether this column is part of the primary key."""
-    unique: bool = False
-    """Whether this column has a unique constraint."""
+    def __init__(
+        self,
+        *,
+        primary_key: bool = False,
+        unique: bool = False,
+    ) -> None:
+        self._primary_key: bool = primary_key
+        self._unique: bool = unique
 
     @property
     def nw_col(self) -> nw.Expr:
@@ -66,6 +68,7 @@ class Column(BaseEntry, ABC):
         raise NotImplementedError
 
     @property
+    @abstractmethod
     def sql_type(self) -> str:
         """Get the SQL type corresponding to this column."""
         raise NotImplementedError
@@ -83,3 +86,21 @@ class Column(BaseEntry, ABC):
             definition += " "
             definition += _KWord.UNIQUE
         return definition
+
+    @property
+    def primary_key(self) -> bool:
+        """Check if this column is part of the primary key.
+
+        Returns:
+            bool: True if this column is part of the primary key, False otherwise.
+        """
+        return self._primary_key
+
+    @property
+    def unique(self) -> bool:
+        """Check if this column has a unique constraint.
+
+        Returns:
+            bool: True if this column has a unique constraint, False otherwise.
+        """
+        return self._unique
