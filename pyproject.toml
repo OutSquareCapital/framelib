@@ -15,8 +15,9 @@
     version = "0.1.44"
 
 [tool.ruff]
-    ignore = [
+    lint.ignore = [
         "C417",
+        "COM812",
         "D401",
         "E501",
         "FIX002",
@@ -30,7 +31,7 @@
         "TD003",
         "TID252",
     ]
-    select = ["ALL"]
+    lint.select = ["ALL"]
     [tool.ruff.format]
         docstring-code-format = true
     [tool.ruff.lint.pydocstyle]
@@ -57,4 +58,10 @@
     doctester = { git = "https://github.com/OutSquareCapital/doctester.git" }
 
 [dependency-groups]
-    dev = ["doctester", "marimo>=0.16.5", "pyarrow-stubs>=20.0.0.20250928"]
+    dev = [
+        "doctester",
+        "marimo>=0.16.5",
+        "pyarrow-stubs>=20.0.0.20250928",
+        "pydoclint>=0.8.1",
+        "ruff>=0.14.5",
+    ]
