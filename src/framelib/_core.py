@@ -2,11 +2,18 @@ from __future__ import annotations
 
 from abc import ABC
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pyochain as pc
 
-from ._database import Schema
+if TYPE_CHECKING:
+    from ._database import Schema
+
+
+def _default_schema() -> type[Schema]:
+    from ._database import Schema
+
+    return Schema
 
 
 class BaseEntry(ABC):
@@ -79,7 +86,7 @@ class Entry(BaseEntry):
 
     def __init__(self, model: type[Schema] | None = None) -> None:
         if model is None:
-            model = Schema
+            model = _default_schema()
         self._model = model
 
     def __set_source__(self, source: Path) -> None:
