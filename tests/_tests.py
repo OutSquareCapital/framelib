@@ -65,6 +65,7 @@ def setup_test_data(db: TestDB) -> TestResult:
 
 def teardown_test_data() -> TestResult:
     try:
+        TestData.db.close()
         TestData.clean()
         return pc.Ok(None)
     except Exception as e:
@@ -159,28 +160,38 @@ def test_db_op(db: TestDB) -> TestResult:
 def run_tests() -> None:
     print("🚀 Démarrage des tests de framelib...")
 
-    result: TestResult = (
-        from_callable(
-            setup_folder,
-            lambda e: f"setup_folder failed: {e!r}",
-            OSError,
+    result: TestResult = pc.Err("no result")
+    try:
+        result = (
+            from_callable(
+                setup_folder,
+                lambda e: f"setup_folder failed: {e!r}",
+                OSError,
+            )
+            .map(lambda _: None)
+            .and_then(
+                lambda _: TestData.db.apply(setup_test_data).pipe(
+                    test_db_op,
+                ),
+            )
+            .and_then(lambda _: test_file_operations())
         )
-        .map(lambda _: None)
-        .and_then(
-            lambda _: TestData.db.apply(setup_test_data).pipe(
-                test_db_op,
-            ),
-        )
-        .and_then(lambda _: test_file_operations())
-        .and_then(lambda _: teardown_test_data())
-    )
-
-    match result:
-        case pc.Ok(_):
-            print("\n🎉 Tous les tests sont passés avec succès!")
-        case pc.Err(err):
-            msg = f"❌ ERREUR PENDANT LES TESTS:\n{err}"
-            raise ValueError(msg)
-        case _:
-            msg = "État de test inattendu"
-            raise RuntimeError(msg)
+    except Exception as e:
+        result = pc.Err(f"unhandled exception during tests: {e!r}")
+    finally:
+        teardown_result = teardown_test_data()
+        match (result, teardown_result):
+            case pc.Ok(_), pc.Ok(_):
+                print("\n🎉 Tous les tests sont passés avec succès!")
+            case pc.Ok(_), pc.Err(err2):
+                msg = f"❌ ERREUR PENDANT LES TESTS:\nteardown failed: {err2}"
+                raise ValueError(msg)
+            case pc.Err(err), pc.Ok(_):
+                msg = f"❌ ERREUR PENDANT LES TESTS:\n{err}"
+                raise ValueError(msg)
+            case pc.Err(err), pc.Err(err2):
+                msg = f"❌ ERREUR PENDANT LES TESTS:\n{err}\n(plus teardown failed: {err2})"
+                raise ValueError(msg)
+            case _:
+                msg = "❌ ERREUR INATTENDUE PENDANT LES TESTS"
+                raise ValueError(msg)
