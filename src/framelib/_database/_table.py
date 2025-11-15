@@ -8,13 +8,12 @@ from narwhals.typing import IntoFrame, IntoFrameT, IntoLazyFrame, IntoLazyFrameT
 from .._core import Entry
 from . import qry
 from ._constraints import on_conflict
-from ._schema import Schema
 
 type DuckFrame = nw.LazyFrame[duckdb.DuckDBPyRelation]
 """Syntactic sugar for `narwhals.LazyFrame[duckdb.DuckDBPyRelation]`"""
 
 
-class Table[T: Schema](Entry[T]):
+class Table(Entry):
     """A `Table` represents a DuckDB table whose logical schema is defined by model (a Schema subclass).
 
     It is an `Entry` in a `DataBase` layout.

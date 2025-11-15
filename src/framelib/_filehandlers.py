@@ -10,7 +10,7 @@ from ._core import Entry
 from ._database import Schema
 
 
-class File[T: Schema](Entry[T], ABC):
+class File(Entry, ABC):
     """A `File` represents a file in a folder.
 
     It's an `Entry` in a `Folder`.
@@ -34,9 +34,6 @@ class File[T: Schema](Entry[T], ABC):
     """
 
     _with_suffix: bool = True
-
-    def __init__(self, model: type[T] = Schema) -> None:
-        self._model = model
 
     def __set_source__(self, source: Path | str) -> None:
         self.__source__ = Path(source, self._name)
@@ -77,7 +74,7 @@ class File[T: Schema](Entry[T], ABC):
         return self.scan().pipe(self.model.cast).to_native()
 
 
-class Parquet[T: Schema](File[T]):
+class Parquet(File):
     """A Parquet file handler."""
 
     @property
@@ -93,7 +90,7 @@ class Parquet[T: Schema](File[T]):
         return partial(pl.DataFrame.write_parquet, file=self.source)
 
 
-class ParquetPartitioned[T: Schema](Parquet[T]):
+class ParquetPartitioned(Parquet):
     """A Parquet file that is partitioned by one or more columns.
 
     A partitioned Parquet file is organized into separate directories for each unique value of the partitioning column(s).
@@ -104,7 +101,7 @@ class ParquetPartitioned[T: Schema](Parquet[T]):
 
     Args:
         partition_by (str | Sequence[str]): The column(s) to partition by.
-        model (type[T], optional): The schema model associated with the file. Defaults to Schema.
+        model (type[Schema], optional): The schema model associated with the file. Defaults to Schema.
     """
 
     _with_suffix: bool = False
@@ -112,9 +109,9 @@ class ParquetPartitioned[T: Schema](Parquet[T]):
     def __init__(
         self,
         partition_by: str | Sequence[str],
-        model: type[T] = Schema,
+        model: type[Schema] = Schema,
     ) -> None:
-        self.model: type[T] = model
+        self.model: type[Schema] = model
         self._partition_by: str | Sequence[str] = partition_by
 
     @property
@@ -126,7 +123,7 @@ class ParquetPartitioned[T: Schema](Parquet[T]):
         )
 
 
-class CSV[T: Schema](File[T]):
+class CSV(File):
     """Represents a CSV file.
 
     Acts as an interface with methods to scan, read, read in batches, and write CSV data using Polars functions.
@@ -149,7 +146,7 @@ class CSV[T: Schema](File[T]):
         return partial(pl.DataFrame.write_csv, file=self.source)
 
 
-class NDJson[T: Schema](File[T]):
+class NDJson(File):
     """Represents a file handler for newline-delimited JSON (NDJSON) files.
 
     Provides properties to scan, read, and write NDJSON data using Polars functions.
@@ -168,7 +165,7 @@ class NDJson[T: Schema](File[T]):
         return partial(pl.DataFrame.write_ndjson, file=self.source)
 
 
-class Json[T: Schema](File[T]):
+class Json(File):
     r"""Represents a JSON file.
 
     Acts as an interface with methods to scan the file as a pl.LazyFrame using DuckDB, and to read from or write to the file using Polars.

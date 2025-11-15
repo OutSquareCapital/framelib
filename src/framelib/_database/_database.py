@@ -17,7 +17,7 @@ from ._table import DuckFrame, Table
 _DDB = ".ddb"
 
 
-class DataBase(BaseLayout[Table[Any]], BaseEntry, ABC):
+class DataBase(BaseLayout[Table], BaseEntry, ABC):
     """A DataBase represents a DuckDB database.
 
     It's a `Schema` of `Table` entries.

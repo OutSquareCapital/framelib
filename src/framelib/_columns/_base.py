@@ -101,6 +101,6 @@ class Column(BaseEntry, ABC):
         """Check if this column has a unique constraint.
 
         Returns:
-            bool: True if this column has a unique constraint, False otherwise.
+            int: True if this column has a unique constraint, False otherwise.
         """
         return self._unique

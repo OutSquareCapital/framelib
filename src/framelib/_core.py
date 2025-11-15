@@ -6,6 +6,8 @@ from typing import Any
 
 import pyochain as pc
 
+from ._database import Schema
+
 
 class BaseEntry(ABC):
     _name: str
@@ -63,19 +65,21 @@ class BaseLayout[T](ABC):
         return pc.Dict(cls._schema)
 
 
-class Entry[T](BaseEntry):
+class Entry(BaseEntry):
     """An `Entry` represents any class that can be instantiated and used as an attribute in a `Layout`.
 
     It has a `source` attribute representing its `Path` location and a `model` of `type[T]` attribute representing its schema or data model.
 
     Args:
-        model (type[T], optional): The model type associated with the entry. Defaults to object.
+        model (type[Schema] | None): The model type associated with the entry. Defaults to object.
     """
 
-    _model: type[T]
+    _model: type[Schema]
     __source__: Path
 
-    def __init__(self, model: type[T] = object) -> None:
+    def __init__(self, model: type[Schema] | None = None) -> None:
+        if model is None:
+            model = Schema
         self._model = model
 
     def __set_source__(self, source: Path) -> None:
@@ -87,7 +91,7 @@ class Entry[T](BaseEntry):
         )
 
     @property
-    def model(self) -> type[T]:
+    def model(self) -> type[Schema]:
         """Get the model type associated with the entry."""
         return self._model
 
