@@ -58,7 +58,9 @@ class Schema(Layout[Column]):
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
         cls._schema = _schema_from_mro(cls)
-        cls._constraints = cls.schema().iter_values().pipe(cols_to_constraints)
+        cls._constraints = (
+            cls.schema().iter_values().collect().pipe(cols_to_constraints)
+        )
 
     @classmethod
     def constraints(cls) -> pc.Option[KeysConstraints]:

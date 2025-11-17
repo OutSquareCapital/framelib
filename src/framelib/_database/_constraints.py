@@ -8,10 +8,10 @@ from .._columns import Column
 
 
 def _constraint_type(
-    cols: pc.Iter[Column],
+    cols: pc.Seq[Column],
     predicate: Callable[[Column], bool],
 ) -> pc.Option[pc.Seq[str]]:
-    constraint_cols = cols.filter(predicate).map(lambda c: c.name).collect()
+    constraint_cols = cols.iter().filter(predicate).map(lambda c: c.name).collect()
     match constraint_cols.count():
         case 0:
             return pc.NONE
@@ -73,19 +73,13 @@ def on_conflict(
     return OnConflictResult(f"({target})", update_clause)
 
 
-def _constraints_to_result(
-    primary: pc.Option[pc.Seq[str]],
-    uniques: pc.Option[pc.Seq[str]],
-) -> pc.Option[KeysConstraints]:
+def cols_to_constraints(cols: pc.Seq[Column]) -> pc.Option[KeysConstraints]:
+    primary: pc.Option[pc.Seq[str]] = cols.pipe(
+        _constraint_type, lambda c: c.primary_key
+    )
+    uniques: pc.Option[pc.Seq[str]] = cols.pipe(_constraint_type, lambda c: c.unique)
     match primary.is_some(), uniques.is_some():
         case False, False:
             return pc.NONE
         case _:
             return pc.Some(KeysConstraints(primary=primary, uniques=uniques))
-
-
-def cols_to_constraints(cols: pc.Iter[Column]) -> pc.Option[KeysConstraints]:
-    return _constraints_to_result(
-        cols.pipe(_constraint_type, lambda c: c.primary_key),
-        cols.pipe(_constraint_type, lambda c: c.unique),
-    )
