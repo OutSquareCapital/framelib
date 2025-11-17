@@ -55,3 +55,9 @@ class DataFrames:
     UNIQUE_CONFLICT_SALES = pl.DataFrame(
         {"order_id": [5], "customer_id": [101], "amount": [50.0]},
     )
+
+
+def setup_folder() -> None:
+    TestData.source().mkdir(parents=True, exist_ok=True)
+    TestData.sales_file.write(DataFrames.SALES)
+    print(TestData.show_tree())
