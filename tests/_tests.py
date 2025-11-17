@@ -8,17 +8,6 @@ from tests._data import DataFrames, Sales, TestData, TestDB, setup_folder
 TestResult = pc.Result[str, str]
 
 
-def from_callable[T, E](
-    fn: Callable[[], T],
-    map_err: Callable[[BaseException], E],
-    *exc_types: type[BaseException],
-) -> pc.Result[T, E]:
-    try:
-        return pc.Ok(fn())
-    except exc_types as exc:
-        return pc.Err(map_err(exc))
-
-
 def expect_equal[T](actual: T, expected: T, ctx: str) -> TestResult:
     if actual == expected:
         return pc.Ok(ctx)
@@ -35,9 +24,6 @@ def expect_raises[E: BaseException](
         fn()
     except exc_type:
         return pc.Ok(fn.__name__)
-    except Exception as e:
-        msg = f"{ctx}: expected {exc_type.__name__}, got {type(e).__name__}: {e}"
-        return pc.Err(msg)
     else:
         msg = f"{ctx}: expected {exc_type.__name__}, but no exception was raised"
         return pc.Err(msg)
@@ -49,7 +35,7 @@ def setup_test_data(db: TestDB) -> TestResult:
         db.sales.create_or_replace_from(DataFrames.SALES)
         TestData.show_tree()
         return pc.Ok("setup_test_data succeeded")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return pc.Err(f"setup_test_data failed: {e}")
 
 
@@ -58,7 +44,7 @@ def teardown_test_data() -> TestResult:
         TestData.db.close()
         TestData.clean()
         return pc.Ok("teardown_test_data succeeded")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return pc.Err(f"teardown_test_data failed: {e}")
 
 
@@ -140,15 +126,15 @@ def run_tests() -> None:
     result: TestResult = pc.Err("no result")
     try:
         result = (
-            from_callable(
-                setup_folder,
-                lambda e: f"setup_folder failed: {e}",
+            pc.Result.from_fn(
                 OSError,
+                fn=setup_folder,
+                map_err=lambda e: f"setup_folder failed: {e}",
             )
             .map(lambda _: None)
             .and_then(lambda _: TestData.db.apply(setup_test_data).pipe(test_db_op))
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         result = pc.Err(f"unhandled exception during tests: {e}")
     finally:
         teardown_result = teardown_test_data()
