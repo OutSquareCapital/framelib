@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
-from typing import NamedTuple
+from typing import TYPE_CHECKING
 
 import pyochain as pc
+
+if TYPE_CHECKING:
+    from ._folder import File, Folder
 
 
 class Leaf(StrEnum):
@@ -26,13 +30,35 @@ def _tree_line(*, is_last: bool) -> Tree:
     return Tree.SPACE if is_last else Tree.BRANCH
 
 
-class FolderStructure(NamedTuple):
+@dataclass(slots=True)
+class FolderStructure:
     all_paths: pc.Seq[Path]
     dir_paths: set[Path]
-    root: Path
 
     def childrens(self, current: Path) -> pc.Seq[Path]:
         return self.all_paths.iter().filter(lambda path: path.parent == current).sort()
+
+
+def _folders_to_structure(folders: pc.Seq[type[Folder]], root: Path) -> FolderStructure:
+    dir_paths: set[Path] = {root}
+
+    def _add_to_tree(folder: File) -> pc.Option[Path]:
+        try:
+            parent: Path = folder.source.relative_to(root).parent
+            while str(parent) != ".":
+                dir_paths.add(root.joinpath(parent))
+                parent = parent.parent
+            return pc.Some(folder.source)
+        except ValueError:
+            return pc.NONE
+
+    return (
+        folders.iter()
+        .map(lambda f: f.schema().iter_values().filter_map(_add_to_tree).inner())
+        .flatten()
+        .union(dir_paths)
+        .pipe(FolderStructure, dir_paths)
+    )
 
 
 def show_tree(hierarchy: Sequence[type]) -> str:
@@ -43,27 +69,7 @@ def show_tree(hierarchy: Sequence[type]) -> str:
     )
 
     root: Path = folders.last().source()
-    relatives: pc.Seq[Path] = (
-        folders.iter()
-        .map(
-            lambda folder: (
-                folder.schema().iter_values().map(lambda f: f.source).inner()
-            ),
-        )
-        .flatten()
-        .filter_except(lambda p: p.relative_to(root), ValueError)
-        .collect()
-    )
-    dir_paths: set[Path] = {root}
-
-    def _add_to_root(p: Path) -> None:
-        parent: Path = p.relative_to(root).parent
-        while str(parent) != ".":
-            dir_paths.add(root.joinpath(parent))
-            parent = parent.parent
-
-    relatives.iter().for_each(_add_to_root)
-    structure = relatives.union(dir_paths).pipe(FolderStructure, dir_paths, root)
+    structure: FolderStructure = _folders_to_structure(folders, root)
     lines: list[str] = []
 
     def recurse(current: Path, prefix: str = "") -> None:
@@ -79,5 +85,5 @@ def show_tree(hierarchy: Sequence[type]) -> str:
 
         childrens.iter().enumerate().for_each(_visit)
 
-    recurse(structure.root)
-    return pc.Seq(lines).iter().into(lambda xs: f"{structure.root}\n" + "\n".join(xs))
+    recurse(root)
+    return pc.Seq(lines).iter().into(lambda xs: f"{root}\n" + "\n".join(xs))
