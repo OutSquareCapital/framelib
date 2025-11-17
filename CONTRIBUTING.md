@@ -17,6 +17,10 @@ So far, framelib has been developped with Pylance in strict mode, with the confi
 
 It is yet to be determined how to best integrate type checking in the CI pipeline.
 
+**Note:**
+    Narhwals and Polars currently have numpy types in their methods, which cause issues in environnements where numpy is not installed (like this one).
+    Current solution involve manually deleting the type (IntoExpr union for example) in the venv code to avoid numpy types.
+
 ## Running Tests and Linters
 
 Before submitting a pull request, ensure that all tests pass and that the code adheres to the project's style guidelines.
