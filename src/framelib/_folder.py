@@ -5,14 +5,14 @@ from typing import Self
 
 import pyochain as pc
 
-from ._core import BaseLayout
+from ._core import Layout
 from ._filehandlers import File
 from ._tree import show_tree
 
 SOURCE = "__source__"
 
 
-class Folder(BaseLayout[File]):
+class Folder(Layout[File]):
     """A Folder represents a directory containing files.
 
     It's a `Schema` of `File` entries.

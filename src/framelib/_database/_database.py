@@ -10,14 +10,14 @@ import duckdb
 import narwhals as nw
 import pyochain as pc
 
-from .._core import BaseEntry, BaseLayout
+from .._core import BaseEntry, Layout
 from . import qry
 from ._table import DuckFrame, Table
 
 _DDB = ".ddb"
 
 
-class DataBase(BaseLayout[Table], BaseEntry, ABC):
+class DataBase(Layout[Table], BaseEntry, ABC):
     """A DataBase represents a DuckDB database.
 
     It's a `Schema` of `Table` entries.

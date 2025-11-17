@@ -13,7 +13,7 @@ import pyochain as pc
 from ._base import Column, TimeUnit
 
 if TYPE_CHECKING:
-    from .._core import BaseLayout
+    from .._core import Layout
 
 
 class Datetime(Column):
@@ -126,7 +126,7 @@ class Struct(Column):
 
     def __init__(
         self,
-        fields: Mapping[str, Column] | type[BaseLayout[Column]],
+        fields: Mapping[str, Column] | type[Layout[Column]],
         *,
         primary_key: bool = False,
         unique: bool = False,

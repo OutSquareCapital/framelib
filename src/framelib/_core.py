@@ -33,13 +33,12 @@ def _add_to_schema(name: str, obj: BaseEntry, schema: dict[str, Any]) -> None:
     schema[name] = obj
 
 
-class BaseLayout[T](ABC):
-    """A BaseLayout represents a static layout containing multiple entries.
+class Layout[T](ABC):
+    r"""A `Layout` represents a static layout containing multiple `BaseEntry` instances.
 
-    Each entry is of type T, which is typically a subclass of BaseEntry.
-    The layout can be a Folder (containing File entries) or a Database (containing Table entries).
+    Each entry is of type T, which is typically a subclass of `BaseEntry`.
 
-    It has a schema method that returns a dictionary of its entries.
+    The layout can be a `Folder` (containing `File` entries) or a `Database` (containing `Table` entries).
     """
 
     _schema: dict[str, T]

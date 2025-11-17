@@ -7,7 +7,7 @@ import polars as pl
 import pyochain as pc
 
 from .._columns import Column
-from .._core import BaseLayout
+from .._core import Layout
 from ._constraints import KeysConstraints, cols_to_constraints
 
 if TYPE_CHECKING:
@@ -45,7 +45,7 @@ def _schema_from_mro(cls: type) -> dict[str, Column]:
     )
 
 
-class Schema(BaseLayout[Column]):
+class Schema(Layout[Column]):
     """A schema is a layout containing only Column entries.
 
     Used to define the schema of a Table or a File.
