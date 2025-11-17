@@ -31,6 +31,9 @@ class FolderStructure(NamedTuple):
     dir_paths: set[Path]
     root: Path
 
+    def childrens(self, current: Path) -> pc.Seq[Path]:
+        return self.all_paths.iter().filter(lambda path: path.parent == current).sort()
+
 
 def show_tree(hierarchy: Sequence[type]) -> str:
     from ._folder import Folder
@@ -56,7 +59,7 @@ def show_tree(hierarchy: Sequence[type]) -> str:
     def _add_to_root(p: Path) -> None:
         parent: Path = p.relative_to(root).parent
         while str(parent) != ".":
-            dir_paths.add(root / parent)
+            dir_paths.add(root.joinpath(parent))
             parent = parent.parent
 
     relatives.iter().for_each(_add_to_root)
@@ -64,13 +67,8 @@ def show_tree(hierarchy: Sequence[type]) -> str:
     lines: list[str] = []
 
     def recurse(current: Path, prefix: str = "") -> None:
-        children = (
-            structure.all_paths.iter()
-            .filter(lambda path: path.parent == current)
-            .sort()
-        )
-
-        children_len: int = children.count()
+        childrens = structure.childrens(current)
+        children_len: int = childrens.count()
 
         def _visit(entry: tuple[int, Path]) -> None:
             idx, child = entry
@@ -79,7 +77,7 @@ def show_tree(hierarchy: Sequence[type]) -> str:
             if child in structure.dir_paths:
                 recurse(child, prefix + _tree_line(is_last=is_last))
 
-        (children.iter().enumerate().for_each(_visit))
+        childrens.iter().enumerate().for_each(_visit)
 
     recurse(structure.root)
     return pc.Seq(lines).iter().into(lambda xs: f"{structure.root}\n" + "\n".join(xs))

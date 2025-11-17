@@ -8,9 +8,30 @@ from narwhals.typing import IntoFrame, IntoFrameT, IntoLazyFrame, IntoLazyFrameT
 from .._core import Entry
 from . import qry
 from ._constraints import on_conflict
+from ._schema import Schema
 
 type DuckFrame = nw.LazyFrame[duckdb.DuckDBPyRelation]
 """Syntactic sugar for `narwhals.LazyFrame[duckdb.DuckDBPyRelation]`"""
+
+
+def _from_df(
+    model: type[Schema], df: IntoFrameT | IntoLazyFrameT
+) -> IntoFrameT | IntoLazyFrameT:
+    """Cast the input frame to the provided `Schema` and return the native frame.
+
+    The caller **must** bind the result to a local variable named "_"
+    so `DuckDB` can resolve it in SQL queries like `SELECT * FROM _`.
+
+    See https://duckdb.org/docs/stable/guides/python/sql_on_pandas for details.
+
+    Args:
+        model (type[Schema]): The table's schema model.
+        df (IntoFrameT | IntoLazyFrameT): The input dataframe.
+
+    Returns:
+        IntoFrameT | IntoLazyFrameT: The casted native DataFrame.
+    """
+    return nw.from_native(df).lazy().pipe(model.cast).to_native()
 
 
 class Table(Entry):
@@ -20,30 +41,13 @@ class Table(Entry):
 
     """
 
-    def __set_connexion__(self, con: duckdb.DuckDBPyConnection) -> Self:
+    def __set_connexion__(self, con: duckdb.DuckDBPyConnection) -> None:
         self._con: duckdb.DuckDBPyConnection = con
-        return self
 
     @property
     def relation(self) -> duckdb.DuckDBPyRelation:
         """Get the `duckdb.DuckDBPyRelation` of the table."""
         return self._con.table(self._name)
-
-    def _from_df(self, df: IntoFrameT | IntoLazyFrameT) -> IntoFrameT | IntoLazyFrameT:
-        """Cast the input frame to this table's `Schema` and return the native frame.
-
-        The caller **must** bind the result to a local variable named "_"
-        so `DuckDB` can resolve it in SQL queries like `SELECT * FROM _`.
-
-        See https://duckdb.org/docs/stable/guides/python/sql_on_pandas for details.
-
-        Args:
-            df (IntoFrameT | IntoLazyFrameT): The input dataframe.
-
-        Returns:
-            IntoFrameT | IntoLazyFrameT: The casted native DataFrame.
-        """
-        return nw.from_native(df).lazy().pipe(self.model.cast).to_native()
 
     def read(self) -> pl.DataFrame:
         """Reads the entire table from the database.
@@ -80,7 +84,7 @@ class Table(Entry):
         Returns:
             Self: The table instance.
         """
-        _ = self._from_df(df)
+        _ = _from_df(self.model, df)
         create_q = qry.create_or_replace(self._name, self.model.sql_schema())
         self._con.execute(create_q).execute(qry.insert_into(self._name))
 
@@ -97,7 +101,7 @@ class Table(Entry):
         Returns:
             Self: The table instance.
         """
-        _ = self._from_df(df)
+        _ = _from_df(self.model, df)
         self._con.execute(qry.create_from(self._name))
         return self
 
@@ -130,7 +134,7 @@ class Table(Entry):
         Returns:
             Self: The table instance.
         """
-        _ = self._from_df(df)
+        _ = _from_df(self.model, df)
         self._con.execute(qry.insert_into(self._name))
         return self
 
@@ -145,7 +149,7 @@ class Table(Entry):
         Returns:
             Self: The table instance.
         """
-        _ = self._from_df(df)
+        _ = _from_df(self.model, df)
         q = self.model.constraints().map_or(
             lambda kc: qry.insert_on_conflict_update(
                 self._name,
@@ -167,7 +171,7 @@ class Table(Entry):
         Returns:
             Self: The table instance.
         """
-        _ = self._from_df(df)
+        _ = _from_df(self.model, df)
         self._con.execute(qry.insert_or_ignore(self._name))
         return self
 

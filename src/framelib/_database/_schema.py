@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
 from typing import TYPE_CHECKING, overload
 
 import narwhals as nw
@@ -31,15 +32,16 @@ def _schema_from_mro(cls: type) -> dict[str, Column]:
     Returns:
         dict[str, Column]: The final schema as a dictionary.
     """
+
+    def _keep_cols(base: type[Schema]) -> Iterator[tuple[str, Column]]:
+        return pc.Dict.from_object(base).filter_type(Column).iter_items().inner()
+
     return (
-        pc.Iter.from_(cls.mro())
+        pc.Seq(cls.mro())
+        .iter()
         .filter_subclass(Schema, keep_parent=False)
         .reverse()
-        .map(
-            lambda base: (
-                pc.Dict.from_object(base).filter_type(Column).iter_items().inner()
-            ),
-        )
+        .map(_keep_cols)
         .flatten()
         .into(dict)
     )
@@ -97,8 +99,7 @@ class Schema(Layout[Column]):
 
     @classmethod
     def cast(
-        cls,
-        df: IntoLazyFrameT | LazyFrameT | pl.DataFrame,
+        cls, df: IntoLazyFrameT | LazyFrameT | pl.DataFrame
     ) -> LazyFrameT | nw.LazyFrame[IntoLazyFrameT]:
         """Casts the input DataFrame to match the schema.
 
@@ -153,7 +154,7 @@ class Schema(Layout[Column]):
                 cls.schema()
                 .iter_values()
                 .map(lambda col: col.nw_col.cast(col.nw_dtype))
-                .inner(),
+                .inner()
             )
         )
 
@@ -174,5 +175,5 @@ class Schema(Layout[Column]):
             cls.schema()
             .iter_values()
             .map(lambda c: c.pl_col.cast(c.pl_dtype, strict=False))
-            .inner(),
+            .inner()
         )

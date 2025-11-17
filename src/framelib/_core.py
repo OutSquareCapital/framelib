@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import pyochain as pc
 
@@ -17,6 +17,11 @@ def _default_schema() -> type[Schema]:
 
 
 class BaseEntry(ABC):
+    """A `BaseEntry` represents any class that can be instantiated and used as an attribute in a `Layout`.
+
+    It has a `name` attribute representing its name in the layout.
+    """
+
     _name: str
 
     @property
@@ -28,12 +33,7 @@ class BaseEntry(ABC):
         self._name = name
 
 
-def _add_to_schema(name: str, obj: BaseEntry, schema: dict[str, Any]) -> None:
-    obj.__name_from_layout__(name)
-    schema[name] = obj
-
-
-class Layout[T](ABC):
+class Layout[T: BaseEntry](ABC):
     r"""A `Layout` represents a static layout containing multiple `BaseEntry` instances.
 
     Each entry is of type T, which is typically a subclass of `BaseEntry`.
@@ -49,32 +49,29 @@ class Layout[T](ABC):
 
     @classmethod
     def _add_entries(cls) -> pc.Dict[str, BaseEntry]:
-        return (
-            pc.Dict.from_object(cls)
-            .filter_type(BaseEntry)
-            .for_each(_add_to_schema, cls._schema)
-        )
+        def _add_to_schema(name: str, obj: BaseEntry) -> None:
+            obj.__name_from_layout__(name)
+            cls._schema[name] = obj  # type: ignore[assignment]
+
+        return pc.Dict.from_object(cls).filter_type(BaseEntry).for_each(_add_to_schema)
 
     @classmethod
     def schema(cls) -> pc.Dict[str, T]:
         """Gets the schema dictionary of the layout.
 
-        Each value is an Entry instance.
-
-        For example, for a `Folder` layout, the schema will contain `File` instances.
-
-        For a `Database` layout, the schema will contain `Table` instances.
+        Each value is an Entry instance corresponding to the attribute in the layout.
 
         Returns:
-            pc.Dict[str, T]: the schema dictionary of the layout as a pychain.Dict
+            pc.Dict[str, T]: the schema dictionary of the layout as a pyochain.Dict
         """
         return pc.Dict(cls._schema)
 
 
 class Entry(BaseEntry):
-    """An `Entry` represents any class that can be instantiated and used as an attribute in a `Layout`.
+    r"""An `Entry` represents any class that can be instantiated and used as an attribute in a `Layout`.
 
-    It has a `source` attribute representing its `Path` location and a `model` of `type[T]` attribute representing its schema or data model.
+    It has a `source` attribute representing its `Path` location,
+    and a `model` of `type[T]` attribute representing its schema or data model.
 
     Args:
         model (type[Schema] | None): The model type associated with the entry. Defaults to object.
@@ -84,9 +81,7 @@ class Entry(BaseEntry):
     __source__: Path
 
     def __init__(self, model: type[Schema] | None = None) -> None:
-        if model is None:
-            model = _default_schema()
-        self._model = model
+        self._model = _default_schema() if model is None else model
 
     def __set_source__(self, source: Path) -> None:
         self.__source__ = source
