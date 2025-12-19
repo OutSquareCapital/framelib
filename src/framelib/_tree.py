@@ -1,10 +1,10 @@
-from __future__ import annotations
+
 
 from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeIs
 
 import pyochain as pc
 
@@ -61,12 +61,14 @@ def _folders_to_structure(folders: pc.Seq[type[Folder]], root: Path) -> FolderSt
     )
 
 
+def _is_subclass[T](cls: type, parent: type[T]) -> TypeIs[type[T]]:
+    return issubclass(cls, parent) and cls is not parent
+
+
 def show_tree(hierarchy: Sequence[type]) -> str:
     from ._folder import Folder
 
-    folders = (
-        pc.Seq(hierarchy).iter().filter_subclass(Folder, keep_parent=False).collect()
-    )
+    folders = pc.Iter(hierarchy).filter(lambda cls: _is_subclass(cls, Folder)).collect()
 
     root: Path = folders.last().source()
     structure: FolderStructure = _folders_to_structure(folders, root)
@@ -74,7 +76,7 @@ def show_tree(hierarchy: Sequence[type]) -> str:
 
     def recurse(current: Path, prefix: str = "") -> None:
         childrens = structure.childrens(current)
-        children_len: int = childrens.count()
+        children_len: int = childrens.length()
 
         def _visit(idx: int, child: Path) -> None:
             is_last: bool = idx == children_len - 1
@@ -85,4 +87,4 @@ def show_tree(hierarchy: Sequence[type]) -> str:
         childrens.iter().enumerate().for_each(lambda entry: _visit(*entry))
 
     recurse(root)
-    return pc.Seq(lines).iter().into(lambda xs: f"{root}\n" + "\n".join(xs))
+    return pc.Iter(lines).into(lambda xs: f"{root}\n" + "\n".join(xs))

@@ -1,14 +1,17 @@
-from typing import Self
+from typing import TYPE_CHECKING, Self
 
 import duckdb
 import narwhals as nw
-import polars as pl
-from narwhals.typing import IntoFrame, IntoFrameT, IntoLazyFrame, IntoLazyFrameT
 
 from .._core import Entry
 from . import qry
 from ._constraints import on_conflict
-from ._schema import Schema
+
+if TYPE_CHECKING:
+    import polars as pl
+    from narwhals.typing import IntoFrame, IntoFrameT, IntoLazyFrame, IntoLazyFrameT
+
+    from ._schema import Schema
 
 type DuckFrame = nw.LazyFrame[duckdb.DuckDBPyRelation]
 """Syntactic sugar for `narwhals.LazyFrame[duckdb.DuckDBPyRelation]`"""

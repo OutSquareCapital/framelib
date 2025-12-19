@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import datetime
 import enum
 from collections.abc import Iterable, Mapping

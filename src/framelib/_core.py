@@ -1,8 +1,6 @@
-from __future__ import annotations
-
 from abc import ABC
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeIs
 
 import pyochain as pc
 
@@ -33,6 +31,10 @@ class BaseEntry(ABC):
         self._name = name
 
 
+def _is_base_entry(obj: object) -> TypeIs[BaseEntry]:
+    return isinstance(obj, BaseEntry)
+
+
 class Layout[T: BaseEntry](ABC):
     r"""A `Layout` represents a static layout containing multiple `BaseEntry` instances.
 
@@ -53,7 +55,11 @@ class Layout[T: BaseEntry](ABC):
             obj.__name_from_layout__(name)
             cls._schema[name] = obj  # type: ignore[assignment]
 
-        return pc.Dict.from_object(cls).filter_type(BaseEntry).for_each(_add_to_schema)
+        return (
+            pc.Dict.from_object(cls)
+            .filter_values(_is_base_entry)
+            .for_each(_add_to_schema)
+        )
 
     @classmethod
     def schema(cls) -> pc.Dict[str, T]:

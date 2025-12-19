@@ -1,10 +1,11 @@
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 import pyochain as pc
 
-from .._columns import Column
+if TYPE_CHECKING:
+    from .._columns import Column
 
 
 def _constraint_type(
