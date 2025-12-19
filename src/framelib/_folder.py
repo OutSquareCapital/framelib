@@ -20,15 +20,14 @@ class Folder(Layout[File]):
 
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
-
-        if not hasattr(cls, SOURCE):
-            cls.__source__ = Path()
-
-        cls.__source__ = cls.__source__.joinpath(cls.__name__.lower())
         cls._set_files_source()
 
     @classmethod
     def _set_files_source(cls) -> None:
+        if not hasattr(cls, SOURCE):
+            cls.__source__ = Path()
+
+        cls.__source__ = cls.__source__.joinpath(cls.__name__.lower())
         return (
             cls.schema()
             .iter_values()

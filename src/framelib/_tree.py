@@ -76,14 +76,13 @@ def show_tree(hierarchy: Sequence[type]) -> str:
         childrens = structure.childrens(current)
         children_len: int = childrens.count()
 
-        def _visit(entry: tuple[int, Path]) -> None:
-            idx, child = entry
+        def _visit(idx: int, child: Path) -> None:
             is_last: bool = idx == children_len - 1
             lines.append(f"{prefix}{_leaf_line(is_last=is_last)}{child.name}")
             if child in structure.dir_paths:
                 recurse(child, prefix + _tree_line(is_last=is_last))
 
-        childrens.iter().enumerate().for_each(_visit)
+        childrens.iter().enumerate().for_each(lambda entry: _visit(*entry))
 
     recurse(root)
     return pc.Seq(lines).iter().into(lambda xs: f"{root}\n" + "\n".join(xs))

@@ -191,10 +191,9 @@ class DataBase(Layout[Table], BaseEntry, ABC):
         return self
 
     def _drop_tables(self) -> None:
-        tables_in_db = self.show_tables().collect().get_column("name").to_list()
         return (
-            pc.Seq(tables_in_db)
-            .diff_unique(self.schema().iter_keys().inner())
+            pc.Iter[str](self.show_tables().collect().get_column("name"))
+            .difference(self.schema().iter_keys().inner())
             .iter()
             .for_each(lambda q: self.connexion.execute(qry.drop_table(q)))
         )

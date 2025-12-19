@@ -33,14 +33,10 @@ class File(Entry, ABC):
         model (type[T]): The schema model associated with the file.
     """
 
-    _with_suffix: bool = True
-
     def __set_source__(self, source: Path | str) -> None:
-        self.__source__ = Path(source, self._name)
-        if self.__class__._with_suffix:
-            self.__source__ = self.__source__.with_suffix(
-                f".{self.__class__.__name__.lower()}",
-            )
+        self.__source__ = Path(source, self._name).with_suffix(
+            f".{self.__class__.__name__.lower()}"
+        )
 
     @property
     @abstractmethod
@@ -104,15 +100,16 @@ class ParquetPartitioned(Parquet):
         model (type[Schema], optional): The schema model associated with the file. Defaults to Schema.
     """
 
-    _with_suffix: bool = False
-
     def __init__(
         self,
         partition_by: str | Sequence[str],
         model: type[Schema] = Schema,
     ) -> None:
-        self.model: type[Schema] = model
         self._partition_by: str | Sequence[str] = partition_by
+        super().__init__(model)
+
+    def __set_source__(self, source: Path | str) -> None:
+        self.__source__ = Path(source, self._name)
 
     @property
     def write(self):  # noqa: ANN202
