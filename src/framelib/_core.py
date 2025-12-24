@@ -50,15 +50,17 @@ class Layout[T: BaseEntry](ABC):
         cls._add_entries()
 
     @classmethod
-    def _add_entries(cls) -> pc.Dict[str, BaseEntry]:
-        def _add_to_schema(name: str, obj: BaseEntry) -> None:
-            obj.__name_from_layout__(name)
-            cls._schema[name] = obj  # type: ignore[assignment]
-
+    def _add_entries(cls) -> None:
         return (
             pc.Dict.from_object(cls)
             .filter_values(_is_base_entry)
-            .for_each(_add_to_schema)
+            .inspect(
+                lambda x: x.iter().for_each(
+                    lambda kv: kv[1].__name_from_layout__(kv[0])
+                )
+            )
+            .iter()
+            .for_each(lambda kv: cls._schema.__setitem__(kv[0], kv[1]))  # pyright: ignore[reportArgumentType]
         )
 
     @classmethod

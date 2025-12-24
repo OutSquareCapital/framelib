@@ -154,11 +154,11 @@ class Table(Entry):
         """
         _ = _from_df(self.model, df)
         q = self.model.constraints().map_or(
+            qry.insert_or_replace(self._name),
             lambda kc: qry.insert_on_conflict_update(
                 self._name,
-                *on_conflict(kc.conflict_keys, self.model.schema()),
+                *on_conflict(kc.conflict_keys.unwrap(), self.model.schema()),
             ),
-            qry.insert_or_replace(self._name),
         )
         self._con.execute(q)
         return self

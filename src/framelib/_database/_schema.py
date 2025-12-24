@@ -1,5 +1,4 @@
-from collections.abc import Iterator
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, TypeIs, overload
 
 import narwhals as nw
 import polars as pl
@@ -13,7 +12,7 @@ if TYPE_CHECKING:
     from narwhals.typing import IntoLazyFrameT, LazyFrameT
 
 
-def _schema_from_mro(cls: type) -> dict[str, Column]:
+def _schema_from_mro(cls: type) -> pc.Iter[tuple[str, Column]]:
     """Constructs the schema dictionary from the class MRO.
 
     Steps:
@@ -31,17 +30,21 @@ def _schema_from_mro(cls: type) -> dict[str, Column]:
         dict[str, Column]: The final schema as a dictionary.
     """
 
-    def _keep_cols(base: type[Schema]) -> Iterator[tuple[str, Column]]:
-        return pc.Dict.from_object(base).filter_type(Column).iter_items().inner()
+    def _is_subclass_of_schema(c: type) -> TypeIs[type[Schema]]:
+        return issubclass(c, Schema) and c is not Schema
+
+    def _keep_cols(base: type[Schema]) -> pc.Iter[tuple[str, Column]]:
+        def _is_column(v: object) -> TypeIs[Column]:
+            return isinstance(v, Column)
+
+        return pc.Dict.from_object(base).filter_values(_is_column).iter()
 
     return (
-        pc.Seq(cls.mro())
-        .iter()
-        .filter_subclass(Schema, keep_parent=False)
-        .reverse()
+        pc.Iter(cls.mro())
+        .filter(_is_subclass_of_schema)
+        .rev()
         .map(_keep_cols)
         .flatten()
-        .into(dict)
     )
 
 
@@ -55,9 +58,9 @@ class Schema(Layout[Column]):
 
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
-        cls._schema = _schema_from_mro(cls)
+        cls._schema = _schema_from_mro(cls).into(dict)
         cls._constraints = (
-            cls.schema().iter_values().collect().pipe(cols_to_constraints)
+            cls.schema().values_iter().collect(set).into(cols_to_constraints)
         )
 
     @classmethod
@@ -72,7 +75,7 @@ class Schema(Layout[Column]):
     @classmethod
     def sql_schema(cls) -> str:
         """Get the SQL schema definition."""
-        return cls.schema().iter_values().map(lambda col: col.to_sql()).join(", ")
+        return cls.schema().values_iter().map(lambda col: col.to_sql()).join(", ")
 
     @classmethod
     def pl_schema(cls) -> pl.Schema:
@@ -152,9 +155,8 @@ class Schema(Layout[Column]):
             .lazy()
             .select(
                 cls.schema()
-                .iter_values()
+                .values_iter()
                 .map(lambda col: col.nw_col.cast(col.nw_dtype))
-                .inner()
             )
         )
 
@@ -173,7 +175,6 @@ class Schema(Layout[Column]):
         """
         return df.lazy().select(
             cls.schema()
-            .iter_values()
+            .values_iter()
             .map(lambda c: c.pl_col.cast(c.pl_dtype, strict=False))
-            .inner()
         )

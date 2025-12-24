@@ -1,5 +1,3 @@
-
-
 from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
@@ -32,7 +30,7 @@ def _tree_line(*, is_last: bool) -> Tree:
 
 @dataclass(slots=True)
 class FolderStructure:
-    all_paths: pc.Seq[Path]
+    all_paths: pc.Set[Path]
     dir_paths: set[Path]
 
     def childrens(self, current: Path) -> pc.Seq[Path]:
@@ -54,10 +52,11 @@ def _folders_to_structure(folders: pc.Seq[type[Folder]], root: Path) -> FolderSt
 
     return (
         folders.iter()
-        .map(lambda f: f.schema().iter_values().filter_map(_add_to_tree).inner())
+        .map(lambda f: f.schema().values_iter().filter_map(_add_to_tree))
         .flatten()
+        .collect(set)
         .union(dir_paths)
-        .pipe(FolderStructure, dir_paths)
+        .into(FolderStructure, dir_paths)
     )
 
 

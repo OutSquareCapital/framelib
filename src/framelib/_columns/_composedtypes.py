@@ -150,7 +150,7 @@ class Struct(Column):
 
         inner = (
             self.fields.map_values(lambda col: col.sql_type)
-            .iter_items()
+            .iter()
             .map(lambda it: format_item(*it))
             .join(", ")
         )
