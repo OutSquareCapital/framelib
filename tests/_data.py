@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import polars as pl
+import pyochain as pc
 
 import framelib as fl
 
@@ -57,7 +58,12 @@ class DataFrames:
     )
 
 
-def setup_folder() -> None:
-    TestData.source().mkdir(parents=True, exist_ok=True)
-    TestData.sales_file.write(DataFrames.SALES)
-    print(TestData.show_tree())
+def setup_folder() -> pc.Result[None, OSError]:
+    try:
+        TestData.source().mkdir(parents=True, exist_ok=True)
+        TestData.sales_file.write(DataFrames.SALES)
+        print(TestData.show_tree())
+        return pc.Ok(None)
+    except Exception as e:
+        msg = f"setup_folder failed: {e}"
+        return pc.Err(OSError(msg))

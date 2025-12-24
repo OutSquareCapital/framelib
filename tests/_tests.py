@@ -5,6 +5,8 @@ from duckdb import CatalogException, ConstraintException
 
 from tests._data import DataFrames, Sales, TestData, TestDB, setup_folder
 
+# TODO: refactor with pytest
+
 TestResult = pc.Result[str, str]
 
 
@@ -122,18 +124,11 @@ def test_db_op(db: TestDB) -> TestResult:
 
 def run_tests() -> None:
     print("🚀 Démarrage des tests de framelib...")
-
-    result: TestResult = pc.Err("no result")
     try:
-        result = (
-            pc.Result.from_fn(
-                OSError,
-                fn=setup_folder,
-                map_err=lambda e: f"setup_folder failed: {e}",
-            )
-            .map(lambda _: None)
-            .and_then(lambda _: TestData.db.apply(setup_test_data).pipe(test_db_op))
+        result = setup_folder().map(
+            lambda _: TestData.db.apply(setup_test_data).pipe(test_db_op)
         )
+
     except Exception as e:  # noqa: BLE001
         result = pc.Err(f"unhandled exception during tests: {e}")
     finally:
