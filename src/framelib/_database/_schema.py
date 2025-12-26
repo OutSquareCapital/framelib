@@ -6,7 +6,7 @@ import pyochain as pc
 
 from .._columns import Column
 from .._core import Layout
-from ._constraints import KeysConstraints, cols_to_constraints
+from ._constraints import KeysConstraints
 
 if TYPE_CHECKING:
     from narwhals.typing import IntoLazyFrameT, LazyFrameT
@@ -24,7 +24,7 @@ class Schema(Layout[Column]):
         super().__init_subclass__()
         cls._schema = _schema_from_mro(cls)
         cls._constraints = (
-            cls.schema().values_iter().collect(pc.Set).into(cols_to_constraints)
+            cls.schema().values_iter().collect(pc.Set).into(KeysConstraints.from_cols)
         )
 
     @classmethod

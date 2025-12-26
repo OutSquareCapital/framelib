@@ -5,7 +5,7 @@ import narwhals as nw
 
 from .._core import Entry
 from . import qry
-from ._constraints import on_conflict
+from ._constraints import OnConflictResult
 
 if TYPE_CHECKING:
     import polars as pl
@@ -157,7 +157,9 @@ class Table(Entry):
             qry.insert_or_replace(self._name),
             lambda kc: qry.insert_on_conflict_update(
                 self._name,
-                *on_conflict(kc.conflict_keys.unwrap(), self.model.schema()),
+                *OnConflictResult.from_keys(
+                    kc.conflict_keys.unwrap(), self.model.schema()
+                ),
             ),
         )
         self._con.execute(q)
