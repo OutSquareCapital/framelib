@@ -96,8 +96,12 @@ class DataBase(Layout[Table], BaseEntry, ABC):
 
     def __set_source__(self, source: Path) -> None:
         self.__source__ = Path(source, self._name).with_suffix(_DDB)
-        self.schema().values_iter().for_each(
-            lambda table: table.__set_source__(self.__source__),
+        return (
+            self.schema()
+            .values_iter()
+            .for_each(
+                lambda table: table.__set_source__(self.__source__),
+            )
         )
 
     def __del__(self) -> None:
@@ -191,8 +195,8 @@ class DataBase(Layout[Table], BaseEntry, ABC):
     def _drop_tables(self) -> None:
         return (
             pc.Iter[str](self.show_tables().collect().get_column("name"))
-            .collect(set)
-            .difference(self.schema().keys_iter())
+            .collect(pc.Set)
+            .difference(self.schema().keys_iter().collect(pc.Set))
             .iter()
             .for_each(lambda q: self.connexion.execute(qry.drop_table(q)))
         )

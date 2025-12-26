@@ -12,42 +12,6 @@ if TYPE_CHECKING:
     from narwhals.typing import IntoLazyFrameT, LazyFrameT
 
 
-def _schema_from_mro(cls: type) -> pc.Iter[tuple[str, Column]]:
-    """Constructs the schema dictionary from the class MRO.
-
-    Steps:
-        - Create an Iterator over the MRO
-        - Filter only Schema subclasses (excluding the parent Schema class itself)
-        - Reverse the order to have the base classes first
-        - For each base class, filter its attributes to keep only Column entries
-        - Extract the items (name, Column) as tuples
-        - Flatten the list of tuples into a single iterable
-
-    Args:
-        cls (type): The schema class.
-
-    Returns:
-        dict[str, Column]: The final schema as a dictionary.
-    """
-
-    def _is_subclass_of_schema(c: type) -> TypeIs[type[Schema]]:
-        return issubclass(c, Schema) and c is not Schema
-
-    def _keep_cols(base: type[Schema]) -> pc.Iter[tuple[str, Column]]:
-        def _is_column(v: object) -> TypeIs[Column]:
-            return isinstance(v, Column)
-
-        return pc.Dict.from_object(base).filter_values(_is_column).iter()
-
-    return (
-        pc.Iter(cls.mro())
-        .filter(_is_subclass_of_schema)
-        .rev()
-        .map(_keep_cols)
-        .flatten()
-    )
-
-
 class Schema(Layout[Column]):
     """A schema is a layout containing only Column entries.
 
@@ -58,9 +22,9 @@ class Schema(Layout[Column]):
 
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
-        cls._schema = _schema_from_mro(cls).into(dict)
+        cls._schema = _schema_from_mro(cls)
         cls._constraints = (
-            cls.schema().values_iter().collect(set).into(cols_to_constraints)
+            cls.schema().values_iter().collect(pc.Set).into(cols_to_constraints)
         )
 
     @classmethod
@@ -178,3 +142,38 @@ class Schema(Layout[Column]):
             .values_iter()
             .map(lambda c: c.pl_col.cast(c.pl_dtype, strict=False))
         )
+
+
+def _schema_from_mro(cls: type) -> pc.Dict[str, Column]:
+    """Constructs the schema dictionary from the class MRO.
+
+    Steps:
+        - Create an Iterator over the MRO
+        - Filter only Schema subclasses (excluding the parent Schema class itself)
+        - Reverse the order to have the base classes first
+        - For each base class, filter its attributes to keep only Column entries
+        - Extract the items (name, Column) as tuples
+        - Flatten the list of tuples into a single iterable
+
+    Args:
+        cls (type): The schema class.
+
+    Returns:
+        pc.Dict[str, Column]: The final schema as a dictionary.
+    """
+
+    def _is_subclass_of_schema(c: type) -> TypeIs[type[Schema]]:
+        return issubclass(c, Schema) and c is not Schema
+
+    def _is_column(v: object) -> TypeIs[Column]:
+        return isinstance(v, Column)
+
+    return (
+        pc.Iter(cls.mro())
+        .filter(_is_subclass_of_schema)
+        .rev()
+        .flat_map(
+            lambda base: pc.Dict.from_object(base).filter_values(_is_column).iter()
+        )
+        .into(pc.Dict)
+    )

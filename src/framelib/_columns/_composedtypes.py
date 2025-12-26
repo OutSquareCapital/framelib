@@ -105,7 +105,7 @@ class Array(Column):
         base: str = self._inner.sql_type
         if isinstance(self._shape, int):
             return f"{base}[{self._shape}]"
-        dims = "".join(f"[{d}]" for d in self._shape)
+        dims = pc.Iter(self._shape).map(lambda d: f"[{d}]").join("")
         return f"{base}{dims}"
 
     @property
@@ -132,26 +132,23 @@ class Struct(Column):
         if isclass(fields):
             self._fields = fields.schema()
         else:
-            self._fields = pc.Dict.from_(fields)
+            self._fields = pc.Dict(fields)
         super().__init__(primary_key=primary_key, unique=unique)
 
     @property
     def pl_dtype(self) -> pl.Struct:
-        return pl.Struct(self.fields.map_values(lambda col: col.pl_dtype).inner())
+        return pl.Struct(self.fields.map_values(lambda col: col.pl_dtype))
 
     @property
     def nw_dtype(self) -> nw.Struct:
-        return nw.Struct(self.fields.map_values(lambda col: col.nw_dtype).inner())
+        return nw.Struct(self.fields.map_values(lambda col: col.nw_dtype))
 
     @property
     def sql_type(self) -> str:
-        def format_item(name: str, t: str) -> str:
-            return f"{name} {t}"
-
         inner = (
             self.fields.map_values(lambda col: col.sql_type)
             .iter()
-            .map(lambda it: format_item(*it))
+            .map(lambda dtype: f"{dtype.key} {dtype.value}")
             .join(", ")
         )
         return f"STRUCT({inner})"
@@ -214,7 +211,7 @@ class Categorical(Column):
 
 
 class Enum(Column):
-    _categories: list[str]
+    _categories: tuple[str, ...]
 
     def __init__(
         self,
@@ -225,7 +222,7 @@ class Enum(Column):
     ) -> None:
         if isclass(categories):
             categories = (item.value for item in categories)
-        self._categories = list(categories)
+        self._categories = tuple(categories)
         super().__init__(primary_key=primary_key, unique=unique)
 
     @property
@@ -247,6 +244,6 @@ class Enum(Column):
         return "VARCHAR"
 
     @property
-    def categories(self) -> list[str]:
-        """Get the categories of this enum as a `list[str]`."""
+    def categories(self) -> tuple[str, ...]:
+        """Get the categories of this enum as a `tuple[str, ...]`."""
         return self._categories

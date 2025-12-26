@@ -53,33 +53,17 @@ class File(Entry, ABC):
     def write(self) -> Callable[..., None]:
         raise NotImplementedError
 
-    def read_cast(self) -> pl.DataFrame:
-        """Read the file and cast it to the defined schema.
-
-        Returns:
-            pl.DataFrame: The read and casted DataFrame.
-        """
-        return self.read().pipe(self.model.cast).to_native().collect()
-
-    def scan_cast(self) -> pl.LazyFrame:
-        """Scan the file and cast it to the defined schema.
-
-        Returns:
-            pl.LazyFrame: The scanned and casted LazyFrame.
-        """
-        return self.scan().pipe(self.model.cast).to_native()
-
 
 class Parquet(File):
     """A Parquet file handler."""
 
     @property
     def scan(self):  # noqa: ANN202
-        return partial(pl.scan_parquet, self.source)
+        return partial(pl.scan_parquet, self.source, schema=self.model.pl_schema())
 
     @property
     def read(self):  # noqa: ANN202
-        return partial(pl.read_parquet, self.source)
+        return partial(pl.read_parquet, self.source, schema=self.model.pl_schema())
 
     @property
     def write(self):  # noqa: ANN202
@@ -128,11 +112,11 @@ class CSV(File):
 
     @property
     def scan(self):  # noqa: ANN202
-        return partial(pl.scan_csv, self.source)
+        return partial(pl.scan_csv, self.source, schema=self.model.pl_schema())
 
     @property
     def read(self):  # noqa: ANN202
-        return partial(pl.read_csv, self.source)
+        return partial(pl.read_csv, self.source, schema=self.model.pl_schema())
 
     @property
     def read_batched(self):  # noqa: ANN202
@@ -151,11 +135,11 @@ class NDJson(File):
 
     @property
     def scan(self):  # noqa: ANN202
-        return partial(pl.scan_ndjson, self.source)
+        return partial(pl.scan_ndjson, self.source, schema=self.model.pl_schema())
 
     @property
     def read(self):  # noqa: ANN202
-        return partial(pl.read_ndjson, self.source)
+        return partial(pl.read_ndjson, self.source, schema=self.model.pl_schema())
 
     @property
     def write(self):  # noqa: ANN202
@@ -262,7 +246,7 @@ class Json(File):
 
     @property
     def read(self):  # noqa: ANN202
-        return partial(pl.read_json, self.source)
+        return partial(pl.read_json, self.source, schema=self.model.pl_schema())
 
     @property
     def write(self):  # noqa: ANN202

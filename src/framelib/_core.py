@@ -31,10 +31,6 @@ class BaseEntry(ABC):
         self._name = name
 
 
-def _is_base_entry(obj: object) -> TypeIs[BaseEntry]:
-    return isinstance(obj, BaseEntry)
-
-
 class Layout[T: BaseEntry](ABC):
     r"""A `Layout` represents a static layout containing multiple `BaseEntry` instances.
 
@@ -43,24 +39,20 @@ class Layout[T: BaseEntry](ABC):
     The layout can be a `Folder` (containing `File` entries) or a `Database` (containing `Table` entries).
     """
 
-    _schema: dict[str, T]
+    _schema: pc.Dict[str, T]
 
     def __init_subclass__(cls) -> None:
-        cls._schema: dict[str, T] = {}
-        cls._add_entries()
+        def _is_base_entry(obj: object) -> TypeIs[T]:
+            return isinstance(obj, BaseEntry)
 
-    @classmethod
-    def _add_entries(cls) -> None:
-        return (
+        cls._schema = (
             pc.Dict.from_object(cls)
             .filter_values(_is_base_entry)
             .inspect(
                 lambda x: x.iter().for_each(
-                    lambda kv: kv[1].__name_from_layout__(kv[0])
+                    lambda kv: kv.value.__name_from_layout__(kv.key)
                 )
             )
-            .iter()
-            .for_each(lambda kv: cls._schema.__setitem__(kv[0], kv[1]))  # pyright: ignore[reportArgumentType]
         )
 
     @classmethod
@@ -72,7 +64,7 @@ class Layout[T: BaseEntry](ABC):
         Returns:
             pc.Dict[str, T]: the schema dictionary of the layout as a pyochain.Dict
         """
-        return pc.Dict(cls._schema)
+        return cls._schema
 
 
 class Entry(BaseEntry):
