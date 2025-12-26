@@ -122,7 +122,7 @@ def _() -> None:
 def _() -> None:
     def get_report(db: Analytics) -> pl.DataFrame:
         return (
-            db.sales.create_or_replace_from(MyProject.raw_sales.scan_cast())
+            db.sales.create_or_replace_from(MyProject.raw_sales.scan())
             .scan()
             .group_by("customer_id")
             .agg(
@@ -159,7 +159,7 @@ def _() -> None:
 
 @app.cell
 def _() -> None:
-    MyProject.raw_sales.read_cast().schema  # noqa: B018
+    MyProject.raw_sales.read().schema  # noqa: B018
 
 
 @app.cell(hide_code=True)

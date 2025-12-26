@@ -1,150 +1,94 @@
-from collections.abc import Callable
+from collections.abc import Generator
 
-import pyochain as pc
+import pytest
 from duckdb import CatalogException, ConstraintException
 
-from tests._data import DataFrames, Sales, TestData, TestDB, setup_folder
-
-# TODO: refactor with pytest
-
-TestResult = pc.Result[str, str]
+from tests._data import DataFrames, Sales, TestData, TestDB
 
 
-def expect_equal[T](actual: T, expected: T, ctx: str) -> TestResult:
-    if actual == expected:
-        return pc.Ok(ctx)
-    msg = f"{ctx}: expected {expected}, got {actual}"
-    return pc.Err(msg)
+@pytest.fixture
+def test_folder() -> Generator[None]:
+    """Create test folder structure."""
+    TestData.source().mkdir(parents=True, exist_ok=True)
+    TestData.sales_file.write(DataFrames.SALES)
+    print(TestData.show_tree())
+    yield
+    TestData.db.close()
+    TestData.clean()
 
 
-def expect_raises[E: BaseException](
-    exc_type: type[E],
-    fn: Callable[[], object],
-    ctx: str,
-) -> TestResult:
-    try:
-        fn()
-    except exc_type:
-        return pc.Ok(fn.__name__)
-    else:
-        msg = f"{ctx}: expected {exc_type.__name__}, but no exception was raised"
-        return pc.Err(msg)
+@pytest.fixture
+def test_db(test_folder: None) -> TestDB:  # noqa: ARG001
+    """Setup database with test data."""
 
-
-def setup_test_data(db: TestDB) -> TestResult:
-    try:
+    def _setup(db: TestDB) -> None:
         db.customers.create_or_replace_from(DataFrames.CUSTOMERS)
         db.sales.create_or_replace_from(DataFrames.SALES)
         TestData.show_tree()
-        return pc.Ok("setup_test_data succeeded")
-    except Exception as e:  # noqa: BLE001
-        return pc.Err(f"setup_test_data failed: {e}")
+
+    TestData.db.apply(_setup)
+    return TestData.db
 
 
-def teardown_test_data() -> TestResult:
-    try:
-        TestData.db.close()
-        TestData.clean()
-        return pc.Ok("teardown_test_data succeeded")
-    except Exception as e:  # noqa: BLE001
-        return pc.Err(f"teardown_test_data failed: {e}")
+def test_initial_sales_shape(test_db: TestDB) -> None:
+    """Test that initial sales table has correct shape."""
+    assert test_db.sales.read().shape == (3, 3)
 
 
-def test_db_op(db: TestDB) -> TestResult:
-    order_id = 2
+def test_insert_into_with_duplicate_primary_key(test_db: TestDB) -> None:
+    """Test that insert_into raises ConstraintException on duplicate primary key."""
+    with pytest.raises(ConstraintException):
+        test_db.sales.insert_into(
+            DataFrames.CONFLICTING_SALES.filter(Sales.order_id.pl_col.eq(2)),
+        )
 
-    return (
-        expect_equal(db.sales.read().shape, (3, 3), "sales.read initial shape")
-        .and_then(
-            lambda _: expect_raises(
-                ConstraintException,
-                lambda: db.sales.insert_into(
-                    DataFrames.CONFLICTING_SALES.filter(Sales.order_id.pl_col.eq(2)),
-                ),
-                "insert_into with duplicate primary key must fail",
-            )
+
+def test_insert_or_ignore(test_db: TestDB) -> None:
+    """Test that insert_or_ignore skips duplicates based on primary key."""
+    result_shape = (
+        test_db.sales.insert_or_ignore(
+            DataFrames.CONFLICTING_SALES,
         )
-        .and_then(
-            lambda _: expect_equal(
-                db.sales.insert_or_ignore(
-                    DataFrames.CONFLICTING_SALES,
-                )
-                .read()
-                .shape,
-                (4, 3),
-                "insert_or_ignore result shape",
-            )
-        )
-        .and_then(
-            lambda _: expect_equal(
-                db.sales.read().filter(Sales.order_id.pl_col.eq(2)).item(0, "amount"),
-                20.0,
-                "insert_or_ignore keeps existing amount for order_id=2",
-            ),
-        )
-        .and_then(
-            lambda _: expect_equal(
-                db.sales.insert_or_replace(DataFrames.CONFLICTING_SALES)
-                .scan()
-                .filter(Sales.order_id.nw_col == order_id)
-                .collect()
-                .item(0, "amount"),
-                99.9,
-                f"insert_or_replace overrides amount for order_id={order_id}",
-            )
-        )
-        .and_then(
-            lambda _: expect_raises(
-                ConstraintException,
-                lambda: db.sales.insert_into(DataFrames.UNIQUE_CONFLICT_SALES),
-                "insert_into with UNIQUE conflict must fail",
-            )
-        )
-        .and_then(
-            lambda _: expect_equal(
-                db.sales.truncate().read().shape, (0, 3), "truncate sales table"
-            )
-        )
-        .and_then(
-            lambda _: expect_raises(
-                CatalogException,
-                lambda: db.sales.drop().scan(),
-                "drop non-existing table must raise CatalogException",
-            )
-        )
-        .and_then(
-            lambda _: expect_equal(
-                TestData.sales_file.read_cast().shape,
-                (3, 3),
-                "test_file_operations: sales_file.read_cast",
-            )
-        )
+        .read()
+        .shape
     )
+    assert result_shape == (4, 3)
+
+    amount = test_db.sales.read().filter(Sales.order_id.pl_col.eq(2)).item(0, "amount")
+    assert amount == 20.0  # noqa: PLR2004
 
 
-def run_tests() -> None:
-    print("🚀 Démarrage des tests de framelib...")
-    try:
-        result = setup_folder().map(
-            lambda _: TestData.db.apply(setup_test_data).pipe(test_db_op)
-        )
+def test_insert_or_replace(test_db: TestDB) -> None:
+    """Test that insert_or_replace overrides existing rows."""
+    order_id = 2
+    amount = (
+        test_db.sales.insert_or_replace(DataFrames.CONFLICTING_SALES)
+        .scan()
+        .filter(Sales.order_id.nw_col == order_id)
+        .collect()
+        .item(0, "amount")
+    )
+    assert amount == 99.9  # noqa: PLR2004
 
-    except Exception as e:  # noqa: BLE001
-        result = pc.Err(f"unhandled exception during tests: {e}")
-    finally:
-        teardown_result = teardown_test_data()
-        match (result, teardown_result):
-            case pc.Ok(_), pc.Ok(_):
-                print("\n🎉 Tous les tests sont passés avec succès!")
-            case pc.Ok(_), pc.Err(err2):
-                msg = f"❌ ERREUR PENDANT LES TESTS:\nteardown failed: {err2}"
-                raise ValueError(msg)
-            case pc.Err(err), pc.Ok(_):
-                msg = f"❌ ERREUR PENDANT LES TESTS:\n{err}"
-                raise ValueError(msg)
-            case pc.Err(err), pc.Err(err2):
-                msg = f"❌ ERREUR PENDANT LES TESTS:\n{err}\n(plus teardown failed: {err2})"
-                raise ValueError(msg)
-            case _:
-                msg = "❌ ERREUR INATTENDUE PENDANT LES TESTS"
-                raise ValueError(msg)
+
+def test_insert_into_with_unique_conflict(test_db: TestDB) -> None:
+    """Test that insert_into raises ConstraintException on UNIQUE conflict."""
+    with pytest.raises(ConstraintException):
+        test_db.sales.insert_into(DataFrames.UNIQUE_CONFLICT_SALES)
+
+
+def test_truncate_sales_table(test_db: TestDB) -> None:
+    """Test that truncate empties the table."""
+    assert test_db.sales.truncate().read().shape == (0, 3)
+
+
+def test_drop_non_existing_table(test_db: TestDB) -> None:
+    """Test that dropping non-existing table raises CatalogException."""
+    test_db.sales.drop()
+    with pytest.raises(CatalogException):
+        test_db.sales.scan()
+
+
+def test_sales_file_read(test_db: TestDB) -> None:  # noqa: ARG001
+    """Test that sales_file.read returns correct shape."""
+    assert TestData.sales_file.read().shape == (3, 3)
