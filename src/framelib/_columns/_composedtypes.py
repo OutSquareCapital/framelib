@@ -211,7 +211,7 @@ class Categorical(Column):
 
 
 class Enum(Column):
-    _categories: tuple[str, ...]
+    _categories: pc.Seq[str]
 
     def __init__(
         self,
@@ -222,7 +222,7 @@ class Enum(Column):
     ) -> None:
         if isclass(categories):
             categories = (item.value for item in categories)
-        self._categories = tuple(categories)
+        self._categories = pc.Seq(categories)
         super().__init__(primary_key=primary_key, unique=unique)
 
     @property
@@ -244,6 +244,6 @@ class Enum(Column):
         return "VARCHAR"
 
     @property
-    def categories(self) -> tuple[str, ...]:
+    def categories(self) -> pc.Seq[str]:
         """Get the categories of this enum as a `tuple[str, ...]`."""
         return self._categories

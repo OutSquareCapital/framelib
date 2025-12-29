@@ -72,13 +72,13 @@ class DataBase(Layout[Table], BaseEntry, ABC):
 
         return self
 
-    def pipe[**P, R](
+    def into[**P, R](
         self,
         fn: Callable[Concatenate[Self, P], R],
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> R:
-        """Execute a function that takes the database instance and returns the result.
+        """Execute a function that takes **self** and returns the result.
 
         Allow passing additional arguments to the function.
 
@@ -194,8 +194,7 @@ class DataBase(Layout[Table], BaseEntry, ABC):
 
     def _drop_tables(self) -> None:
         return (
-            pc.Iter[str](self.show_tables().collect().get_column("name"))
-            .collect(pc.Set)
+            pc.Set[str](self.show_tables().collect().get_column("name"))
             .difference(self.schema().keys_iter().collect(pc.Set))
             .iter()
             .for_each(lambda q: self.connexion.execute(qry.drop_table(q)))

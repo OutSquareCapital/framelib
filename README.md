@@ -9,9 +9,11 @@ It leverages **pathlib**, **polars**, **narwhals**, and **duckdb** to provide a 
 ## Simple Example
 
 ```python
-import polars as pl
-import framelib as fl
 from pathlib import Path
+
+import polars as pl
+
+import framelib as fl
 
 df = pl.DataFrame(
     {
@@ -33,8 +35,7 @@ class MyData(fl.Folder):
 
 
 MyData.my_csv.write(df)
-MyData.my_csv.scan_cast().select(MySchema.value.pl_col.sum()).collect()
-
+MyData.my_csv.scan().select(MySchema.value.pl_col.sum()).collect()
 
 
 class MyJsonData(fl.Folder):
@@ -43,15 +44,15 @@ class MyJsonData(fl.Folder):
     sales = fl.Json()
     clients = fl.Json()
 
+
 # Lots of convenient methods availables thanks to framelib + pyochain working together
 # Rewrite all JSON files to NDJSON format conveniently using the schema API
 def rewrite_json_to_ndjson() -> None:
     return (
         MyJsonData.schema()
         .map_values(lambda x: x.read().write_ndjson(x.source.with_suffix(".ndjson")))
-        .pipe(lambda _: print(f"success: {MyJsonData.show_tree()}"))
+        .into(lambda _: print(f"success: {MyJsonData.show_tree()}"))
     )
-
 
 ```
 
