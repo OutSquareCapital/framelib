@@ -54,17 +54,13 @@ def show_tree(hierarchy: Sequence[type]) -> str:
         childrens = structure.childrens(current)
         children_len: int = childrens.length()
 
-        def _visit(idx: int, child: Path) -> None:
-            is_last: bool = idx == children_len - 1
-            lines.append(f"{prefix}{Leaf.line(is_last=is_last)}{child.name}")
-            if child in structure.dir_paths:
-                recurse(child, prefix + Tree.line(is_last=is_last))
+        def _visit(entry: pc.Enumerated[Path]) -> None:
+            is_last: bool = entry.idx == children_len - 1
+            lines.append(f"{prefix}{Leaf.line(is_last=is_last)}{entry.value.name}")
+            if entry.value in structure.dir_paths:
+                recurse(entry.value, prefix + Tree.line(is_last=is_last))
 
-        return (
-            childrens.iter()
-            .enumerate()
-            .for_each(lambda entry: _visit(entry.idx, entry.value))
-        )
+        return childrens.iter().enumerate().for_each(_visit)
 
     recurse(root)
     return lines.into(lambda xs: f"{root}\n" + xs.join("\n"))
@@ -76,7 +72,7 @@ def _folders_to_structure(folders: pc.Seq[type[Folder]], root: Path) -> FolderSt
     def _add_to_tree(folder: File) -> pc.Option[Path]:
         try:
             parent: Path = folder.source.relative_to(root).parent
-            while str(parent) != ".":
+            while parent.as_posix() != ".":
                 dir_paths.add(root.joinpath(parent))
                 parent = parent.parent
             return pc.Some(folder.source)
