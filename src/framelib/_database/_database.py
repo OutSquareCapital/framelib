@@ -195,7 +195,7 @@ class DataBase(Layout[Table], BaseEntry, ABC):
     def _drop_tables(self) -> None:
         return (
             pc.Set[str](self.show_tables().collect().get_column("name"))
-            .difference(self.schema().keys_iter().collect(pc.Set))
+            .difference(self.schema().keys_iter())
             .iter()
             .for_each(lambda q: self.connexion.execute(qry.drop_table(q)))
         )

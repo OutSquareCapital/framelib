@@ -175,5 +175,5 @@ def _schema_from_mro(cls: type) -> pc.Dict[str, Column]:
         .flat_map(
             lambda base: pc.Dict.from_object(base).filter_values(_is_column).iter()
         )
-        .into(pc.Dict)
+        .collect(pc.Dict)
     )

@@ -55,25 +55,24 @@ class KeysConstraints(NamedTuple):
 
     @property
     def conflict_keys(self) -> pc.Result[pc.Set[str], str]:
-        if self.primary.any():
-            return pc.Ok(self.primary)
-        if self.uniques.any():
-            return pc.Ok(self.uniques)
-        return pc.Err("At least one constraint expected")
+        return (
+            self.primary.then_some()
+            .or_else(lambda: self.uniques.then_some())
+            .ok_or("At least one constraint expected")
+        )
 
     @classmethod
     def from_cols(cls, cols: pc.Set[Column]) -> pc.Option[Self]:
         def _constraint_type(
             predicate: Callable[[Column], bool],
         ) -> pc.Option[pc.Set[str]]:
-            constraint_cols = (
-                cols.iter().filter(predicate).map(lambda c: c.name).collect(pc.Set)
+            return (
+                cols.iter()
+                .filter(predicate)
+                .map(lambda c: c.name)
+                .collect(pc.Set)
+                .then_some()
             )
-            match constraint_cols.any():
-                case False:
-                    return pc.NONE
-                case True:
-                    return pc.Some(constraint_cols)
 
         return (
             _constraint_type(lambda c: c.primary_key)
