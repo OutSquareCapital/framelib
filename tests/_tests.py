@@ -13,7 +13,8 @@ def test_folder() -> Generator[None]:
     TestData.sales_file.write(DataFrames.SALES)
     print(TestData.show_tree())
     yield
-    TestData.db.close()
+    if TestData.db.is_connected:
+        TestData.db.close()
     TestData.clean()
 
 
@@ -24,7 +25,6 @@ def test_db(test_folder: None) -> TestDB:  # noqa: ARG001
     def _setup(db: TestDB) -> None:
         db.customers.create_or_replace_from(DataFrames.CUSTOMERS)
         db.sales.create_or_replace_from(DataFrames.SALES)
-        TestData.show_tree()
 
     TestData.db.apply(_setup)
     return TestData.db
@@ -92,3 +92,22 @@ def test_drop_non_existing_table(test_db: TestDB) -> None:
 def test_sales_file_read(test_db: TestDB) -> None:  # noqa: ARG001
     """Test that sales_file.read returns correct shape."""
     assert TestData.sales_file.read().shape == (3, 3)
+
+
+def test_show_tree_format(test_folder: None) -> None:  # noqa: ARG001
+    """Test that show_tree returns correctly formatted tree structure."""
+    tree = TestData.show_tree()
+
+    # Verify root path is present
+    assert "testdata" in tree
+
+    # Verify tree contains expected files
+    assert "customers_file.ndjson" in tree
+    assert "sales_file.csv" in tree
+    assert "db.ddb" in tree
+
+    # Verify tree structure markers are present
+    assert "├──" in tree or "└──" in tree
+
+    # Verify output is not empty
+    assert len(tree) > 0

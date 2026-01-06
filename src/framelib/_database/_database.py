@@ -26,6 +26,15 @@ class DataBase(Layout[Table], BaseEntry, ABC):
     _is_connected: bool = False
     _connexion: duckdb.DuckDBPyConnection
 
+    @property
+    def is_connected(self) -> bool:
+        """Check if the database is connected.
+
+        Returns:
+            bool: True if the database is connected, False otherwise.
+        """
+        return self._is_connected
+
     def _connect(self) -> None:
         """Opens the connection to the database.
 
