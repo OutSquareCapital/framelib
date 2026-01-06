@@ -37,12 +37,12 @@ class Schema(Layout[Column]):
         return cls._constraints
 
     @classmethod
-    def sql_schema(cls) -> str:
+    def to_sql(cls) -> str:
         """Get the SQL schema definition."""
         return cls.schema().values_iter().map(lambda col: col.to_sql()).join(", ")
 
     @classmethod
-    def pl_schema(cls) -> pl.Schema:
+    def to_pl(cls) -> pl.Schema:
         """Syntactic sugar for getting the Polars schema definition.
 
         Equivalent to: `Foo.schema().map_values(lambda c: c.pl_dtype).into(pl.Schema)`

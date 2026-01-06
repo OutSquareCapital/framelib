@@ -88,7 +88,7 @@ class Table(Entry):
             Self: The table instance.
         """
         _ = _from_df(self.model, df)
-        create_q = qry.create_or_replace(self._name, self.model.sql_schema())
+        create_q = qry.create_or_replace(self._name, self.model.to_sql())
         self._con.execute(create_q).execute(qry.insert_into(self._name))
 
         return self

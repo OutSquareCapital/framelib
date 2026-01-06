@@ -59,11 +59,11 @@ class Parquet(File):
 
     @property
     def scan(self):  # noqa: ANN202
-        return partial(pl.scan_parquet, self.source, schema=self.model.pl_schema())
+        return partial(pl.scan_parquet, self.source, schema=self.model.to_pl())
 
     @property
     def read(self):  # noqa: ANN202
-        return partial(pl.read_parquet, self.source, schema=self.model.pl_schema())
+        return partial(pl.read_parquet, self.source, schema=self.model.to_pl())
 
     @property
     def write(self):  # noqa: ANN202
@@ -112,11 +112,11 @@ class CSV(File):
 
     @property
     def scan(self):  # noqa: ANN202
-        return partial(pl.scan_csv, self.source, schema=self.model.pl_schema())
+        return partial(pl.scan_csv, self.source, schema=self.model.to_pl())
 
     @property
     def read(self):  # noqa: ANN202
-        return partial(pl.read_csv, self.source, schema=self.model.pl_schema())
+        return partial(pl.read_csv, self.source, schema=self.model.to_pl())
 
     @property
     def read_batched(self):  # noqa: ANN202
@@ -135,11 +135,11 @@ class NDJson(File):
 
     @property
     def scan(self):  # noqa: ANN202
-        return partial(pl.scan_ndjson, self.source, schema=self.model.pl_schema())
+        return partial(pl.scan_ndjson, self.source, schema=self.model.to_pl())
 
     @property
     def read(self):  # noqa: ANN202
-        return partial(pl.read_ndjson, self.source, schema=self.model.pl_schema())
+        return partial(pl.read_ndjson, self.source, schema=self.model.to_pl())
 
     @property
     def write(self):  # noqa: ANN202
@@ -246,7 +246,7 @@ class Json(File):
 
     @property
     def read(self):  # noqa: ANN202
-        return partial(pl.read_json, self.source, schema=self.model.pl_schema())
+        return partial(pl.read_json, self.source, schema=self.model.to_pl())
 
     @property
     def write(self):  # noqa: ANN202
