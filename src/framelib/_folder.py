@@ -5,7 +5,7 @@ import pyochain as pc
 
 from ._core import Layout
 from ._filehandlers import File
-from ._tree import show_tree
+from ._tree import TreeBuilder
 
 SOURCE = "__source__"
 
@@ -61,7 +61,7 @@ class Folder(Layout[File]):
 
         ```
         """
-        return show_tree(cls.mro())
+        return TreeBuilder.from_mro(cls.mro()).build()
 
     @classmethod
     def iter_dir(cls) -> pc.Iter[Path]:

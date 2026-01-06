@@ -1,8 +1,8 @@
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
-from typing import TYPE_CHECKING, TypeIs
+from typing import TYPE_CHECKING, Self, TypeIs
 
 import pyochain as pc
 
@@ -29,60 +29,88 @@ class Tree(StrEnum):
 
 
 @dataclass(slots=True)
-class FolderStructure:
+class TreeBuilder:
+    folders: pc.Seq[type[Folder]]
+    root: Path
+    structure: Structure = field(init=False)
+
+    @classmethod
+    def from_mro(cls, mro: Sequence[type]) -> Self:
+        from ._folder import Folder
+
+        def _is_subclass[T](cls: type, parent: type[T]) -> TypeIs[type[T]]:
+            return issubclass(cls, parent) and cls is not parent
+
+        return (
+            pc.Iter(mro)
+            .filter(lambda cls: _is_subclass(cls, Folder))
+            .collect()
+            .into(lambda folders: cls(folders, folders.last().source()))
+        )
+
+    def build(self) -> str:
+        def _add_to_tree(folder: File) -> pc.Iter[Path]:
+            try:
+                return pc.Iter.successors(
+                    pc.Some(folder.source.relative_to(self.root).parent),
+                    lambda p: pc.Some(p.parent) if p.as_posix() != "." else pc.NONE,
+                ).map(lambda p: self.root.joinpath(p))
+            except ValueError:
+                return pc.Iter[Path].empty()
+
+        return (
+            self.folders.iter()
+            .flat_map(lambda f: f.schema().values_iter())
+            .flat_map(_add_to_tree)
+            .insert(self.root)
+            .collect(pc.Set)
+            .into(Structure.from_folders, self.folders)
+            .recurse(self.root)
+            .collect()
+            .then_some()
+            .map(lambda lines: f"{self.root}\n{lines.join('\n')}")
+            .unwrap_or(f"{self.root}\n")
+        )
+
+
+@dataclass(slots=True)
+class Structure:
     all_paths: pc.Set[Path]
     dir_paths: pc.Set[Path]
 
-    def childrens(self, current: Path) -> pc.Seq[Path]:
+    @classmethod
+    def from_folders(
+        cls, dir_paths: pc.Set[Path], all_folders: pc.Seq[type[Folder]]
+    ) -> Self:
+        return (
+            all_folders.iter()
+            .flat_map(lambda f: f.schema().values_iter().map(lambda file: file.source))
+            .collect(pc.Set)
+            .union(dir_paths)
+            .into(cls, dir_paths)
+        )
+
+    def _childrens(self, current: Path) -> pc.Seq[Path]:
         return self.all_paths.iter().filter(lambda path: path.parent == current).sort()
 
-
-def _is_subclass[T](cls: type, parent: type[T]) -> TypeIs[type[T]]:
-    return issubclass(cls, parent) and cls is not parent
-
-
-def show_tree(hierarchy: Sequence[type]) -> str:
-    from ._folder import Folder
-
-    folders = pc.Iter(hierarchy).filter(lambda cls: _is_subclass(cls, Folder)).collect()
-
-    root: Path = folders.last().source()
-    structure: FolderStructure = folders.into(_folders_to_structure, root)
-    lines = pc.Vec[str].new()
-
-    def recurse(current: Path, prefix: str = "") -> None:
-        childrens = structure.childrens(current)
+    def recurse(self, current: Path, prefix: str = "") -> pc.Iter[str]:
+        childrens = self._childrens(current)
         children_len: int = childrens.length()
 
-        def _visit(entry: pc.Enumerated[Path]) -> None:
-            is_last: bool = entry.idx == children_len - 1
-            lines.append(f"{prefix}{Leaf.line(is_last=is_last)}{entry.value.name}")
-            if entry.value in structure.dir_paths:
-                recurse(entry.value, prefix + Tree.line(is_last=is_last))
+        def _entries(entry: pc.Enumerated[Path]) -> pc.Iter[str]:
+            match entry.value in self.dir_paths:
+                case True:
+                    return pc.Iter.once(
+                        f"{prefix}{Leaf.line(is_last=entry.idx == children_len - 1)}{entry.value.name}"
+                    )
+                case False:
+                    return pc.Iter.once(
+                        f"{prefix}{Leaf.line(is_last=entry.idx == children_len - 1)}{entry.value.name}"
+                    ).chain(
+                        self.recurse(
+                            entry.value,
+                            f"{prefix}{Tree.line(is_last=entry.idx == children_len - 1)}",
+                        )
+                    )
 
-        return childrens.iter().enumerate().for_each(_visit)
-
-    recurse(root)
-    return lines.into(lambda xs: f"{root}\n" + xs.join("\n"))
-
-
-def _folders_to_structure(folders: pc.Seq[type[Folder]], root: Path) -> FolderStructure:
-    dir_paths = pc.SetMut({root})
-
-    def _add_to_tree(folder: File) -> pc.Option[Path]:
-        try:
-            parent: Path = folder.source.relative_to(root).parent
-            while parent.as_posix() != ".":
-                dir_paths.add(root.joinpath(parent))
-                parent = parent.parent
-            return pc.Some(folder.source)
-        except ValueError:
-            return pc.NONE
-
-    return (
-        folders.iter()
-        .flat_map(lambda f: f.schema().values_iter().filter_map(_add_to_tree))
-        .collect(pc.Set)
-        .union(dir_paths)
-        .into(FolderStructure, dir_paths)
-    )
+        return childrens.iter().enumerate().flat_map(_entries)
