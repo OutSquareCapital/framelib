@@ -49,8 +49,8 @@ class Layout[T: BaseEntry](ABC):
             pc.Dict.from_object(cls)
             .filter_values(_is_base_entry)
             .inspect(
-                lambda x: x.iter().for_each(
-                    lambda kv: kv.value.__name_from_layout__(kv.key)
+                lambda x: x.iter().for_each_star(
+                    lambda name, entry: entry.__name_from_layout__(name)
                 )
             )
         )

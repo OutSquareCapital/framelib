@@ -97,19 +97,20 @@ class Structure:
         childrens = self._childrens(current)
         children_len: int = childrens.length()
 
-        def _entries(entry: pc.Enumerated[Path]) -> pc.Iter[str]:
-            match entry.value in self.dir_paths:
+        def _entries(entry: tuple[int, Path]) -> pc.Iter[str]:
+            idx, node = entry
+            match node in self.dir_paths:
                 case True:
                     return pc.Iter.once(
-                        f"{prefix}{Leaf.line(is_last=entry.idx == children_len - 1)}{entry.value.name}"
+                        f"{prefix}{Leaf.line(is_last=idx == children_len - 1)}{node.name}"
                     )
                 case False:
                     return pc.Iter.once(
-                        f"{prefix}{Leaf.line(is_last=entry.idx == children_len - 1)}{entry.value.name}"
+                        f"{prefix}{Leaf.line(is_last=idx == children_len - 1)}{node.name}"
                     ).chain(
                         self.recurse(
-                            entry.value,
-                            f"{prefix}{Tree.line(is_last=entry.idx == children_len - 1)}",
+                            node,
+                            f"{prefix}{Tree.line(is_last=idx == children_len - 1)}",
                         )
                     )
 

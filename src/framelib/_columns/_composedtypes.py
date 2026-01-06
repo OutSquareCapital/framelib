@@ -148,7 +148,7 @@ class Struct(Column):
         inner = (
             self.fields.map_values(lambda col: col.sql_type)
             .iter()
-            .map(lambda dtype: f"{dtype.key} {dtype.value}")
+            .map_star(lambda col, dtype: f"{col} {dtype}")
             .join(", ")
         )
         return f"STRUCT({inner})"
