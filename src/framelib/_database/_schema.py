@@ -50,7 +50,12 @@ class Schema(Layout[Column]):
         Returns:
             pl.Schema: The Polars schema definition.
         """
-        return cls.schema().map_values(lambda c: c.pl_dtype).into(pl.Schema)
+        return (
+            cls.schema()
+            .iter()
+            .map_star(lambda name, c: (name, c.pl_dtype))
+            .collect(pl.Schema)
+        )
 
     @overload
     @classmethod
@@ -173,7 +178,9 @@ def _schema_from_mro(cls: type) -> pc.Dict[str, Column]:
         .filter(_is_subclass_of_schema)
         .rev()
         .flat_map(
-            lambda base: pc.Dict.from_object(base).filter_values(_is_column).iter()
+            lambda base: pc.Iter(base.__dict__.items()).filter_star(
+                lambda _, v: _is_column(v)
+            )
         )
         .collect(pc.Dict)
     )

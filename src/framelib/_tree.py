@@ -50,11 +50,17 @@ class TreeBuilder:
 
     def build(self) -> str:
         def _add_to_tree(folder: File) -> pc.Iter[Path]:
+            def _is_addable(path: Path) -> pc.Option[Path]:
+                return pc.Option.if_true(
+                    path.parent, predicate=lambda: path.as_posix() != "."
+                )
+
             try:
-                return pc.Iter.successors(
-                    pc.Some(folder.source.relative_to(self.root).parent),
-                    lambda p: pc.Some(p.parent) if p.as_posix() != "." else pc.NONE,
-                ).map(lambda p: self.root.joinpath(p))
+                return (
+                    pc.Some(folder.source.relative_to(self.root).parent)
+                    .into(pc.Iter.successors, succ=_is_addable)
+                    .map(lambda p: self.root.joinpath(p))
+                )
             except ValueError:
                 return pc.Iter[Path].empty()
 
@@ -90,15 +96,14 @@ class Structure:
             .into(cls, dir_paths)
         )
 
-    def _childrens(self, current: Path) -> pc.Seq[Path]:
+    def _childrens(self, current: Path) -> pc.Vec[Path]:
         return self.all_paths.iter().filter(lambda path: path.parent == current).sort()
 
     def recurse(self, current: Path, prefix: str = "") -> pc.Iter[str]:
         childrens = self._childrens(current)
         children_len: int = childrens.length()
 
-        def _entries(entry: tuple[int, Path]) -> pc.Iter[str]:
-            idx, node = entry
+        def _entries(idx: int, node: Path) -> pc.Iter[str]:
             match node in self.dir_paths:
                 case True:
                     return pc.Iter.once(
@@ -114,4 +119,4 @@ class Structure:
                         )
                     )
 
-        return childrens.iter().enumerate().flat_map(_entries)
+        return childrens.iter().enumerate().map_star(_entries).flatten()

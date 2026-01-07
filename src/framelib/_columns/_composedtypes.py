@@ -137,18 +137,27 @@ class Struct(Column):
 
     @property
     def pl_dtype(self) -> pl.Struct:
-        return pl.Struct(self.fields.map_values(lambda col: col.pl_dtype))
+        return (
+            self.fields.iter()
+            .map_star(lambda name, col: pl.Field(name, col.pl_dtype))
+            .collect()
+            .into(lambda d: pl.Struct(d))
+        )
 
     @property
     def nw_dtype(self) -> nw.Struct:
-        return nw.Struct(self.fields.map_values(lambda col: col.nw_dtype))
+        return (
+            self.fields.iter()
+            .map_star(lambda name, col: nw.Field(name, col.nw_dtype))
+            .collect()
+            .into(lambda d: nw.Struct(d))
+        )
 
     @property
     def sql_type(self) -> str:
         inner = (
-            self.fields.map_values(lambda col: col.sql_type)
-            .iter()
-            .map_star(lambda col, dtype: f"{col} {dtype}")
+            self.fields.iter()
+            .map_star(lambda name, col: f"{name} {col.sql_type}")
             .join(", ")
         )
         return f"STRUCT({inner})"

@@ -46,8 +46,9 @@ class Layout[T: BaseEntry](ABC):
             return isinstance(obj, BaseEntry)
 
         cls._schema = (
-            pc.Dict.from_object(cls)
-            .filter_values(_is_base_entry)
+            pc.Iter(cls.__dict__.items())  # TODO: typeIs for star functions
+            .filter_star(lambda _, obj: _is_base_entry(obj))
+            .collect(pc.Dict)
             .inspect(
                 lambda x: x.iter().for_each_star(
                     lambda name, entry: entry.__name_from_layout__(name)
