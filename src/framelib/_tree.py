@@ -52,7 +52,7 @@ class TreeBuilder:
         def _add_to_tree(folder: File) -> pc.Iter[Path]:
             def _is_addable(path: Path) -> pc.Option[Path]:
                 return pc.Option.if_true(
-                    path.parent, predicate=lambda: path.as_posix() != "."
+                    path.parent, predicate=lambda p: p.as_posix() != "."
                 )
 
             try:
@@ -62,7 +62,7 @@ class TreeBuilder:
                     .map(lambda p: self.root.joinpath(p))
                 )
             except ValueError:
-                return pc.Iter[Path].empty()
+                return pc.Iter[Path].new()
 
         return (
             self.folders.iter()
