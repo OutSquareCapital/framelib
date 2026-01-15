@@ -119,10 +119,6 @@ class CSV(File):
         return partial(pl.read_csv, self.source, schema=self.model.to_pl())
 
     @property
-    def read_batched(self):  # noqa: ANN202
-        return partial(pl.read_csv_batched, self.source)
-
-    @property
     def write(self):  # noqa: ANN202
         return partial(pl.DataFrame.write_csv, file=self.source)
 

@@ -50,9 +50,9 @@ class Layout[T: BaseEntry](ABC):
             .filter_star(lambda _, obj: _is_base_entry(obj))
             .collect(pc.Dict)
             .inspect(
-                lambda x: x.iter().for_each_star(
-                    lambda name, entry: entry.__name_from_layout__(name)
-                )
+                lambda x: x.items()
+                .iter()
+                .for_each_star(lambda name, entry: entry.__name_from_layout__(name))
             )
         )
 

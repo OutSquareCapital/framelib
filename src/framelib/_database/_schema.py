@@ -24,7 +24,7 @@ class Schema(Layout[Column]):
         super().__init_subclass__()
         cls._schema = _schema_from_mro(cls)
         cls._constraints = (
-            cls.schema().values_iter().collect(pc.Set).into(KeysConstraints.from_cols)
+            cls.schema().values().iter().collect(pc.Set).into(KeysConstraints.from_cols)
         )
 
     @classmethod
@@ -39,7 +39,7 @@ class Schema(Layout[Column]):
     @classmethod
     def to_sql(cls) -> str:
         """Get the SQL schema definition."""
-        return cls.schema().values_iter().map(lambda col: col.to_sql()).join(", ")
+        return cls.schema().values().iter().map(lambda col: col.to_sql()).join(", ")
 
     @classmethod
     def to_pl(cls) -> pl.Schema:
@@ -52,6 +52,7 @@ class Schema(Layout[Column]):
         """
         return (
             cls.schema()
+            .items()
             .iter()
             .map_star(lambda name, c: (name, c.pl_dtype))
             .collect(pl.Schema)
@@ -124,7 +125,8 @@ class Schema(Layout[Column]):
             .lazy()
             .select(
                 cls.schema()
-                .values_iter()
+                .values()
+                .iter()
                 .map(lambda col: col.nw_col.cast(col.nw_dtype))
             )
         )
@@ -144,7 +146,8 @@ class Schema(Layout[Column]):
         """
         return df.lazy().select(
             cls.schema()
-            .values_iter()
+            .values()
+            .iter()
             .map(lambda c: c.pl_col.cast(c.pl_dtype, strict=False))
         )
 
@@ -176,6 +179,7 @@ def _schema_from_mro(cls: type) -> pc.Dict[str, Column]:
     return (
         pc.Iter(cls.mro())
         .filter(_is_subclass_of_schema)
+        .collect()
         .rev()
         .flat_map(
             lambda base: pc.Iter(base.__dict__.items()).filter_star(

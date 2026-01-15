@@ -49,7 +49,8 @@ class DataBase(Layout[Table], BaseEntry, ABC):
     def _set_tables_connexion(self) -> None:
         return (
             self.schema()
-            .values_iter()
+            .values()
+            .iter()
             .for_each(lambda table: table.__set_connexion__(self._connexion))
         )
 
@@ -107,7 +108,8 @@ class DataBase(Layout[Table], BaseEntry, ABC):
         self.__source__ = Path(source, self._name).with_suffix(_DDB)
         return (
             self.schema()
-            .values_iter()
+            .values()
+            .iter()
             .for_each(
                 lambda table: table.__set_source__(self.__source__),
             )
@@ -205,12 +207,10 @@ class DataBase(Layout[Table], BaseEntry, ABC):
         return (
             self.show_tables()
             .collect()
-            .pipe(
-                lambda df: pc.Set[str](df.get_column("name"))
-                .difference(self.schema().keys_iter())
-                .iter()
-                .for_each(lambda q: self.connexion.execute(qry.drop_table(q)))
-            )
+            .pipe(lambda df: pc.Set[str](df.get_column("name")))
+            .difference(self.schema().keys())
+            .iter()
+            .for_each(lambda q: self.connexion.execute(qry.drop_table(q)))
         )
 
     @property

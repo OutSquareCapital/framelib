@@ -138,7 +138,8 @@ class Struct(Column):
     @property
     def pl_dtype(self) -> pl.Struct:
         return (
-            self.fields.iter()
+            self.fields.items()
+            .iter()
             .map_star(lambda name, col: pl.Field(name, col.pl_dtype))
             .collect()
             .into(lambda d: pl.Struct(d))
@@ -147,7 +148,8 @@ class Struct(Column):
     @property
     def nw_dtype(self) -> nw.Struct:
         return (
-            self.fields.iter()
+            self.fields.items()
+            .iter()
             .map_star(lambda name, col: nw.Field(name, col.nw_dtype))
             .collect()
             .into(lambda d: nw.Struct(d))
@@ -156,7 +158,8 @@ class Struct(Column):
     @property
     def sql_type(self) -> str:
         inner = (
-            self.fields.iter()
+            self.fields.items()
+            .iter()
             .map_star(lambda name, col: f"{name} {col.sql_type}")
             .join(", ")
         )

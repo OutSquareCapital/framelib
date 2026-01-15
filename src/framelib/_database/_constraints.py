@@ -27,7 +27,7 @@ class OnConflictResult(NamedTuple):
         target: str = conflict_keys.iter().map(lambda k: f'"{k}"').join(", ")
 
         update_clause: str = (
-            schema.keys_iter()
+            schema.iter()
             .filter(lambda k: k not in conflict_keys)
             .map(lambda col: f'"{col}" = excluded."{col}"')
             .join(", ")
