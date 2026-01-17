@@ -1,7 +1,9 @@
 import contextlib
+import functools
 from abc import ABC
 from collections.abc import Callable
 from pathlib import Path
+from types import TracebackType
 from typing import Any, Concatenate, Self
 
 import duckdb
@@ -21,10 +23,50 @@ class DataBase(Layout[Table], BaseEntry, ABC):
     It's a `Schema` of `Table` entries.
 
     It's itself a `BaseEntry` that can be used as an entry in a `Folder` (thanks to _is_file attribute).
+
+    The connexion to the database is managed via context manager methods (`__enter__` and `__exit__`), or via the `connect` decorator.
+
+    The latter is the recommended, idiomatic way of dealing with database connections in FrameliB.
     """
 
     _is_connected: bool = False
     _connexion: duckdb.DuckDBPyConnection
+
+    @classmethod
+    def connect[**P, R](
+        cls, fn: Callable[Concatenate[Self, P], R]
+    ) -> Callable[Concatenate[Self, P], R]:
+        """Decorator to ensure database connection context for a method.
+
+        Args:
+            fn (Callable[Concatenate[Self, P], R]): The method to wrap.
+
+        Returns:
+            Callable[Concatenate[Self, P], R]: The wrapped method with connection context.
+
+        Example:
+        ```python
+        class MyDatabase(DataBase):
+            table1: Table
+            table2: Table
+
+
+        @MyDatabase.connect
+        def my_func(db: MyDatabase) -> None:
+            db.table1.insert(...)
+            db.table2.update(...)
+
+
+        my_func()
+        ```
+        """
+
+        @functools.wraps(fn)
+        def wrapper(self: Self, *args: P.args, **kwargs: P.kwargs) -> R:
+            with self as db:
+                return fn(db, *args, **kwargs)
+
+        return wrapper
 
     def __set_source__(self, source: Path) -> None:
         self.__source__ = Path(source, self._name).with_suffix(_DDB)
@@ -40,18 +82,6 @@ class DataBase(Layout[Table], BaseEntry, ABC):
     def __del__(self) -> None:
         with contextlib.suppress(Exception):
             self.close()
-
-    def __enter__(self) -> Self:
-        self._connect()
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: object,
-    ) -> None:
-        self.close()
 
     @property
     def is_connected(self) -> bool:
@@ -80,6 +110,30 @@ class DataBase(Layout[Table], BaseEntry, ABC):
             .iter()
             .for_each(lambda table: table.__set_connexion__(self._connexion))
         )
+
+    def __enter__(self) -> Self:
+        """Enters the context manager, opening the connection to the database.
+
+        Returns:
+            Self: The database instance.
+        """
+        self._connect()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None = None,
+        exc_value: BaseException | None = None,
+        traceback: TracebackType | None = None,
+    ) -> None:
+        """Exits the context manager, closing the connection to the database.
+
+        Args:
+            exc_type: The exception type.
+            exc_value: The exception value.
+            traceback: The traceback.
+        """
+        self.close()
 
     def close(self) -> None:
         """Closes the connection to the database."""
