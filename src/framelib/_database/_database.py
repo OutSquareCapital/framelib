@@ -26,6 +26,33 @@ class DataBase(Layout[Table], BaseEntry, ABC):
     _is_connected: bool = False
     _connexion: duckdb.DuckDBPyConnection
 
+    def __set_source__(self, source: Path) -> None:
+        self.__source__ = Path(source, self._name).with_suffix(_DDB)
+        return (
+            self.schema()
+            .values()
+            .iter()
+            .for_each(
+                lambda table: table.__set_source__(self.__source__),
+            )
+        )
+
+    def __del__(self) -> None:
+        with contextlib.suppress(Exception):
+            self.close()
+
+    def __enter__(self) -> Self:
+        self._connect()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: object,
+    ) -> None:
+        self.close()
+
     @property
     def is_connected(self) -> bool:
         """Check if the database is connected.
@@ -58,30 +85,6 @@ class DataBase(Layout[Table], BaseEntry, ABC):
         """Closes the connection to the database."""
         self._is_connected = False
         self._connexion.close()
-
-    def __enter__(self) -> Self:
-        """Enter context manager: establish database connection.
-
-        Returns:
-            Self: The database instance with an active connection.
-        """
-        self._connect()
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: object,
-    ) -> None:
-        """Exit context manager: close database connection.
-
-        Args:
-            exc_type: Exception type if an error occurred.
-            exc_val: Exception value if an error occurred.
-            exc_tb: Exception traceback if an error occurred.
-        """
-        self.close()
 
     def apply[**P](
         self,
@@ -127,21 +130,6 @@ class DataBase(Layout[Table], BaseEntry, ABC):
         self._connect()
 
         return fn(self, *args, **kwargs)
-
-    def __set_source__(self, source: Path) -> None:
-        self.__source__ = Path(source, self._name).with_suffix(_DDB)
-        return (
-            self.schema()
-            .values()
-            .iter()
-            .for_each(
-                lambda table: table.__set_source__(self.__source__),
-            )
-        )
-
-    def __del__(self) -> None:
-        with contextlib.suppress(Exception):
-            self.close()
 
     @property
     def connexion(self) -> duckdb.DuckDBPyConnection:
