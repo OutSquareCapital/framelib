@@ -136,14 +136,14 @@ class DataBase(Layout[Table], BaseEntry, ABC):
         """Returns the DuckDB connexion."""
         return self._connexion
 
-    def query(self, sql_query: str) -> DuckFrame:
-        """Executes a SQL query and returns the result.
+    def sql(self, sql_query: str) -> DuckFrame:
+        """Executes a `SQL` *query* and returns the result.
 
         Args:
-            sql_query (str): The SQL query to execute.
+            sql_query (str): The `SQL` *query* to execute.
 
         Returns:
-            DuckFrame: The result of the query as a Narwhals LazyFrame.
+            DuckFrame: The result of the *query* as a Narwhals `LazyFrame`.
         """
         self._connect()
         return nw.from_native(self._connexion.sql(sql_query))
@@ -154,7 +154,7 @@ class DataBase(Layout[Table], BaseEntry, ABC):
         Returns:
             DuckFrame: The tables as a Narwhals LazyFrame.
         """
-        return self.query(qry.SHOW_TABLES)
+        return self.sql(qry.SHOW_TABLES)
 
     def show_views(self) -> DuckFrame:
         """Shows all views in the database.
@@ -162,7 +162,7 @@ class DataBase(Layout[Table], BaseEntry, ABC):
         Returns:
             DuckFrame: The views as a Narwhals LazyFrame.
         """
-        return self.query(qry.SHOW_VIEWS)
+        return self.sql(qry.SHOW_VIEWS)
 
     def show_types(self) -> DuckFrame:
         """Shows all data types, including user-defined ENUMs.
@@ -170,7 +170,7 @@ class DataBase(Layout[Table], BaseEntry, ABC):
         Returns:
             DuckFrame: The data types as a Narwhals LazyFrame.
         """
-        return self.query(qry.SHOW_TYPES)
+        return self.sql(qry.SHOW_TYPES)
 
     def show_schemas(self) -> DuckFrame:
         """Shows all schemas in the database.
@@ -178,7 +178,7 @@ class DataBase(Layout[Table], BaseEntry, ABC):
         Returns:
             DuckFrame: The schemas as a Narwhals LazyFrame.
         """
-        return self.query(qry.SHOW_SCHEMAS)
+        return self.sql(qry.SHOW_SCHEMAS)
 
     def show_settings(self) -> DuckFrame:
         """Shows all settings in the current database session.
@@ -186,7 +186,7 @@ class DataBase(Layout[Table], BaseEntry, ABC):
         Returns:
             DuckFrame: The settings as a Narwhals LazyFrame.
         """
-        return self.query(qry.SHOW_SETTINGS)
+        return self.sql(qry.SHOW_SETTINGS)
 
     def show_extensions(self) -> DuckFrame:
         """Shows all installed and loaded extensions.
@@ -194,7 +194,7 @@ class DataBase(Layout[Table], BaseEntry, ABC):
         Returns:
             DuckFrame: The extensions as a Narwhals LazyFrame.
         """
-        return self.query(qry.SHOW_EXTENSIONS)
+        return self.sql(qry.SHOW_EXTENSIONS)
 
     def show_all_constraints(self) -> DuckFrame:
         """Shows all constraints across all tables in the database.
@@ -202,7 +202,7 @@ class DataBase(Layout[Table], BaseEntry, ABC):
         Returns:
             DuckFrame: The constraints as a Narwhals LazyFrame.
         """
-        return self.query(qry.ALL_CONSTRAINTS)
+        return self.sql(qry.ALL_CONSTRAINTS)
 
     def sync_schema(self) -> Self:
         """Drops tables from the database that are not present in the schema.
