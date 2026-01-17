@@ -59,6 +59,30 @@ class DataBase(Layout[Table], BaseEntry, ABC):
         self._is_connected = False
         self._connexion.close()
 
+    def __enter__(self) -> Self:
+        """Enter context manager: establish database connection.
+
+        Returns:
+            Self: The database instance with an active connection.
+        """
+        self._connect()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: object,
+    ) -> None:
+        """Exit context manager: close database connection.
+
+        Args:
+            exc_type: Exception type if an error occurred.
+            exc_val: Exception value if an error occurred.
+            exc_tb: Exception traceback if an error occurred.
+        """
+        self.close()
+
     def apply[**P](
         self,
         fn: Callable[Concatenate[Self, P], Any],
