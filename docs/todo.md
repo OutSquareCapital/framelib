@@ -7,6 +7,10 @@
 - Fix insert_on_update bugs (messy code, does not work ATM).
 - Fix init_subclass process (no strict control ATM, no clear schemas nor error messages).
 
+### API
+
+- Decide how `__source__` should be handled for custom set -> manual attribute or decorator?
+
 ### Features
 
 - Add better support for folder/files management (glob patterns, recursive search, etc...).
@@ -17,11 +21,15 @@
 
 - Use slots everywhere if possible.
 - Improve all __repr__ methods (use tree? what do to with schema vs entries?)
-- Better handle DataBase and Table API (TypeState pattern to avoid calling methods outside of apply/pipe context?).
+- Add a "light", pure python Schema/Column/FileHandler version with lazy file reading and reliance on pyochain Iterators for data processing. Probably must continue to improve dictexpr for that. tinyDb could be a good inspiration, also this <https://github.com/jazzband/jsonmodels>.
+- Use Result and Option across the codebase to make errors explicit
+- Decide how to handle "initial setup" scenarios (creating folders, databases, etc...). subclass init, decorator?
+- Check how to handle prefixes for files paths (e.g ./data/, s3://, etc...) in a clean way.
 
 ### Code architecture
 
 - Analyse the current inheritance structure of Columns, FileHandlers, Schemas, etc... and see if it can be improved/simplified.
+- Related to above, decide how to handle relationship of DataBase and Folder. Should DataBase be completely independent if wanted?
 
 ### Need Decisions
 
@@ -49,6 +57,6 @@ Since a schema is agnostic to it's model handler (File or Table), we can easily 
 
 ```python
 MySchemaFiles.my_file.read().pipe(
-    lambda df: MySchemaFiles.my_db.apply(lambda db: db.my_db.create_or_replace_from(df)),
+    lambda df: MySchemaFiles.my_db.create_or_replace_from(df)
 )
 ```
