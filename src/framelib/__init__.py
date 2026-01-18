@@ -1,5 +1,7 @@
 """framelib: A high-level DataFrame library built on Polars and Narwhals."""
 
+from narwhals import col
+
 from ._columns import (
     Array,
     Boolean,
@@ -63,4 +65,5 @@ __all__ = [
     "UInt32",
     "UInt64",
     "UInt128",
+    "col",
 ]

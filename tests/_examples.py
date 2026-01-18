@@ -120,9 +120,12 @@ def _() -> None:
 
 @app.cell
 def _() -> None:
-    def get_report(db: Analytics) -> pl.DataFrame:
+    @MyProject.analytics_db
+    def get_report() -> pl.DataFrame:
         return (
-            db.sales.create_or_replace_from(MyProject.raw_sales.scan())
+            MyProject.analytics_db.sales.create_or_replace_from(
+                MyProject.raw_sales.scan()
+            )
             .scan()
             .group_by("customer_id")
             .agg(
@@ -133,7 +136,7 @@ def _() -> None:
             .pl()
         )
 
-    MyProject.analytics_db.apply(get_report)
+    get_report()
 
 
 @app.cell(hide_code=True)
@@ -214,7 +217,9 @@ def _() -> None:
         },
     )
 
-    def database_op(dba: Analytics) -> None:
+    @MyProject.analytics_db
+    def database_op() -> None:
+        dba = MyProject.analytics_db
         print("\n📦 Sales Data in DB before insert_into:")
         print(dba.sales.scan().to_native())
         print("\n📦 Sales Data in DB after insert_into:")
@@ -225,7 +230,7 @@ def _() -> None:
         print("\n📦 Sales Data in DB after truncate:")
         print(dba.sales.truncate().scan().to_native())
 
-    MyProject.analytics_db.apply(database_op).close()
+    database_op()
 
 
 @app.cell(hide_code=True)
