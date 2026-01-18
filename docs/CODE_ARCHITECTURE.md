@@ -365,15 +365,18 @@ This lazy connection management ensures resources are only used when needed and 
 
 `pyochain` is the functional programming library that powers framelib's introspection and transformation capabilities. It provides:
 
-- **`pc.Iter`**: Lazy iteration with functional transformations (map, filter, fold, etc.)
-- **`pc.Dict`**: A superset of `dict` with conversion methods to/from `pc.Iter`
+- **`pc.Vec`**: A mutable sequence with functional transformations (map, filter, flat_map, etc.)
+- **`pc.Dict`**: A superset of `dict` with conversion methods to/from other collections
 - **`pc.Option` and `pc.Result`**: Type-safe handling of optional values/fallible computations
 
-In the context of `Layout.__init_subclass__`, `pyochain` is used to:
+In the context of `Layout.__init_subclass__`, `pyochain` is used to perform **MRO-based introspection** to collect `BaseEntry` instances from the entire class hierarchy:
 
 ```python
 cls._schema = (
-    pc.Iter(cls.__dict__.items())  # Iterate over class attributes
+    pc.Vec.from_ref(cls.mro())  # Convert MRO list to a pyochain Vec for zero-copy conversion
+    .rev()  # Get a reversed Iterator to process from base to derived
+    .filter(lambda c: c is not object and hasattr(c, "__dict__"))  # Keep only classes with attributes
+    .flat_map(lambda c: c.__dict__.items())  # Flatten all attributes from all classes
     .filter_star(lambda _, obj: _is_base_entry(obj))  # Keep only BaseEntry instances
     .collect(pc.Dict)  # Convert to a pyochain Dict
     .inspect(  # Side effect: register names in entries
@@ -384,7 +387,11 @@ cls._schema = (
 )
 ```
 
-This functional approach makes the code more declarative and composable.
+**Why MRO-based introspection?** This approach enables schema inheritance. When a class inherits from another class that is also a `Layout`, the child class automatically inherits all entries from its parent.
+
+By processing the entire MRO (reversed from base to derived), entries from parent classes are included in the schema, allowing you to extend schemas hierarchically.
+
+This functional approach makes the code more declarative and composable, while also enabling powerful inheritance patterns across the class hierarchy.
 
 ### `Folder` and `File` Interaction
 
