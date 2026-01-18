@@ -108,19 +108,17 @@ class Structure:
         children_len: int = childrens.length()
 
         def _entries(idx: int, node: Path) -> pc.Iter[str]:
+            is_last = idx == children_len - 1
+            line = f"{prefix}{Leaf.line(is_last=is_last)}{node.name}"
             match node in self.dir_paths:
-                case True:
-                    return pc.Iter.once(
-                        f"{prefix}{Leaf.line(is_last=idx == children_len - 1)}{node.name}"
-                    )
-                case False:
-                    return pc.Iter.once(
-                        f"{prefix}{Leaf.line(is_last=idx == children_len - 1)}{node.name}"
-                    ).chain(
+                case True:  # Directory: print and recurse into it
+                    return pc.Iter.once(line).chain(
                         self.recurse(
                             node,
-                            f"{prefix}{Tree.line(is_last=idx == children_len - 1)}",
+                            f"{prefix}{Tree.line(is_last=is_last)}",
                         )
                     )
+                case False:  # File: just print
+                    return pc.Iter.once(line)
 
         return childrens.iter().enumerate().map_star(_entries).flatten()
