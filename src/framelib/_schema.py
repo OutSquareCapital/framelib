@@ -20,21 +20,26 @@ class Schema(Layout[Column]):
     Used to define the schema of a Table or a File.
     """
 
-    _constraints: pc.Option[KeysConstraints]
+    _constraints: KeysConstraints
 
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
         cls._schema = _schema_from_mro(cls)
         cls._constraints = (
-            cls.schema().values().iter().collect(pc.Set).into(KeysConstraints.from_cols)
+            cls.schema()
+            .values()
+            .iter()
+            .collect(pc.Set)
+            .into(KeysConstraints.from_cols)
+            .expect("No duplicate primary keys should be defined in the schema")
         )
 
     @classmethod
-    def constraints(cls) -> pc.Option[KeysConstraints]:
+    def constraints(cls) -> KeysConstraints:
         """Get the eventual keys constraints of the schema.
 
         Returns:
-            pc.Option[KeysConstraints]: the keys constraints of the schema, if any.
+            KeysConstraints: the keys constraints of the schema, if any.
         """
         return cls._constraints
 

@@ -8,7 +8,6 @@ import pyochain as pc
 
 from .._core import Entry
 from . import qry
-from ._constraints import OnConflictResult
 
 if TYPE_CHECKING:
     import polars as pl
@@ -165,16 +164,7 @@ class Table(Entry):
             Self: The table instance.
         """
         _ = _from_df(self.model, df)
-        q = self.model.constraints().map_or(
-            qry.insert_or_replace(self._name),
-            lambda kc: qry.insert_on_conflict_update(
-                self._name,
-                *OnConflictResult.from_keys(
-                    kc.conflict_keys.unwrap(), self.model.schema()
-                ),
-            ),
-        )
-        self.connexion.unwrap().execute(q)
+        self.connexion.unwrap().execute(qry.insert_or_replace(self._name))
         return self
 
     def insert_or_ignore(self, df: IntoFrame | IntoLazyFrame) -> Self:
