@@ -37,6 +37,7 @@ class DataFrames:
                 "charlie@example.com",
             ],
         },
+        schema=Customers.to_pl(),
     )
 
     SALES = pl.DataFrame(
@@ -45,6 +46,7 @@ class DataFrames:
             "customer_id": [101, 102, 103],
             "amount": [10.0, 20.0, 30.0],
         },
+        schema=Sales.to_pl(),
     )
     CONFLICTING_SALES = pl.DataFrame(
         {"order_id": [2, 4], "customer_id": [102, 104], "amount": [99.9, 40.0]},
