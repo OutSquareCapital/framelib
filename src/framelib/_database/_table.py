@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Self
 
 import duckdb
 import narwhals as nw
+import pyochain as pc
 
 from .._core import Entry
 from . import qry
@@ -46,13 +47,30 @@ class Table(Entry):
 
     """
 
+    _con: duckdb.DuckDBPyConnection
+
     def __set_connexion__(self, con: duckdb.DuckDBPyConnection) -> None:
         self._con: duckdb.DuckDBPyConnection = con
 
     @property
+    def connexion(self) -> pc.Result[duckdb.DuckDBPyConnection, RuntimeError]:
+        """Get the `duckdb.DuckDBPyConnection` of the table.
+
+        `Ok(connection)` if the table is connected to a database, `Err(RuntimeError)` otherwise.
+
+        Returns:
+            pc.Result[duckdb.DuckDBPyConnection, RuntimeError]: The connection result.
+        """
+        try:
+            return pc.Ok(self._con)
+        except AttributeError:
+            msg = "The table is not connected to any database."
+            return pc.Err(RuntimeError(msg))
+
+    @property
     def relation(self) -> duckdb.DuckDBPyRelation:
         """Get the `duckdb.DuckDBPyRelation` of the table."""
-        return self._con.table(self._name)
+        return self.connexion.unwrap().table(self._name)
 
     def read(self) -> pl.DataFrame:
         """Reads the entire table from the database.
@@ -91,7 +109,7 @@ class Table(Entry):
         """
         _ = _from_df(self.model, df)
         create_q = qry.create_or_replace(self._name, self.model.to_sql())
-        self._con.execute(create_q).execute(qry.insert_into(self._name))
+        self.connexion.unwrap().execute(create_q).execute(qry.insert_into(self._name))
 
         return self
 
@@ -107,7 +125,7 @@ class Table(Entry):
             Self: The table instance.
         """
         _ = _from_df(self.model, df)
-        self._con.execute(qry.create_from(self._name))
+        self.connexion.unwrap().execute(qry.create_from(self._name))
         return self
 
     def truncate(self) -> Self:
@@ -116,7 +134,7 @@ class Table(Entry):
         Returns:
             Self: The table instance.
         """
-        self._con.execute(qry.truncate(self._name))
+        self.connexion.unwrap().execute(qry.truncate(self._name))
         return self
 
     def drop(self) -> Self:
@@ -125,7 +143,7 @@ class Table(Entry):
         Returns:
             Self: The table instance.
         """
-        self._con.execute(qry.drop(self._name))
+        self.connexion.unwrap().execute(qry.drop(self._name))
         return self
 
     def insert_into(self, df: IntoFrame | IntoLazyFrame) -> Self:
@@ -140,7 +158,7 @@ class Table(Entry):
             Self: The table instance.
         """
         _ = _from_df(self.model, df)
-        self._con.execute(qry.insert_into(self._name))
+        self.connexion.unwrap().execute(qry.insert_into(self._name))
         return self
 
     def insert_or_replace(self, df: IntoFrame | IntoLazyFrame) -> Self:
@@ -164,7 +182,7 @@ class Table(Entry):
                 ),
             ),
         )
-        self._con.execute(q)
+        self.connexion.unwrap().execute(q)
         return self
 
     def insert_or_ignore(self, df: IntoFrame | IntoLazyFrame) -> Self:
@@ -179,7 +197,7 @@ class Table(Entry):
             Self: The table instance.
         """
         _ = _from_df(self.model, df)
-        self._con.execute(qry.insert_or_ignore(self._name))
+        self.connexion.unwrap().execute(qry.insert_or_ignore(self._name))
         return self
 
     def summarize(self) -> DuckFrame:
@@ -188,7 +206,7 @@ class Table(Entry):
         Returns:
             DuckFrame: The summary as a Narwhals LazyFrame.
         """
-        return nw.from_native(self._con.sql(qry.summarize(self._name)))
+        return nw.from_native(self.connexion.unwrap().sql(qry.summarize(self._name)))
 
     def describe_columns(self) -> DuckFrame:
         """Returns detailed information about the columns of this table from the INFORMATION_SCHEMA.
@@ -196,7 +214,9 @@ class Table(Entry):
         Returns:
             DuckFrame: The columns information as a Narwhals LazyFrame.
         """
-        return nw.from_native(self._con.sql(qry.columns_schema(self._name))).select(
+        return nw.from_native(
+            self.connexion.unwrap().sql(qry.columns_schema(self._name))
+        ).select(
             "column_name",
             "data_type",
             "is_nullable",
@@ -209,4 +229,4 @@ class Table(Entry):
         Returns:
             DuckFrame: The constraints information as a Narwhals LazyFrame.
         """
-        return nw.from_native(self._con.sql(qry.constraints(self._name)))
+        return nw.from_native(self.connexion.unwrap().sql(qry.constraints(self._name)))

@@ -4,7 +4,7 @@ from abc import ABC
 from collections.abc import Callable
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Concatenate, Self
+from typing import Self
 
 import duckdb
 import narwhals as nw
@@ -17,7 +17,9 @@ from ._table import DuckFrame, Table
 _DDB = ".ddb"
 
 
-class DataBase(Layout[Table], BaseEntry, ABC):
+class DataBase(
+    Layout[Table], BaseEntry, ABC, contextlib.ContextDecorator, pc.traits.Pipeable
+):
     """A DataBase represents a DuckDB database.
 
     It's a `Schema` of `Table` entries.
@@ -32,17 +34,16 @@ class DataBase(Layout[Table], BaseEntry, ABC):
     _is_connected: bool = False
     _connexion: duckdb.DuckDBPyConnection
 
-    @classmethod
-    def connect[**P, R](
-        cls, fn: Callable[Concatenate[Self, P], R]
-    ) -> Callable[Concatenate[Self, P], R]:
+    def __call__[**P, R](self, fn: Callable[P, R]) -> Callable[P, R]:
         """Decorator to ensure database connection context for a method.
 
         Args:
-            fn (Callable[Concatenate[Self, P], R]): The method to wrap.
+            fn (Callable[P, R]): The method to wrap.
+            *args (P.args): Positional arguments to pass to the method.
+            **kwargs (P.kwargs): Keyword arguments to pass to the method.
 
         Returns:
-            Callable[Concatenate[Self, P], R]: The wrapped method with connection context.
+            Callable[P, R]: The wrapped method with connection context.
 
         Example:
         ```python
@@ -51,8 +52,11 @@ class DataBase(Layout[Table], BaseEntry, ABC):
             table2: Table
 
 
-        @MyDatabase.connect
-        def my_func(db: MyDatabase) -> None:
+        db = MyDatabase()
+
+
+        @db
+        def my_func() -> None:
             db.table1.insert(...)
             db.table2.update(...)
 
@@ -62,9 +66,9 @@ class DataBase(Layout[Table], BaseEntry, ABC):
         """
 
         @functools.wraps(fn)
-        def wrapper(self: Self, *args: P.args, **kwargs: P.kwargs) -> R:
-            with self as db:
-                return fn(db, *args, **kwargs)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            with self:
+                return fn(*args, **kwargs)
 
         return wrapper
 
@@ -79,45 +83,22 @@ class DataBase(Layout[Table], BaseEntry, ABC):
             )
         )
 
-    def __del__(self) -> None:
-        with contextlib.suppress(Exception):
-            self.close()
-
-    @property
-    def is_connected(self) -> bool:
-        """Check if the database is connected.
-
-        Returns:
-            bool: True if the database is connected, False otherwise.
-        """
-        return self._is_connected
-
-    def _connect(self) -> None:
-        """Opens the connection to the database.
-
-        Returns:
-            None: The connection to the database is opened.
-        """
-        if not self._is_connected:
-            self._connexion = duckdb.connect(self.source)
-            self._set_tables_connexion()
-            self._is_connected = True
-
-    def _set_tables_connexion(self) -> None:
-        return (
-            self.schema()
-            .values()
-            .iter()
-            .for_each(lambda table: table.__set_connexion__(self._connexion))
-        )
-
     def __enter__(self) -> Self:
         """Enters the context manager, opening the connection to the database.
 
         Returns:
             Self: The database instance.
         """
-        self._connect()
+        if not self._is_connected:
+            self._connexion = duckdb.connect(self.source)
+            (
+                self.schema()
+                .values()
+                .iter()
+                .for_each(lambda table: table.__set_connexion__(self._connexion))
+            )
+            self._is_connected = True
+
         return self
 
     def __exit__(
@@ -133,57 +114,42 @@ class DataBase(Layout[Table], BaseEntry, ABC):
             exc_value: The exception value.
             traceback: The traceback.
         """
-        self.close()
-
-    def close(self) -> None:
-        """Closes the connection to the database."""
-        self._is_connected = False
         self._connexion.close()
+        self._is_connected = False
 
-    def apply[**P](
-        self,
-        fn: Callable[Concatenate[Self, P], Any],
-        *args: P.args,
-        **kwargs: P.kwargs,
-    ) -> Self:
-        """Execute a function that takes the database instance and returns self for chaining.
+    def __del__(self) -> None:
+        with contextlib.suppress(Exception):
+            self._connexion.close()
 
-        Allow passing additional arguments to the function.
+    def connect(self) -> Self:
+        """Manually connects to the database.
 
-        Args:
-            fn (Callable[Concatenate[Self, P], Any]): The function to execute.
-            *args (P.args): Positional arguments to pass to the function.
-            **kwargs (P.kwargs): Keyword arguments to pass to the function.
+        Warning:
+            It's recommended to use the instance as a function decorator instead of this method.
 
         Returns:
             Self: The database instance.
         """
-        self._connect()
-        fn(self, *args, **kwargs)
+        return self.__enter__()
 
-        return self
+    def close(self) -> None:
+        """Manually closes the connection to the database.
 
-    def into[**P, R](
-        self,
-        fn: Callable[Concatenate[Self, P], R],
-        *args: P.args,
-        **kwargs: P.kwargs,
-    ) -> R:
-        """Execute a function that takes **self** and returns the result.
+        It is **highly** recommended to call this method after having called `connect()` explicitly.
 
-        Allow passing additional arguments to the function.
+        Warning:
+            It's recommended to use the instance as a function decorator instead of this method.
+        """
+        return self.__exit__()
 
-        Args:
-            fn (Callable[Concatenate[Self, P], R]): The function to execute.
-            *args (P.args): Positional arguments to pass to the function.
-            **kwargs (P.kwargs): Keyword arguments to pass to the function.
+    @property
+    def is_connected(self) -> bool:
+        """Check if the database is connected.
 
         Returns:
-            R: The result of the function.
+            bool: True if the database is connected, False otherwise.
         """
-        self._connect()
-
-        return fn(self, *args, **kwargs)
+        return self._is_connected
 
     @property
     def connexion(self) -> duckdb.DuckDBPyConnection:
@@ -199,7 +165,6 @@ class DataBase(Layout[Table], BaseEntry, ABC):
         Returns:
             DuckFrame: The result of the *query* as a Narwhals `LazyFrame`.
         """
-        self._connect()
         return nw.from_native(self._connexion.sql(sql_query))
 
     def show_tables(self) -> DuckFrame:
@@ -264,7 +229,6 @@ class DataBase(Layout[Table], BaseEntry, ABC):
         Returns:
             Self: The database instance.
         """
-        self._connect()
         self._drop_tables()
 
         return self
