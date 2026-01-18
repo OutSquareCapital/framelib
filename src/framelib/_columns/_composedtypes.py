@@ -159,13 +159,12 @@ class Struct(Column):
 
     @property
     def sql_type(self) -> str:
-        inner = (
+        return (
             self.fields.items()
             .iter()
             .map_star(lambda name, col: f"{name} {col.sql_type}")
-            .join(", ")
+            .into(lambda inner: f"STRUCT({inner.join(', ')})")
         )
-        return f"STRUCT({inner})"
 
     @property
     def fields(self) -> pc.Dict[str, Column]:
@@ -225,7 +224,7 @@ class Categorical(Column):
 
 
 class Enum(Column):
-    _categories: pc.Seq[str]
+    _categories: pc.Set[str]
 
     def __init__(
         self,
@@ -236,7 +235,7 @@ class Enum(Column):
     ) -> None:
         if isclass(categories):
             categories = (item.value for item in categories)
-        self._categories = pc.Seq(categories)
+        self._categories = pc.Set(categories)
         super().__init__(primary_key=primary_key, unique=unique)
 
     @property
@@ -258,6 +257,6 @@ class Enum(Column):
         return "VARCHAR"
 
     @property
-    def categories(self) -> pc.Seq[str]:
-        """Get the categories of this enum as a `tuple[str, ...]`."""
+    def categories(self) -> pc.Set[str]:
+        """Get the categories of this `Enum`."""
         return self._categories
