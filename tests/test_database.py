@@ -74,8 +74,9 @@ def test_db() -> Generator[SampleDB]:
     yield TestData.db
     if TestData.db.is_connected:
         TestData.db.close()
-    TestData.clean()
-    TestData.clean()
+    import shutil
+
+    shutil.rmtree(TestData.source())
 
 
 def test_insert_into_with_unique_conflict(test_db: SampleDB) -> None:
@@ -89,6 +90,7 @@ def test_truncate_sales_table(test_db: SampleDB) -> None:
     assert test_db.sales.truncate().read().shape == (0, _EXPECTED_SALES_COUNT)
 
 
+@pytest.mark.usefixtures("test_folder")
 def test_drop_non_existing_table(test_db: SampleDB) -> None:
     """Test that dropping non-existing table raises CatalogException."""
     test_db.sales.drop()

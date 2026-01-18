@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import polars as pl
 
 import framelib as fl
@@ -23,7 +21,6 @@ class SampleDB(fl.DataBase):
 
 
 class TestData(fl.Folder):
-    __source__ = Path("tests")
     sales_file = fl.CSV(model=Sales)
     customers_file = fl.NDJson(model=Customers)
     db = SampleDB()

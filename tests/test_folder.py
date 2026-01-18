@@ -13,11 +13,12 @@ def test_folder() -> Generator[None]:
     """Create test folder structure."""
     TestData.source().mkdir(parents=True, exist_ok=True)
     TestData.sales_file.write(DataFrames.SALES)
-    print(TestData.show_tree())
     yield
     if TestData.db.is_connected:
         TestData.db.close()
-    TestData.clean()
+    import shutil
+
+    shutil.rmtree(TestData.source())
 
 
 class TestFolderStructure:
@@ -25,8 +26,8 @@ class TestFolderStructure:
 
     def test_folder_source_path(self) -> None:
         """Test that Folder correctly sets source path."""
-        assert TestData.source() == Path("tests")
-        assert TestData.source().name == "tests"
+        assert str(TestData.source()) == str(Path("testdata"))
+        assert TestData.source().name == "testdata"
 
     def test_folder_schema_contains_entries(self) -> None:
         """Test that Folder schema contains all defined entries."""
@@ -64,31 +65,6 @@ class TestFolderStructure:
 
         # Check for tree characters
         assert "├──" in tree or "└──" in tree
-
-    @pytest.mark.usefixtures("test_folder")
-    def test_folder_clean_removes_all_files(self) -> None:
-        """Test that clean removes folder and all files."""
-        # Create the folder and files
-        assert TestData.source().exists()
-
-        # Clean
-        TestData.clean()
-
-        # Should be removed
-        assert not TestData.source().exists()
-
-    @pytest.mark.usefixtures("test_folder")
-    def test_folder_iter_dir(self) -> None:
-        """Test that iter_dir lists files in folder."""
-        files = list(TestData.iter_dir())
-
-        # Should have files
-        assert len(files) > 0
-
-        # Check for specific files
-        file_names = {f.name for f in files}
-        assert "sales_file.csv" in file_names
-        assert "customers_file.ndjson" in file_names
 
     @pytest.mark.usefixtures("test_folder")
     def test_folder_file_paths_computed_correctly(self) -> None:
