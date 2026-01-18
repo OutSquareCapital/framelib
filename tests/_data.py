@@ -17,7 +17,7 @@ class Customers(fl.Schema):
     email = fl.String()
 
 
-class TestDB(fl.DataBase):
+class SampleDB(fl.DataBase):
     sales = fl.Table(Sales)
     customers = fl.Table(Customers)
 
@@ -26,7 +26,7 @@ class TestData(fl.Folder):
     __source__ = Path("tests")
     sales_file = fl.CSV(model=Sales)
     customers_file = fl.NDJson(model=Customers)
-    db = TestDB()
+    db = SampleDB()
 
 
 class DataFrames:

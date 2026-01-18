@@ -1,9 +1,12 @@
+"""Tests for DataBases and their functionalities."""
+
 from collections.abc import Generator
 
 import pytest
 from duckdb import CatalogException, ConstraintException
 
-from tests._data import DataFrames, Sales, TestData, TestDB
+import framelib as fl
+from tests._data import DataFrames, Sales, SampleDB, TestData
 
 _EXPECTED_SALES_COUNT = 3
 _EXPECTED_CONFLICTING_SALES_COUNT = 4
@@ -14,39 +17,12 @@ _MIXED_POS1 = 42
 _MIXED_KWARG1 = 2.5
 
 
-@pytest.fixture
-def test_folder() -> Generator[None]:
-    """Create test folder structure."""
-    TestData.source().mkdir(parents=True, exist_ok=True)
-    TestData.sales_file.write(DataFrames.SALES)
-    print(TestData.show_tree())
-    yield
-    if TestData.db.is_connected:
-        TestData.db.close()
-    TestData.clean()
-
-
-@pytest.fixture
-def test_db(test_folder: None) -> TestDB:  # noqa: ARG001
-    """Setup database with test data."""
-
-    @TestData.db
-    def _setup() -> None:
-        TestData.db.customers.create_or_replace_from(DataFrames.CUSTOMERS)
-        TestData.db.sales.create_or_replace_from(DataFrames.SALES)
-
-    _setup()
-    # Reopen connection for the test
-    TestData.db.connect()
-    return TestData.db
-
-
-def test_initial_sales_shape(test_db: TestDB) -> None:
+def test_initial_sales_shape(test_db: SampleDB) -> None:
     """Test that initial sales table has correct shape."""
     assert test_db.sales.read().shape == (_EXPECTED_SALES_COUNT, 3)
 
 
-def test_insert_into_with_duplicate_primary_key(test_db: TestDB) -> None:
+def test_insert_into_with_duplicate_primary_key(test_db: SampleDB) -> None:
     """Test that insert_into raises ConstraintException on duplicate primary key."""
     with pytest.raises(ConstraintException):
         test_db.sales.insert_into(
@@ -54,7 +30,7 @@ def test_insert_into_with_duplicate_primary_key(test_db: TestDB) -> None:
         )
 
 
-def test_insert_or_ignore(test_db: TestDB) -> None:
+def test_insert_or_ignore(test_db: SampleDB) -> None:
     """Test that insert_or_ignore skips duplicates based on primary key."""
     result_shape = (
         test_db.sales.insert_or_ignore(
@@ -69,7 +45,7 @@ def test_insert_or_ignore(test_db: TestDB) -> None:
     assert amount == _CONFLICTING_AMOUNT
 
 
-def test_insert_or_replace(test_db: TestDB) -> None:
+def test_insert_or_replace(test_db: SampleDB) -> None:
     """Test that insert_or_replace overrides existing rows."""
     order_id = 2
     amount = (
@@ -82,30 +58,51 @@ def test_insert_or_replace(test_db: TestDB) -> None:
     assert amount == _REPLACED_AMOUNT
 
 
-def test_insert_into_with_unique_conflict(test_db: TestDB) -> None:
+@pytest.fixture
+def test_db() -> Generator[SampleDB]:
+    """Setup database with test data."""
+    TestData.source().mkdir(parents=True, exist_ok=True)
+
+    @TestData.db
+    def _setup() -> None:
+        TestData.db.customers.create_or_replace_from(DataFrames.CUSTOMERS)
+        TestData.db.sales.create_or_replace_from(DataFrames.SALES)
+
+    _setup()
+    # Reopen connection for the test
+    TestData.db.connect()
+    yield TestData.db
+    if TestData.db.is_connected:
+        TestData.db.close()
+    TestData.clean()
+    TestData.clean()
+
+
+def test_insert_into_with_unique_conflict(test_db: SampleDB) -> None:
     """Test that insert_into raises ConstraintException on UNIQUE conflict."""
     with pytest.raises(ConstraintException):
         test_db.sales.insert_into(DataFrames.UNIQUE_CONFLICT_SALES)
 
 
-def test_truncate_sales_table(test_db: TestDB) -> None:
+def test_truncate_sales_table(test_db: SampleDB) -> None:
     """Test that truncate empties the table."""
     assert test_db.sales.truncate().read().shape == (0, _EXPECTED_SALES_COUNT)
 
 
-def test_drop_non_existing_table(test_db: TestDB) -> None:
+def test_drop_non_existing_table(test_db: SampleDB) -> None:
     """Test that dropping non-existing table raises CatalogException."""
     test_db.sales.drop()
     with pytest.raises(CatalogException):
         test_db.sales.scan()
 
 
-def test_sales_file_read(test_db: TestDB) -> None:  # noqa: ARG001
+def test_sales_file_read() -> None:
     """Test that sales_file.read returns correct shape."""
     assert TestData.sales_file.read().shape == (_EXPECTED_SALES_COUNT, 3)
 
 
-def test_show_tree_format(test_folder: None) -> None:  # noqa: ARG001
+@pytest.mark.usefixtures("test_folder")
+def test_show_tree_format() -> None:
     """Test that show_tree returns correctly formatted tree structure."""
     tree = TestData.show_tree()
 
@@ -115,9 +112,6 @@ def test_show_tree_format(test_folder: None) -> None:  # noqa: ARG001
     assert "db.ddb" in tree
     assert "├──" in tree or "└──" in tree
     assert len(tree) > 0
-
-
-# Tests for decorator functionality
 
 
 @pytest.mark.usefixtures("test_folder")
@@ -393,3 +387,153 @@ def test_decorator_multiple_exceptions_in_sequence() -> None:
     with pytest.raises(ValueError, match="Raised as requested"):
         _fail()
     assert TestData.db.is_connected is False
+
+
+class TestDatabaseInstanceManagement:
+    """Test that DataBase instances are properly managed within Folder contexts."""
+
+    def test_multiple_database_classes_separate_instances(self) -> None:
+        """Test that different DataBase subclasses have separate instances."""
+
+        class DB1(fl.DataBase):
+            table1 = fl.Table(model=fl.Schema)
+
+        class DB2(fl.DataBase):
+            table2 = fl.Table(model=fl.Schema)
+
+        class Project(fl.Folder):
+            database1 = DB1()
+            database2 = DB2()
+
+        # Each should be a different instance
+        assert Project.database1 is not Project.database2
+        assert isinstance(Project.database1, DB1)
+        assert isinstance(Project.database2, DB2)
+
+    def test_inherited_database_separate_instances(self) -> None:
+        """Test that inherited DataBase classes have separate instances."""
+
+        class BaseDB(fl.DataBase):
+            users = fl.Table(model=fl.Schema)
+
+        class ExtendedDB(BaseDB):
+            orders = fl.Table(model=fl.Schema)
+
+        class Project(fl.Folder):
+            db_base = BaseDB()
+            db_extended = ExtendedDB()
+
+        # Even though ExtendedDB inherits from BaseDB, they should be different instances
+        assert Project.db_base is not Project.db_extended
+        assert isinstance(Project.db_base, BaseDB)
+        assert isinstance(Project.db_extended, ExtendedDB)
+
+    def test_nested_database_in_nested_folders(self) -> None:
+        """Test DataBase instances in nested Folder structures."""
+
+        class DB(fl.DataBase):
+            table1 = fl.Table(model=fl.Schema)
+
+        class InnerFolder(fl.Folder):
+            db = DB()
+
+        class OuterFolder(fl.Folder):
+            inner = InnerFolder()
+
+        # The instance should be created once in InnerFolder
+        assert OuterFolder.inner.db is OuterFolder.inner.db
+        inner1 = OuterFolder.inner
+        inner2 = OuterFolder.inner
+        # Accessing InnerFolder through OuterFolder should give same instance
+        assert inner1.db is inner2.db
+
+    def test_database_connection_isolation(self) -> None:
+        """Test that connections are properly isolated between uses."""
+
+        def create_data() -> None:
+            TestData.source().mkdir(parents=True, exist_ok=True)
+            with TestData.db as db:
+                db.customers.create_or_replace_from(DataFrames.CUSTOMERS)
+
+        def read_data() -> int:
+            with TestData.db as db:
+                return len(db.customers.read())
+
+        # Create data in one context
+        create_data()
+        # Read in another context - should still work
+        count = read_data()
+        assert count == len(DataFrames.CUSTOMERS)
+
+    def test_database_instance_in_folder_not_recreated(self) -> None:
+        """Test that DataBase instance in Folder is not recreated on access."""
+
+        class DB(fl.DataBase):
+            table1 = fl.Table(model=fl.Schema)
+
+        class Project(fl.Folder):
+            db = DB()
+
+        # Get the instance multiple times
+        instance1 = Project.db
+        instance2 = Project.db
+        instance3 = Project.db
+
+        # All should be the same object in memory
+        assert id(instance1) == id(instance2) == id(instance3)
+
+
+class TestDatabaseConnectionEdgeCases:
+    """Test edge cases in connection management."""
+
+    def test_database_connection_cleanup_on_exception(self) -> None:
+        """Test that connection is closed even if an exception occurs."""
+        TestData.source().mkdir(parents=True, exist_ok=True)
+
+        def _create_and_fail() -> None:
+            with TestData.db as db:
+                db.customers.create_or_replace_from(DataFrames.CUSTOMERS)
+                msg = "Test error"
+                raise ValueError(msg)
+
+        with pytest.raises(ValueError, match="Test error"):
+            _create_and_fail()
+
+        # Connection should be closed
+        assert not TestData.db.is_connected
+
+    def test_database_decorator_cleanup_on_exception(self) -> None:
+        """Test that connection is closed even if decorated function raises."""
+        TestData.source().mkdir(parents=True, exist_ok=True)
+
+        @TestData.db
+        def failing_operation() -> None:
+            TestData.db.customers.create_or_replace_from(DataFrames.CUSTOMERS)
+            msg = "Test error"
+            raise RuntimeError(msg)
+
+        with pytest.raises(RuntimeError, match="Test error"):
+            failing_operation()
+
+        # Connection should still be closed after exception
+        assert not TestData.db.is_connected
+
+    def test_database_no_connection_leak_on_multiple_enters(self) -> None:
+        """Test that multiple enters don't leak connections."""
+        TestData.source().mkdir(parents=True, exist_ok=True)
+        # Enter context multiple times
+        with TestData.db:
+            pass
+
+        assert not TestData.db.is_connected
+
+        with TestData.db:
+            pass
+
+        assert not TestData.db.is_connected
+
+        # Should still work
+        with TestData.db as db:
+            db.customers.create_or_replace_from(DataFrames.CUSTOMERS)
+
+        assert not TestData.db.is_connected
