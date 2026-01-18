@@ -29,7 +29,7 @@ class BaseEntry(ABC):
         """Get the name of the entry."""
         return self._name
 
-    def __name_from_layout__(self, name: str) -> None:
+    def __set_entry_name__(self, name: str) -> None:
         self._name = name
 
 
@@ -54,7 +54,7 @@ class Layout[T: BaseEntry](ABC):
             .inspect(
                 lambda x: x.items()
                 .iter()
-                .for_each_star(lambda name, entry: entry.__name_from_layout__(name))
+                .for_each_star(lambda name, entry: entry.__set_entry_name__(name))
             )
         )
 

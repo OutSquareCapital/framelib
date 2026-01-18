@@ -50,14 +50,14 @@ Here is the step-by-step process:
             .inspect(
                 lambda x: x.items()
                 .iter()
-                .for_each_star(lambda name, entry: entry.__name_from_layout__(name))
+                .for_each_star(lambda name, entry: entry.__set_entry_name__(name))
             )
         )
     ```
 
     - It finds all attributes that are instances of a `BaseEntry` type (e.g., `File`, `Table`, `Column` instances).
     - It populates the layout's `_schema` dictionary, mapping the attribute name (`"raw_data"`) to the entry instance (`Parquet()`).
-    - Crucially, it calls `__name_from_layout__` on each entry, injecting the attribute name so the `Parquet` instance now knows its name is `"raw_data"`.
+    - Crucially, it calls `__set_entry_name__` on each entry, injecting the attribute name so the `Parquet` instance now knows its name is `"raw_data"`.
 
 4. **MRO-based schema inheritance (for `Schema` only)**. For `Schema` classes, an additional introspection step processes the Method Resolution Order (MRO) to collect columns from all parent schema classes. This allows schema inheritance:
 
@@ -379,7 +379,7 @@ cls._schema = (
     .inspect(  # Side effect: register names in entries
         lambda x: x.items()
         .iter()
-        .for_each_star(lambda name, entry: entry.__name_from_layout__(name))
+        .for_each_star(lambda name, entry: entry.__set_entry_name__(name))
     )
 )
 ```
