@@ -32,6 +32,7 @@ class DataBase(
     """
 
     _is_connected: bool = False
+    _entry_count: int = 0
     _connexion: duckdb.DuckDBPyConnection
 
     def __call__[**P, R](self, fn: Callable[P, R]) -> Callable[P, R]:
@@ -84,10 +85,12 @@ class DataBase(
     def __enter__(self) -> Self:
         """Enters the context manager, opening the connection to the database.
 
+        Supports reentrant usage: nested `with db:` blocks share the same connection.
+
         Returns:
             Self: The database instance.
         """
-        if not self._is_connected:
+        if self._entry_count == 0:
             self._connexion = duckdb.connect(self.source)
             (
                 self.schema()
@@ -96,6 +99,7 @@ class DataBase(
                 .for_each(lambda table: table.__set_connexion__(self._connexion))
             )
             self._is_connected = True
+        self._entry_count += 1
 
         return self
 
@@ -105,9 +109,11 @@ class DataBase(
         exc_value: BaseException | None = None,
         traceback: TracebackType | None = None,
     ) -> None:
-        """Exits the context manager, closing the connection to the database."""
-        self._connexion.close()
-        self._is_connected = False
+        """Exits the context manager, closing the connection only when exiting the outermost block."""
+        self._entry_count -= 1
+        if self._entry_count == 0:
+            self._connexion.close()
+            self._is_connected = False
 
     def __del__(self) -> None:
         with contextlib.suppress(Exception):
