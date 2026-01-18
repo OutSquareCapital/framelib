@@ -1,4 +1,4 @@
-"""CRUD and conflict tests for Table within a Folder/DataBase."""
+"""Narhwals syntax and CRUD operations tests."""
 
 from pathlib import Path
 
@@ -32,16 +32,15 @@ def test_table_crud_and_conflicts(tmp_path: Path) -> None:
         # create or replace
         db.t.create_or_replace_from(df1)
         res = db.t.read()
-        assert res["id"].to_list() == [1, 2]
-        assert res["name"].to_list() == ["a", "b"]
+        assert res.get_column("id").to_list() == [1, 2]
+        assert res.get_column("name").to_list() == ["a", "b"]
 
         # insert_or_replace: update id=2 and add id=3
         df2 = pl.DataFrame({"id": [2, 3], "name": ["bb", "c"]})
         db.t.insert_or_replace(df2)
         res2 = db.t.read().sort("id")
-        expected_ids = [1, 2, 3]
         updated_id = 2
-        assert res2["id"].to_list() == expected_ids
+        assert res2["id"].to_list() == [1, 2, 3]
         assert res2.filter(pl.col("id") == updated_id)["name"].to_list() == ["bb"]
 
         # insert_or_ignore: try to insert duplicate id=3 (should be ignored)
@@ -82,3 +81,343 @@ def test_table_access_outside_connection_raises(tmp_path: Path) -> None:
 
     with pytest.raises(pc.ResultUnwrapError):
         _ = Project.db.t.relation
+
+
+# ============================================================================
+# Complex CRUD Operations Tests
+# ============================================================================
+
+
+def test_table_insert_into_append_behavior(tmp_path: Path) -> None:
+    """insert_into appends rows without checking conflicts."""
+
+    class S(fl.Schema):
+        id = fl.Int64()
+        value = fl.String()
+
+    class DB(fl.DataBase):
+        t = fl.Table(model=S)
+
+    class Project(fl.Folder):
+        __source__ = Path(tmp_path)
+        db = DB()
+
+    Project.source().mkdir(parents=True, exist_ok=True)
+    db = Project.db
+
+    with db:
+        db.t.create_or_replace_from(pl.DataFrame({"id": [1], "value": ["a"]}))
+        # Insert more rows
+        db.t.insert_into(pl.DataFrame({"id": [2, 3], "value": ["b", "c"]}))
+        result = db.t.read().sort("id")
+        assert result.height == 3
+        assert result.get_column("value").to_list() == ["a", "b", "c"]
+
+
+def test_table_bulk_insert_or_replace(tmp_path: Path) -> None:
+    """insert_or_replace handles bulk updates efficiently."""
+
+    class S(fl.Schema):
+        id = fl.Int64(primary_key=True)
+        counter = fl.Int64()
+
+    class DB(fl.DataBase):
+        t = fl.Table(model=S)
+
+    class Project(fl.Folder):
+        __source__ = Path(tmp_path)
+        db = DB()
+
+    Project.source().mkdir(parents=True, exist_ok=True)
+    db = Project.db
+
+    with db:
+        # Initial bulk insert
+        initial_df = pl.DataFrame(
+            {
+                "id": pc.Iter(range(100)).collect(),
+                "counter": pc.Iter(range(100)).map(lambda _: 0).collect(),
+            }
+        )
+        db.t.create_or_replace_from(initial_df)
+
+        # Update half of them
+        update_df = pl.DataFrame(
+            {
+                "id": pc.Iter(range(0, 100, 2)).collect(),
+                "counter": pc.Iter(range(50)).map(lambda _: 1).collect(),
+            }
+        )
+        db.t.insert_or_replace(update_df)
+
+        result = db.t.read()
+        assert result.height == 100
+        updated_count = result.filter(pl.col("counter") == 1).height
+        assert updated_count == 50
+
+
+def test_table_chain_operations(tmp_path: Path) -> None:
+    """Multiple table operations can be chained fluently."""
+
+    class S(fl.Schema):
+        id = fl.Int64(primary_key=True)
+        status = fl.String()
+
+    class DB(fl.DataBase):
+        t = fl.Table(model=S)
+
+    class Project(fl.Folder):
+        __source__ = Path(tmp_path)
+        db = DB()
+
+    Project.source().mkdir(parents=True, exist_ok=True)
+    db = Project.db
+
+    with db:
+        (
+            db.t.create_or_replace_from(
+                pl.DataFrame({"id": [1, 2, 3], "status": ["new", "new", "new"]})
+            )
+            .insert_or_replace(pl.DataFrame({"id": [2], "status": ["updated"]}))
+            .insert_or_ignore(pl.DataFrame({"id": [3], "status": ["ignored"]}))
+        )
+
+        result = db.t.read().sort("id")
+        statuses = result.get_column("status").to_list()
+        assert statuses[0] == "new"  # id=1 unchanged
+        assert statuses[1] == "updated"  # id=2 replaced
+        assert statuses[2] == "new"  # id=3 ignored
+
+
+def test_table_scan_narwhals_operations(tmp_path: Path) -> None:
+    """Table scan returns DuckFrame supporting narwhals operations."""
+
+    class S(fl.Schema):
+        category = fl.String()
+        amount = fl.Float64()
+
+    class DB(fl.DataBase):
+        t = fl.Table(model=S)
+
+    class Project(fl.Folder):
+        __source__ = Path(tmp_path)
+        db = DB()
+
+    Project.source().mkdir(parents=True, exist_ok=True)
+    db = Project.db
+
+    with db:
+        db.t.create_or_replace_from(
+            pl.DataFrame(
+                {
+                    "category": ["A", "B", "A", "B", "A"],
+                    "amount": [100.0, 200.0, 150.0, 250.0, 175.0],
+                }
+            )
+        )
+
+        # Use scan for lazy narwhals operations
+        import narwhals as nw
+
+        lf = db.t.scan()
+        assert isinstance(lf, nw.LazyFrame)
+
+        # Aggregate using narwhals
+        result = (
+            lf.group_by("category")
+            .agg(fl.col("amount").sum().alias("total"))
+            .sort("category")
+            .collect()
+        )
+        totals = pc.Dict[str, float](
+            pc.Iter(result.iter_rows())
+            .map_star(lambda cat, total: (cat, total))
+            .collect()
+        )
+        assert totals["A"] == 425.0
+        assert totals["B"] == 450.0
+
+
+def test_table_summarize(tmp_path: Path) -> None:
+    """Table summarize provides column statistics."""
+
+    class S(fl.Schema):
+        value = fl.Float64()
+
+    class DB(fl.DataBase):
+        t = fl.Table(model=S)
+
+    class Project(fl.Folder):
+        __source__ = Path(tmp_path)
+        db = DB()
+
+    Project.source().mkdir(parents=True, exist_ok=True)
+    db = Project.db
+
+    with db:
+        db.t.create_or_replace_from(pl.DataFrame({"value": [1.0, 2.0, 3.0, 4.0, 5.0]}))
+        assert db.t.summarize().to_native().pl().height > 0
+
+
+def test_table_describe_columns(tmp_path: Path) -> None:
+    """Table describe_columns provides schema information."""
+
+    class S(fl.Schema):
+        id = fl.Int64(primary_key=True)
+        name = fl.String()
+        score = fl.Float64()
+
+    class DB(fl.DataBase):
+        t = fl.Table(model=S)
+
+    class Project(fl.Folder):
+        __source__ = Path(tmp_path)
+        db = DB()
+
+    Project.source().mkdir(parents=True, exist_ok=True)
+    db = Project.db
+
+    with db:
+        db.t.create_or_replace_from(
+            pl.DataFrame({"id": [1], "name": ["test"], "score": [99.5]})
+        )
+        cols_info = db.t.describe_columns().collect()
+        col_names = pc.Set[str](cols_info.get_column("column_name"))
+        assert "id" in col_names
+        assert "name" in col_names
+        assert "score" in col_names
+
+
+def test_table_multiple_primary_key_conflict_handling(tmp_path: Path) -> None:
+    """Primary key conflicts are handled correctly across operations."""
+
+    class S(fl.Schema):
+        pk = fl.Int64(primary_key=True)
+        data = fl.String()
+
+    class DB(fl.DataBase):
+        t = fl.Table(model=S)
+
+    class Project(fl.Folder):
+        __source__ = Path(tmp_path)
+        db = DB()
+
+    Project.source().mkdir(parents=True, exist_ok=True)
+    db = Project.db
+
+    with db:
+        db.t.create_or_replace_from(
+            pl.DataFrame({"pk": [1, 2, 3], "data": ["a", "b", "c"]})
+        )
+
+        # insert_or_replace: conflict on pk=1, new for pk=4
+        db.t.insert_or_replace(pl.DataFrame({"pk": [1, 4], "data": ["A", "d"]}))
+
+        # insert_or_ignore: conflict on pk=2 (ignored), new for pk=5 should insert
+        db.t.insert_or_ignore(pl.DataFrame({"pk": [2, 5], "data": ["B", "e"]}))
+
+        result = db.t.read().sort("pk")
+        data_dict = pc.Dict[int, str](
+            pc.Iter(result.iter_rows()).map_star(lambda pk, data: (pk, data)).collect()
+        )
+        assert data_dict[1] == "A"  # replaced
+        assert data_dict[2] == "b"  # ignored (kept original)
+        assert data_dict[3] == "c"  # unchanged
+        assert data_dict[4] == "d"  # new
+        assert data_dict[5] == "e"  # new
+
+
+def test_table_truncate_preserves_schema(tmp_path: Path) -> None:
+    """Truncate removes all rows but preserves table schema."""
+
+    class S(fl.Schema):
+        id = fl.Int64(primary_key=True)
+        value = fl.String()
+
+    class DB(fl.DataBase):
+        t = fl.Table(model=S)
+
+    class Project(fl.Folder):
+        __source__ = Path(tmp_path)
+        db = DB()
+
+    Project.source().mkdir(parents=True, exist_ok=True)
+    db = Project.db
+
+    with db:
+        db.t.create_or_replace_from(
+            pl.DataFrame({"id": [1, 2, 3], "value": ["a", "b", "c"]})
+        )
+        db.t.truncate()
+        assert db.t.read().height == 0
+
+        # Can still insert new data
+        db.t.insert_into(pl.DataFrame({"id": [10], "value": ["new"]}))
+        assert db.t.read().height == 1
+
+
+def test_table_create_from_fails_if_exists(tmp_path: Path) -> None:
+    """create_from raises error if table already exists."""
+    import duckdb as _duckdb
+
+    class S(fl.Schema):
+        v = fl.Int64()
+
+    class DB(fl.DataBase):
+        t = fl.Table(model=S)
+
+    class Project(fl.Folder):
+        __source__ = Path(tmp_path)
+        db = DB()
+
+    Project.source().mkdir(parents=True, exist_ok=True)
+    db = Project.db
+
+    with db:
+        db.t.create_from(pl.DataFrame({"v": [1]}))
+        with pytest.raises(_duckdb.CatalogException):
+            db.t.create_from(pl.DataFrame({"v": [2]}))
+
+
+def test_table_large_dataset_operations(tmp_path: Path) -> None:
+    """Table handles large datasets efficiently."""
+
+    class S(fl.Schema):
+        id = fl.Int64(primary_key=True)
+        category = fl.String()
+        value = fl.Float64()
+
+    class DB(fl.DataBase):
+        t = fl.Table(model=S)
+
+    class Project(fl.Folder):
+        __source__ = Path(tmp_path)
+        db = DB()
+
+    Project.source().mkdir(parents=True, exist_ok=True)
+    db = Project.db
+
+    n_rows = 10000
+
+    with db:
+        df = pl.DataFrame(
+            {
+                "id": pc.Iter(range(n_rows)).collect(),
+                "category": pc.Iter(range(n_rows))
+                .map(lambda i: f"cat_{i % 10}")
+                .collect(),
+                "value": pc.Iter(range(n_rows)).map(float).collect(),
+            }
+        )
+        db.t.create_or_replace_from(df)
+        assert db.t.read().height == n_rows
+
+        assert (
+            db.t.scan()
+            .group_by("category")
+            .agg(fl.col("value").sum().alias("total"))
+            .to_native()
+            .pl()
+            .height
+            == 10
+        )  # 10 unique categories
