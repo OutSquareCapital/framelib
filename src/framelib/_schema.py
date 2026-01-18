@@ -45,9 +45,7 @@ class Schema(Layout[Column]):
 
     @classmethod
     def to_pl(cls) -> pl.Schema:
-        """Syntactic sugar for getting the Polars schema definition.
-
-        Equivalent to: `Foo.schema().map_values(lambda c: c.pl_dtype).into(pl.Schema)`
+        """Get the schema as a Polars schema.
 
         Returns:
             pl.Schema: The Polars schema definition.

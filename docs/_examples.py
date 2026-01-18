@@ -238,15 +238,5 @@ def _() -> None:
     mo.md(r"""### Clean up the project structure""")
 
 
-@app.cell
-def _() -> None:
-    MyProject.clean()
-    print("\n✅ Project structure cleaned up.")
-    try:
-        MyProject.raw_sales.read()
-    except FileNotFoundError:
-        print("✅ Confirmed: Raw sales file no longer exists.")
-
-
 if __name__ == "__main__":
     app.run()

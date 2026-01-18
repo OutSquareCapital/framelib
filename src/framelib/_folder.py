@@ -1,7 +1,4 @@
 from pathlib import Path
-from typing import Self
-
-import pyochain as pc
 
 from ._core import Layout
 from ._filehandlers import File
@@ -59,26 +56,3 @@ class Folder(Layout[File]):
         ```
         """
         return TreeBuilder.from_mro(cls.mro()).build()
-
-    @classmethod
-    def iter_dir(cls) -> pc.Iter[Path]:
-        """Iterate over the files in the folder.
-
-        Returns:
-            pc.Iter[Path]: an iterator over the File instances in the folder.
-        """
-        return pc.Iter(cls.__source__.iterdir())
-
-    @classmethod
-    def clean(cls) -> type[Self]:
-        """Delete all files in the folder.
-
-        Returns:
-            type[Self]: The Folder class.
-        """
-        import shutil
-
-        source_path: Path = cls.source()
-        if source_path.exists():
-            shutil.rmtree(source_path)
-        return cls
