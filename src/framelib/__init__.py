@@ -27,9 +27,10 @@ from ._columns import (
     UInt64,
     UInt128,
 )
-from ._database import DataBase, DuckFrame, Schema, Table
+from ._database import DataBase, DuckFrame, Table
 from ._filehandlers import CSV, Json, NDJson, Parquet, ParquetPartitioned
 from ._folder import Folder
+from ._schema import Schema
 
 __all__ = [
     "CSV",

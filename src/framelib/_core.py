@@ -7,11 +7,11 @@ from typing import TYPE_CHECKING, TypeIs
 import pyochain as pc
 
 if TYPE_CHECKING:
-    from ._database import Schema
+    from ._schema import Schema
 
 
 def _default_schema() -> type[Schema]:
-    from ._database import Schema
+    from ._schema import Schema
 
     return Schema
 

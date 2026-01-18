@@ -6,9 +6,9 @@ import narwhals as nw
 import polars as pl
 import pyochain as pc
 
-from .._columns import Column
-from .._core import Layout
-from ._constraints import KeysConstraints
+from ._columns import Column
+from ._core import Layout
+from ._database._constraints import KeysConstraints
 
 if TYPE_CHECKING:
     from narwhals.typing import IntoLazyFrameT, LazyFrameT

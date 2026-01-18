@@ -7,7 +7,7 @@ import duckdb
 import polars as pl
 
 from ._core import Entry
-from ._database import Schema
+from ._schema import Schema
 
 
 class File(Entry, ABC):

@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     import polars as pl
     from narwhals.typing import IntoFrame, IntoFrameT, IntoLazyFrame, IntoLazyFrameT
 
-    from ._schema import Schema
+    from .._schema import Schema
 
 type DuckFrame = nw.LazyFrame[duckdb.DuckDBPyRelation]
 """Syntactic sugar for `narwhals.LazyFrame[duckdb.DuckDBPyRelation]`"""
