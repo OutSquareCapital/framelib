@@ -59,6 +59,8 @@ class Decimal(Column):
         primary_key: bool = False,
         unique: bool = False,
     ) -> None:
+        if precision is None:
+            precision = 18
         self.precision = precision
         self.scale = scale
         super().__init__(primary_key=primary_key, unique=unique)
@@ -73,8 +75,6 @@ class Decimal(Column):
 
     @property
     def sql_type(self) -> str:
-        if self.precision is None:
-            return "DECIMAL"
         return f"DECIMAL({self.precision}, {self.scale})"
 
 
