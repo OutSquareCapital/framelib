@@ -186,10 +186,7 @@ def _schema_from_mro(cls: type) -> pc.Dict[str, Column]:
         .filter(_is_subclass_of_schema)
         .collect()
         .rev()
-        .flat_map(
-            lambda base: pc.Iter(base.__dict__.items()).filter_star(
-                lambda _, v: _is_column(v)
-            )
-        )
+        .flat_map(lambda base: base.__dict__.items())
+        .filter_star(lambda _, v: _is_column(v))
         .collect(pc.Dict)
     )
