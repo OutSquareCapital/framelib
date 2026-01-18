@@ -16,6 +16,10 @@
 - Add better support for folder/files management (glob patterns, recursive search, etc...).
 - Check dataframely for features to implement (validations, collections, etc...).
 - Check all duckdb python API methods/function, see if some are missing, potentially replace raw SQL queries with API calls, add missing features.
+- Foreign keys
+- Views
+- Transactions
+- Conditional inserts/updates
 
 ### Improvements
 
