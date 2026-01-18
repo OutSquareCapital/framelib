@@ -39,8 +39,6 @@ class DataBase(
 
         Args:
             fn (Callable[P, R]): The method to wrap.
-            *args (P.args): Positional arguments to pass to the method.
-            **kwargs (P.kwargs): Keyword arguments to pass to the method.
 
         Returns:
             Callable[P, R]: The wrapped method with connection context.
@@ -107,13 +105,7 @@ class DataBase(
         exc_value: BaseException | None = None,
         traceback: TracebackType | None = None,
     ) -> None:
-        """Exits the context manager, closing the connection to the database.
-
-        Args:
-            exc_type: The exception type.
-            exc_value: The exception value.
-            traceback: The traceback.
-        """
+        """Exits the context manager, closing the connection to the database."""
         self._connexion.close()
         self._is_connected = False
 
