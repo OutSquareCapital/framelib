@@ -2,28 +2,6 @@
 
 This document provides a comprehensive guide to the internal architecture of `framelib`. It is intended for developers who want to contribute to the library or understand its design principles. This document explains *how* the code is structured and *why* design decisions were made, not *what* it does from a user's perspective.
 
-## Table of Contents
-
-- [Core Design Philosophy](#core-design-philosophy)
-- [Core Concepts](#core-concepts)
-- [The Startup Process: Class Definition as Configuration](#the-startup-process-class-definition-as-configuration)
-- [High-Level Architecture](#high-level-architecture)
-  - [Component Diagram](#component-diagram)
-  - [Class Hierarchy](#class-hierarchy)
-- [Architectural Subtleties and Interactions](#architectural-subtleties-and-interactions)
-  - [`Layout`: The Foundation of Declarative Design](#layout-the-foundation-of-declarative-design)
-  - [`Schema`: An Agnostic Data Blueprint](#schema-an-agnostic-data-blueprint)
-  - [`Folder`: A Versatile Container for Files](#folder-a-versatile-container-for-files)
-  - [`DataBase`: A Dual-Role Entry and Container](#database-a-dual-role-entry-and-container)
-  - [Connection Management Strategy](#connection-management-strategy)
-- [Component Deep Dive](#component-deep-dive)
-  - [The Role of `pyochain` in Introspection](#the-role-of-pyochain-in-introspection)
-  - [`Folder` and `File` Interaction](#folder-and-file-interaction)
-  - [`DataBase` and `Table` Interaction](#database-and-table-interaction)
-- [Design Patterns](#design-patterns)
-  - [Context Manager Pattern](#context-manager-pattern)
-  - [Decorator Pattern](#decorator-pattern)
-
 ## Core Design Philosophy
 
 Framelib is built on a single, powerful principle: **Configuration happens at class definition time, not at instantiation time**.
@@ -55,7 +33,7 @@ Here is the step-by-step process:
         raw_data = fl.Parquet()
     ```
 
-2. **`__init_subclass__` is triggered.** When the `MyData` class object is created by the Python interpreter, the `__init_subclass__` method on its parent class (`Folder`, which inherits it from `Layout`) is called.
+2. **`__init_subclass__` is triggered.** When the `MyData` class object is created by the Python interpreter (basically when you launch your program), the `__init_subclass__` method on its parent class (`Folder`, which inherits it from `Layout`) is called.
 
 3. **Introspection via `pyochain`**. Inside `__init_subclass__`, the schema dictionary is populated using functional iteration. The `Layout` base class uses `pyochain` to introspect the attributes of the newly defined class (`MyData`).
 
@@ -225,7 +203,7 @@ class Backups(fl.Folder):
     users_backup = fl.Parquet(model=UserSchema)
 ```
 
-Schemas also provide utility methods like `to_sql()`, `to_pl()`, and `cast()` for converting data to different formats while maintaining type safety.
+Schemas also provide utility methods like `to_sql()`, `to_pl()`, and `cast()` for manipulating `Column` attributes in different contexts.
 
 ### `Column`: The Building Block of Schemas
 
@@ -236,7 +214,7 @@ A `Column` is a `BaseEntry` that represents a single field in a schema. Unlike `
 - Holds metadata about the column (name, type, constraints)
 - Provides multiple type representations: `pl_dtype`, `nw_dtype`, `sql_type`
 - Supports constraints like `primary_key` and `unique`
-- Generates SQL column definitions via `to_sql()`
+- Generates SQL schemas via `to_sql()`, or Polars schemas via `to_pl()`
 
 ```python
 class UserSchema(fl.Schema):
@@ -273,8 +251,7 @@ lazy_result = MyProject.data.scan()
 Tables provide similar patterns but with a key difference: operations happen on the database, not the local filesystem.
 
 - **`scan()`**: Returns a `DuckFrame` (a `narwhals.LazyFrame` wrapping a DuckDB relation), enabling lazy queries.
-- **`read()`**: Materializes the table as a `pl.DataFrame` for local processing.
-- **`scan_cast()`**: Scans the table and applies the schema model's type casting.
+- **`read()`**: Materializes the table as a `pl.DataFrame` for convenience. This is equivalent to `.scan().to_native().pl()`.
 
 ```python
 class MyDatabase(fl.DataBase):
@@ -389,8 +366,8 @@ This lazy connection management ensures resources are only used when needed and 
 `pyochain` is the functional programming library that powers framelib's introspection and transformation capabilities. It provides:
 
 - **`pc.Iter`**: Lazy iteration with functional transformations (map, filter, fold, etc.)
-- **`pc.Dict`**: A functional dictionary with methods like `items()`, `values()`, `collect()`
-- **`pc.Option` and `pc.Result`**: Type-safe handling of optional/fallible computations
+- **`pc.Dict`**: A superset of `dict` with conversion methods to/from `pc.Iter`
+- **`pc.Option` and `pc.Result`**: Type-safe handling of optional values/fallible computations
 
 In the context of `Layout.__init_subclass__`, `pyochain` is used to:
 
@@ -398,7 +375,7 @@ In the context of `Layout.__init_subclass__`, `pyochain` is used to:
 cls._schema = (
     pc.Iter(cls.__dict__.items())  # Iterate over class attributes
     .filter_star(lambda _, obj: _is_base_entry(obj))  # Keep only BaseEntry instances
-    .collect(pc.Dict)  # Convert to a functional Dict
+    .collect(pc.Dict)  # Convert to a pyochain Dict
     .inspect(  # Side effect: register names in entries
         lambda x: x.items()
         .iter()
@@ -407,7 +384,7 @@ cls._schema = (
 )
 ```
 
-This functional approach eliminates the need for complex metaclass logic and makes the code more declarative and composable.
+This functional approach makes the code more declarative and composable.
 
 ### `Folder` and `File` Interaction
 
@@ -415,14 +392,16 @@ The relationship is straightforward but elegant:
 
 - A `Folder` is a `Layout[File]`
 - When a `Folder` class is defined, its `__init_subclass__` calls `_set_files_source()`
-- This iterates through all `File` children and calls `__set_source__` with the computed path
-- Each `File` now knows exactly where it will live on the filesystem
+- This iterates through all `Entry` childrens and calls `__set_source__` with the computed path
+- Each `Entry` now knows exactly where it will live on the filesystem
 
 ```python
 class Data(fl.Folder):
     raw = fl.CSV()
+    db = fl.MyDatabase()
 
 # At this point, Data.raw.__source__ is already set to Path("data/raw.csv")
+# Data.db.__source__ is set to Path("data/mydatabase.ddb")
 ```
 
 This mechanism ensures that:
@@ -444,8 +423,9 @@ The relationship is more dynamic than `Folder` and `File`:
   3. Calls `__set_connexion__` on each table, injecting the connection
 
 ```python
-db = MyDatabase()  # Connection not established yet
-with db as db:
+class MyProject(fl.Folder):
+    db = MyDatabase() # Created once, but no connection yet
+with MyProject.db as db:
     db.users.read()  # Now the table can execute queries
 # Connection automatically closed
 ```
@@ -586,108 +566,5 @@ Framelib's architecture achieves declarative, type-safe data management through:
 4. **Lazy resource management** for connections using context managers
 5. **Type-safe schemas** that are agnostic to their usage context
 6. **Multiple inheritance and MRO-based pattern** for schema inheritance
-
-The result is a system where your data architecture is both a configuration and documentation artifact, reducing boilerplate while maintaining type safety and clarity.
-
-## Quick Reference
-
-### When to use what
-
-**Folder**: For organizing files and databases in a directory structure
-
-- Define file attributes for different formats
-- Group related files together
-- Can nest DataBases inside
-
-**DataBase**: For managing DuckDB tables
-
-- Define tables with schemas
-- Use context manager for connections
-- Execute SQL queries or use narwhals API
-
-**Schema**: For defining data structure
-
-- Inherit from other schemas to build composable structures
-- Reuse across files and tables
-- Get automatic type casting and SQL generation
-
-**File types**: Choose based on your data format
-
-- `Parquet`: Fast, columnar, good for analytics
-- `CSV`: Standard, human-readable
-- `NDJson`: Streaming, line-delimited
-- `Json`: DuckDB-backed for large files
-
-### Common Patterns
-
-**Nested folders:**
-
-```python
-class RawData(fl.Folder):
-    events = fl.CSV()
-
-class ProcessedData(fl.Folder):
-    events = fl.Parquet()
-
-class MyProject(fl.Folder):
-    raw = RawData()
-    processed = ProcessedData()
-```
-
-**Schema inheritance:**
-
-```python
-class BaseSchema(fl.Schema):
-    created_at = fl.Timestamp()
-    updated_at = fl.Timestamp()
-
-class UserSchema(BaseSchema):
-    id = fl.Int64(primary_key=True)
-    name = fl.String()
-```
-
-**Database with decorator:**
-
-```python
-class MyDatabase(fl.DataBase):
-    users = fl.Table(model=UserSchema)
-
-class MyProject(fl.Folder):
-    raw_data = fl.CSV()
-    db = MyDatabase()
-
-@MyProject.db
-def etl_pipeline() -> None:
-    data = MyProject.raw_data.read()
-    MyProject.db.users.create_or_replace_from(data)
-```
-
-### Adding a New `Layout` Type
-
-To create a new container type:
-
-1. **Inherit from `Layout[T]`**: where `T` is the type of entries it contains
-2. **Override `__init_subclass__` if needed**: Add custom path/connection logic
-3. **Provide traversal methods**: e.g., `schema()`, `iter_entries()`, etc.
-
-Example:
-
-```python
-class Archive(Layout[File]):
-    def __init_subclass__(cls) -> None:
-        super().__init_subclass__()
-        cls.__archive_path__ = Path("archive") / cls.__name__.lower()
-        # Custom initialization logic
-```
-
-## Summary
-
-Framelib's architecture achieves declarative, type-safe data management through:
-
-1. **Automatic introspection at class definition time** via `__init_subclass__`
-2. **Functional composition** using `pyochain` for clean, composable transformations
-3. **Dual-role design** allowing `DataBase` to be both container and entry
-4. **Lazy resource management** for connections using context managers
-5. **Type-safe schemas** that are agnostic to their usage context
 
 The result is a system where your data architecture is both a configuration and documentation artifact, reducing boilerplate while maintaining type safety and clarity.

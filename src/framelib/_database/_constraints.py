@@ -44,10 +44,6 @@ class KeysConstraints(NamedTuple):
     `primary` and `uniques` are optional.
 
     Consult `pyochain.Option` documentation for more information about handling Option types.
-
-    Attributes:
-        primary (pc.Set[str]): The primary key columns, if any.
-        uniques (pc.Set[str]): The unique key columns, if any.
     """
 
     primary: pc.Set[str]

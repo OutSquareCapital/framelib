@@ -105,7 +105,7 @@ def main() -> None:
     # Output:
     # myproject
     # └── users_csv.csv
-    # └── mydatabase.db
+    # └── mydatabase.ddb
 
 ```
 
