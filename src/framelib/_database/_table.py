@@ -96,43 +96,35 @@ class Table(Entry):
     def create(self) -> Self:
         """Creates the table in the database.
 
+        Will fail if the table already exists.
+
+        Returns:
+            Self: The table instance.
+        """
+        q = qry.create(self._name, self.model.to_sql())
+        self.connexion.unwrap().execute(q)
+        return self
+
+    def create_if_not_exist(self) -> Self:
+        """Creates the table in the database if it does not already exist.
+
+        If the table exists, this is a no-op.
+
+        Returns:
+            Self: The table instance.
+        """
+        q = qry.create_if_not_exist(self._name, self.model.to_sql())
+        self.connexion.unwrap().execute(q)
+        return self
+
+    def create_or_replace(self) -> Self:
+        """Creates or replaces the table in the database if it already exists.
+
         Returns:
             Self: The table instance.
         """
         q = qry.create_or_replace(self._name, self.model.to_sql())
         self.connexion.unwrap().execute(q)
-        return self
-
-    def create_or_replace_from(self, df: IntoFrame | IntoLazyFrame) -> Self:
-        """Creates or replaces the table from the dataframe.
-
-        Defines the schema and constraints directly from the model.
-
-        Args:
-            df (IntoFrame | IntoLazyFrame): The dataframe to create or replace the table from.
-
-        Returns:
-            Self: The table instance.
-        """
-        _ = _from_df(self.model, df)
-        create_q = qry.create_or_replace(self._name, self.model.to_sql())
-        self.connexion.unwrap().execute(create_q).execute(qry.insert_into(self._name))
-
-        return self
-
-    def create_from(self, df: IntoFrame | IntoLazyFrame) -> Self:
-        """Creates the table from the dataframe.
-
-        Fails if the table already exists.
-
-        Args:
-            df (IntoFrame | IntoLazyFrame): The dataframe to create the table from.
-
-        Returns:
-            Self: The table instance.
-        """
-        _ = _from_df(self.model, df)
-        self.connexion.unwrap().execute(qry.create_from(self._name))
         return self
 
     def truncate(self) -> Self:
