@@ -130,15 +130,19 @@ class DataBase(
         """
         return self.__enter__()
 
-    def close(self) -> None:
+    def close(self) -> Self:
         """Manually closes the connection to the database.
 
         It is **highly** recommended to call this method after having called `connect()` explicitly.
 
         Warning:
             It's recommended to use the instance as a function decorator instead of this method.
+
+        Returns:
+            Self: The database instance.
         """
-        return self.__exit__()
+        self.__exit__()
+        return self
 
     @property
     def is_connected(self) -> bool:

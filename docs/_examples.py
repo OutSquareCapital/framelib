@@ -190,7 +190,7 @@ def _() -> None:
     @MyProject.analytics_db
     def database_op() -> None:
         dba = MyProject.analytics_db
-        dba.sales.create_or_replace_from(MyProject.raw_sales.scan())
+        dba.sales.create_or_replace().insert_into(MyProject.raw_sales.scan())
         print("\n📦 Sales Data in DB before insert_into:")
         print(dba.sales.scan().to_native())
         print("\n📦 Sales Data in DB after insert_into:")

@@ -36,9 +36,15 @@ def drop_table(name: str) -> str:
     """
 
 
-def create_from(name: str) -> str:
+def create(name: str, schema_sql: str) -> str:
     return f"""--sql
-    CREATE TABLE {name} AS SELECT * FROM _;
+    CREATE TABLE {name} ({schema_sql});
+    """
+
+
+def create_if_not_exist(name: str, schema_sql: str) -> str:
+    return f"""--sql
+    CREATE TABLE IF NOT EXISTS {name} ({schema_sql});
     """
 
 
