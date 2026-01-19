@@ -227,12 +227,7 @@ class DataBase(
         Returns:
             Self: The database instance.
         """
-        self._drop_tables()
-
-        return self
-
-    def _drop_tables(self) -> None:
-        return (
+        (
             self.show_tables()
             .collect()
             .pipe(lambda df: pc.Set[str](df.get_column("name")))
@@ -240,6 +235,8 @@ class DataBase(
             .iter()
             .for_each(lambda q: self.connexion.execute(qry.drop_table(q)))
         )
+
+        return self
 
     @property
     def source(self) -> Path:

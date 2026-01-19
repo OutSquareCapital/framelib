@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self
 
-import duckdb
 import narwhals as nw
 import pyochain as pc
+from duckdb import DuckDBPyConnection, DuckDBPyRelation
 
 from .._core import Entry
 from . import qry
@@ -15,8 +15,8 @@ if TYPE_CHECKING:
 
     from .._schema import Schema
 
-type DuckFrame = nw.LazyFrame[duckdb.DuckDBPyRelation]
-"""Syntactic sugar for `narwhals.LazyFrame[duckdb.DuckDBPyRelation]`"""
+type DuckFrame = nw.LazyFrame[DuckDBPyRelation]
+"""Syntactic sugar for `narwhals.LazyFrame[DuckDBPyRelation]`"""
 
 
 def _from_df(
@@ -46,19 +46,19 @@ class Table(Entry):
 
     """
 
-    _con: duckdb.DuckDBPyConnection
+    _con: DuckDBPyConnection
 
-    def __set_connexion__(self, con: duckdb.DuckDBPyConnection) -> None:
-        self._con: duckdb.DuckDBPyConnection = con
+    def __set_connexion__(self, con: DuckDBPyConnection) -> None:
+        self._con: DuckDBPyConnection = con
 
     @property
-    def connexion(self) -> pc.Result[duckdb.DuckDBPyConnection, RuntimeError]:
-        """Get the `duckdb.DuckDBPyConnection` of the table.
+    def connexion(self) -> pc.Result[DuckDBPyConnection, RuntimeError]:
+        """Get the `DuckDBPyConnection` of the table.
 
         `Ok(connection)` if the table is connected to a database, `Err(RuntimeError)` otherwise.
 
         Returns:
-            pc.Result[duckdb.DuckDBPyConnection, RuntimeError]: The connection result.
+            pc.Result[DuckDBPyConnection, RuntimeError]: The connection result.
         """
         try:
             return pc.Ok(self._con)
@@ -67,17 +67,23 @@ class Table(Entry):
             return pc.Err(RuntimeError(msg))
 
     @property
-    def relation(self) -> duckdb.DuckDBPyRelation:
-        """Get the `duckdb.DuckDBPyRelation` of the table."""
-        return self.connexion.unwrap().table(self._name)
+    def relation(self) -> pc.Result[DuckDBPyRelation, RuntimeError]:
+        """Get the `DuckDBPyRelation` of the table.
+
+        Returns:
+            pc.Result[DuckDBPyRelation, RuntimeError]: `Ok(relation)` if the table is connected to a database, `Err(RuntimeError)` otherwise.
+        """
+        return self.connexion.map(lambda c: c.table(self._name))
 
     def read(self) -> pl.DataFrame:
-        """Reads the entire table from the database.
+        """Reads the entire table from the database and materializes it as a **polars DataFrame**.
+
+        This is syntactic sugar for `self.scan().to_native().pl()`.
 
         Returns:
             pl.DataFrame: The table as a Polars DataFrame.
         """
-        return self.relation.pl()
+        return self.relation.unwrap().pl()
 
     def scan(self) -> DuckFrame:
         """Scan the table from the database.
@@ -85,7 +91,17 @@ class Table(Entry):
         Returns:
             DuckFrame: The table as a Narwhals LazyFrame.
         """
-        return nw.from_native(self.relation)
+        return nw.from_native(self.relation.unwrap())
+
+    def create(self) -> Self:
+        """Creates the table in the database.
+
+        Returns:
+            Self: The table instance.
+        """
+        q = qry.create_or_replace(self._name, self.model.to_sql())
+        self.connexion.unwrap().execute(q)
+        return self
 
     def create_or_replace_from(self, df: IntoFrame | IntoLazyFrame) -> Self:
         """Creates or replaces the table from the dataframe.
@@ -196,9 +212,8 @@ class Table(Entry):
         Returns:
             DuckFrame: The columns information as a Narwhals LazyFrame.
         """
-        return nw.from_native(
-            self.connexion.unwrap().sql(qry.columns_schema(self._name))
-        ).select(
+        q = self.connexion.unwrap().sql(qry.columns_schema(self._name))
+        return nw.from_native(q).select(
             "column_name",
             "data_type",
             "is_nullable",
