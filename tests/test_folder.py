@@ -370,10 +370,8 @@ def test_folder_empty_folder_source(tmp_path: Path) -> None:
     class EmptyFolder(fl.Folder):
         __source__ = Path(tmp_path)
 
-    source = EmptyFolder.source()
-    assert "emptyfolder" in str(source).lower()
-    tree = EmptyFolder.show_tree()
-    assert "emptyfolder" in tree.lower()
+    assert "emptyfolder" in str(EmptyFolder.source()).lower()
+    assert "emptyfolder" in EmptyFolder.show_tree().lower()
 
 
 def test_folder_file_source_matches_filename(tmp_path: Path) -> None:
@@ -556,13 +554,9 @@ def test_folder_source_immutability_across_instances(tmp_path: Path) -> None:
         __source__ = Path(tmp_path)
         data = fl.Parquet(model=schema)
 
-    source1 = MyFolder.source()
-    source2 = MyFolder.source()
-    assert source1 == source2
+    assert MyFolder.source() == MyFolder.source()
 
-    file_source1 = MyFolder.data.source
-    file_source2 = MyFolder.data.source
-    assert file_source1 == file_source2
+    assert MyFolder.data.source == MyFolder.data.source
 
 
 def test_folder_with_database_entry(tmp_path: Path) -> None:

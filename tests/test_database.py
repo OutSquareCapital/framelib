@@ -29,16 +29,14 @@ def test_db_decorator_connects_and_closes(tmp_path: Path) -> None:
     # ensure folder exists so DuckDB can create the file
     Project.source().mkdir(parents=True, exist_ok=True)
 
-    db = Project.db
-
-    @db
+    @Project.db
     def fn_simple() -> None:
-        assert db.is_connected
-        assert db.connexion is not None
-        assert db.users.connexion.unwrap() is db.connexion
+        assert Project.db.is_connected
+        assert Project.db.connexion is not None
+        assert Project.db.users.connexion.unwrap() is Project.db.connexion
 
     fn_simple()
-    assert not db.is_connected
+    assert not Project.db.is_connected
 
 
 def test_nested_and_multiple_db_decorators(tmp_path: Path) -> None:
@@ -110,12 +108,10 @@ def test_schema_inheritance_and_table_interaction(tmp_path: Path) -> None:
 
     Project.source().mkdir(parents=True, exist_ok=True)
 
-    db = Project.db
-
-    with db:
-        assert db.is_connected
+    with Project.db:
+        assert Project.db.is_connected
         # table should have received the same connexion instance
-        assert db.t.connexion.unwrap() is db.connexion
+        assert Project.db.t.connexion.unwrap() is Project.db.connexion
 
     # to_sql should contain both column names
     sql = DerivedS.to_sql()
@@ -142,20 +138,19 @@ def test_db_context_manager_reentrant(tmp_path: Path) -> None:
         db = MyDB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
-    db = Project.db
 
-    with db:
-        first_conn = db.connexion
-        assert db.is_connected
+    with Project.db:
+        first_conn = Project.db.connexion
+        assert Project.db.is_connected
         # Nested enter should keep the same connection
-        with db:
-            assert db.is_connected
-            assert db.connexion is first_conn
+        with Project.db:
+            assert Project.db.is_connected
+            assert Project.db.connexion is first_conn
         # After nested exit, should still be connected with same conn
-        assert db.is_connected
-        assert db.connexion is first_conn
+        assert Project.db.is_connected
+        assert Project.db.connexion is first_conn
 
-    assert not db.is_connected
+    assert not Project.db.is_connected
 
 
 def test_db_decorator_chained_calls_same_db(tmp_path: Path) -> None:
@@ -173,20 +168,22 @@ def test_db_decorator_chained_calls_same_db(tmp_path: Path) -> None:
         db = MyDB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
-    db = Project.db
+
     call_order: list[str] = []
 
-    @db
+    @Project.db
     def first_op() -> None:
         call_order.append("first_start")
-        db.t.create_or_replace_from(pl.DataFrame({"id": [1], "value": ["a"]}))
+        Project.db.t.create_or_replace().insert_into(
+            pl.DataFrame({"id": [1], "value": ["a"]})
+        )
         second_op()
         call_order.append("first_end")
 
-    @db
+    @Project.db
     def second_op() -> None:
         call_order.append("second_start")
-        assert db.t.read().height == 1
+        assert Project.db.t.read().height == 1
         call_order.append("second_end")
 
     first_op()
@@ -214,24 +211,26 @@ def test_db_multiple_tables_single_transaction(tmp_path: Path) -> None:
         db = MyDB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
-    db = Project.db
 
-    with db:
-        db.users.create_or_replace_from(
-            pl.DataFrame({"id": [1, 2], "name": ["Alice", "Bob"]})
+    with Project.db:
+        users_df = pl.DataFrame({"id": [1, 2], "name": ["Alice", "Bob"]})
+        orders_df = pl.DataFrame(
+            {
+                "id": [10, 20, 30],
+                "user_id": [1, 1, 2],
+                "product": ["Widget", "Gadget", "Thing"],
+            }
         )
-        db.orders.create_or_replace_from(
-            pl.DataFrame(
-                {
-                    "id": [10, 20, 30],
-                    "user_id": [1, 1, 2],
-                    "product": ["Widget", "Gadget", "Thing"],
-                }
-            )
-        )
+
         # Both tables accessible
-        assert db.users.read().height == 2
-        assert db.orders.read().height == 3
+        assert (
+            Project.db.users.create_or_replace().insert_into(users_df).read().height
+            == 2
+        )
+        assert (
+            Project.db.orders.create_or_replace().insert_into(orders_df).read().height
+            == 3
+        )
 
 
 def test_db_connection_error_propagation(tmp_path: Path) -> None:
@@ -248,11 +247,10 @@ def test_db_connection_error_propagation(tmp_path: Path) -> None:
         db = MyDB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
-    db = Project.db
 
-    @db
+    @Project.db
     def failing_func() -> None:
-        db.t.create_or_replace_from(pl.DataFrame({"id": [1]}))
+        Project.db.t.create_or_replace().insert_into(pl.DataFrame({"id": [1]}))
         msg = "Intentional error"
         raise ValueError(msg)
 
@@ -260,7 +258,7 @@ def test_db_connection_error_propagation(tmp_path: Path) -> None:
         failing_func()
 
     # Connection should be closed after exception
-    assert not db.is_connected
+    assert not Project.db.is_connected
 
 
 def test_db_sql_execution_within_context(tmp_path: Path) -> None:
@@ -278,13 +276,12 @@ def test_db_sql_execution_within_context(tmp_path: Path) -> None:
         db = MyDB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
-    db = Project.db
 
-    with db:
-        db.data.create_or_replace_from(
-            pl.DataFrame({"x": [1, 2, 3], "y": [1.5, 2.5, 3.5]})
-        )
-        result = db.sql("SELECT SUM(x) as total_x, AVG(y) as avg_y FROM data").collect()
+    with Project.db:
+        df = pl.DataFrame({"x": [1, 2, 3], "y": [1.5, 2.5, 3.5]})
+        Project.db.data.create_or_replace().insert_into(df)
+        qry = "SELECT SUM(x) as total_x, AVG(y) as avg_y FROM data"
+        result = Project.db.sql(qry).collect()
         assert result.get_column("total_x").to_list()[0] == 6
         assert result.get_column("avg_y").to_list()[0] == pytest.approx(2.5)  # pyright: ignore[reportUnknownMemberType]
 
@@ -307,12 +304,11 @@ def test_db_show_tables_reflects_schema(tmp_path: Path) -> None:
         db = MyDB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
-    db = Project.db
 
-    with db:
-        db.table_one.create_or_replace_from(pl.DataFrame({"a": [1]}))
-        db.table_two.create_or_replace_from(pl.DataFrame({"b": ["x"]}))
-        tables = db.show_tables().collect()
+    with Project.db:
+        Project.db.table_one.create_or_replace().insert_into(pl.DataFrame({"a": [1]}))
+        Project.db.table_two.create_or_replace().insert_into(pl.DataFrame({"b": ["x"]}))
+        tables = Project.db.show_tables().collect()
         table_names = pc.Set[str](tables.get_column("name"))
         assert "table_one" in table_names
         assert "table_two" in table_names
@@ -336,28 +332,31 @@ def test_db_concurrent_decorated_functions_different_dbs(tmp_path: Path) -> None
         beta = DBB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
-    alpha = Project.alpha
-    beta = Project.beta
-    results: dict[str, int] = {}
+    results = pc.Dict[str, int].new()
 
-    @alpha
+    @Project.alpha
     def work_alpha() -> None:
-        alpha.t.create_or_replace_from(pl.DataFrame({"id": [100]}))
-        results["alpha"] = alpha.t.read().height
+        df = pl.DataFrame({"id": [100]})
+        results.insert(
+            "alpha", Project.alpha.t.create_or_replace().insert_into(df).read().height
+        )
 
-    @beta
+    @Project.beta
     def work_beta() -> None:
-        beta.t.create_or_replace_from(pl.DataFrame({"id": [200, 201]}))
-        results["beta"] = beta.t.read().height
+        df = pl.DataFrame({"id": [200, 201]})
+
+        results.insert(
+            "beta", Project.beta.t.create_or_replace().insert_into(df).read().height
+        )
 
     work_alpha()
     work_beta()
 
-    assert results["alpha"] == 1
-    assert results["beta"] == 2
+    assert results.get_item("alpha").unwrap() == 1
+    assert results.get_item("beta").unwrap() == 2
     # Both should be disconnected
-    assert not alpha.is_connected
-    assert not beta.is_connected
+    assert not Project.alpha.is_connected
+    assert not Project.beta.is_connected
 
 
 def test_db_manual_connect_close(tmp_path: Path) -> None:
@@ -374,12 +373,11 @@ def test_db_manual_connect_close(tmp_path: Path) -> None:
         db = MyDB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
-    db = Project.db
 
-    assert not db.is_connected
-    db.connect()
-    assert db.is_connected
-    db.t.create_or_replace_from(pl.DataFrame({"v": [42]}))
-    assert db.t.read().get_column("v").to_list() == [42]
-    db.close()
-    assert not db.is_connected
+    assert not Project.db.is_connected
+    assert Project.db.connect().is_connected
+    assert Project.db.t.create_or_replace().insert_into(
+        pl.DataFrame({"v": [42]})
+    ).read().get_column("v").to_list() == [42]
+
+    assert not Project.db.close().is_connected

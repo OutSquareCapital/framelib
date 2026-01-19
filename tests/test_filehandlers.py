@@ -20,10 +20,8 @@ def test_parquet_write_and_read(tmp_path: Path) -> None:
 
     Project.source().mkdir(parents=True, exist_ok=True)
 
-    df = pl.DataFrame({"id": [1, 2], "name": ["alice", "bob"]})
-
     # write (callable expects the DataFrame as first arg)
-    Project.data.write(df)
+    Project.data.write(pl.DataFrame({"id": [1, 2], "name": ["alice", "bob"]}))
 
     # read (no args)
     df2 = Project.data.read()
@@ -44,9 +42,7 @@ def test_csv_write_and_read(tmp_path: Path) -> None:
 
     Project.source().mkdir(parents=True, exist_ok=True)
 
-    df = pl.DataFrame({"id": [10, 20], "val": ["x", "y"]})
-
-    Project.data.write(df)
+    pl.DataFrame({"id": [10, 20], "val": ["x", "y"]}).pipe(Project.data.write)
     df2 = Project.data.read()
     assert df2.shape == (2, 2)
     assert df2.get_column("id").to_list() == [10, 20]

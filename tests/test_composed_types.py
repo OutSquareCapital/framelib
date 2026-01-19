@@ -110,9 +110,9 @@ class TestEnumConversions:
     def test_enum_pl_dtype_categories(self) -> None:
         """Enum from list creates valid polars enum dtype."""
         categories = ["red", "green", "blue"]
-        enum_col = fl.Enum(categories)
-        pl_dtype = pl.Enum(list(enum_col.categories))
-        assert str(pl_dtype).startswith("Enum")
+        enum_dtype = fl.Enum(categories).categories.iter().into(pl.Enum)
+
+        assert str(enum_dtype).startswith("Enum")
 
     def test_enum_from_python_enum_extracts_values(self) -> None:
         """Enum from Python Enum extracts values, not names."""
@@ -127,8 +127,8 @@ class TestEnumConversions:
 
     def test_enum_duplicate_categories_deduplicated(self) -> None:
         """Enum deduplicates via Set."""
-        enum_col = fl.Enum(["a", "b", "a", "c", "b"])
-        assert enum_col.categories.length() == 3
+        data = ["a", "b", "a", "c", "b"]
+        assert fl.Enum(data).categories.length() == 3
 
 
 class TestDatetimeConversions:
@@ -153,19 +153,18 @@ class TestComplexInteractions:
 
     def test_struct_with_enum_sql(self) -> None:
         """Struct with enum generates correct SQL."""
-        struct = fl.Struct(
-            {"status": fl.Enum(["active", "inactive"]), "id": fl.Int64()}
-        )
-        sql = struct.sql_type
+        cats = fl.Enum(["active", "inactive"])
+        sql = pc.Dict.from_kwargs(status=cats, id=fl.Int64()).into(fl.Struct).sql_type
         assert "STRUCT" in sql
         assert "status" in sql
 
     def test_struct_with_datetime_sql(self) -> None:
         """Struct with datetime generates correct SQL."""
-        struct = fl.Struct(
-            {"created": fl.Datetime(time_zone="UTC"), "name": fl.String()}
+        sql = (
+            pc.Dict.from_kwargs(created=fl.Datetime(time_zone="UTC"), name=fl.String())
+            .into(fl.Struct)
+            .sql_type
         )
-        sql = struct.sql_type
         assert "STRUCT" in sql
         assert "TIMESTAMP" in sql
 

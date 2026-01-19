@@ -31,8 +31,7 @@ def test_schema_empty_allowed() -> None:
     class EmptyS(fl.Schema):
         pass
 
-    schema = EmptyS.schema()
-    assert len(schema) == 0
+    assert EmptyS.schema().length() == 0
 
 
 def test_schema_inheritance_column_order_preservation() -> None:
@@ -45,7 +44,7 @@ def test_schema_inheritance_column_order_preservation() -> None:
     class ChildS(ParentS):
         child_col = fl.Float64()
 
-    col_names = pc.Iter(ChildS.schema().keys()).collect()
+    col_names = ChildS.schema().keys().into(tuple)
     # Parent columns should come first
     assert col_names.index("parent_col1") < col_names.index("child_col")
     assert col_names.index("parent_col2") < col_names.index("child_col")

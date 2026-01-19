@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import duckdb
+import narwhals as nw
 import polars as pl
 import pyochain as pc
 import pytest
@@ -24,44 +26,42 @@ def test_table_crud_and_conflicts(tmp_path: Path) -> None:
         db = DB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
-    db = Project.db
 
     df1 = pl.DataFrame({"id": [1, 2], "name": ["a", "b"]})
 
-    with db:
+    with Project.db:
         # create or replace
-        db.t.create_or_replace_from(df1)
-        res = db.t.read()
+
+        res = Project.db.t.create_or_replace().insert_into(df1).read()
         assert res.get_column("id").to_list() == [1, 2]
         assert res.get_column("name").to_list() == ["a", "b"]
 
         # insert_or_replace: update id=2 and add id=3
         df2 = pl.DataFrame({"id": [2, 3], "name": ["bb", "c"]})
-        db.t.insert_or_replace(df2)
-        res2 = db.t.read().sort("id")
+        res2 = Project.db.t.insert_or_replace(df2).read().sort("id")
         updated_id = 2
-        assert res2["id"].to_list() == [1, 2, 3]
-        assert res2.filter(pl.col("id") == updated_id)["name"].to_list() == ["bb"]
+        assert res2.get_column("id").to_list() == [1, 2, 3]
+        assert res2.filter(pl.col("id") == updated_id).get_column("name").to_list() == [
+            "bb"
+        ]
 
         # insert_or_ignore: try to insert duplicate id=3 (should be ignored)
         df3 = pl.DataFrame({"id": [3], "name": ["ccc"]})
-        db.t.insert_or_ignore(df3)
-        res3 = db.t.read().sort("id")
+
         ignored_id = 3
-        assert res3.filter(pl.col("id") == ignored_id)["name"].to_list() == ["c"]
+        assert Project.db.t.insert_or_ignore(df3).read().sort("id").filter(
+            pl.col("id") == ignored_id
+        ).get_column("name").to_list() == ["c"]
 
         # truncate
-        db.t.truncate()
-        res4 = db.t.read()
-        assert res4.height == 0
+        assert Project.db.t.truncate().read().height == 0
 
         # recreate then drop
-        db.t.create_or_replace_from(df1)
-        db.t.drop()
+        Project.db.t.create_or_replace().insert_into(df1).drop()
         import duckdb as _duckdb
 
         with pytest.raises(_duckdb.CatalogException):
-            _ = db.t.relation
+            _ = Project.db.t.relation
 
 
 def test_table_access_outside_connection_raises(tmp_path: Path) -> None:
@@ -80,7 +80,7 @@ def test_table_access_outside_connection_raises(tmp_path: Path) -> None:
     Project.source().mkdir(parents=True, exist_ok=True)
 
     with pytest.raises(pc.ResultUnwrapError):
-        _ = Project.db.t.relation
+        _ = Project.db.t.relation.unwrap()
 
 
 # ============================================================================
@@ -103,13 +103,14 @@ def test_table_insert_into_append_behavior(tmp_path: Path) -> None:
         db = DB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
-    db = Project.db
 
-    with db:
-        db.t.create_or_replace_from(pl.DataFrame({"id": [1], "value": ["a"]}))
+    with Project.db:
+        Project.db.t.create_or_replace().insert_into(
+            pl.DataFrame({"id": [1], "value": ["a"]})
+        )
         # Insert more rows
-        db.t.insert_into(pl.DataFrame({"id": [2, 3], "value": ["b", "c"]}))
-        result = db.t.read().sort("id")
+        Project.db.t.insert_into(pl.DataFrame({"id": [2, 3], "value": ["b", "c"]}))
+        result = Project.db.t.read().sort("id")
         assert result.height == 3
         assert result.get_column("value").to_list() == ["a", "b", "c"]
 
@@ -129,9 +130,8 @@ def test_table_bulk_insert_or_replace(tmp_path: Path) -> None:
         db = DB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
-    db = Project.db
 
-    with db:
+    with Project.db:
         # Initial bulk insert
         initial_df = pl.DataFrame(
             {
@@ -139,7 +139,7 @@ def test_table_bulk_insert_or_replace(tmp_path: Path) -> None:
                 "counter": pc.Iter(range(100)).map(lambda _: 0).collect(),
             }
         )
-        db.t.create_or_replace_from(initial_df)
+        Project.db.t.create_or_replace().insert_into(initial_df)
 
         # Update half of them
         update_df = pl.DataFrame(
@@ -148,9 +148,9 @@ def test_table_bulk_insert_or_replace(tmp_path: Path) -> None:
                 "counter": pc.Iter(range(50)).map(lambda _: 1).collect(),
             }
         )
-        db.t.insert_or_replace(update_df)
 
-        result = db.t.read()
+        result = Project.db.t.insert_or_replace(update_df).read()
+
         assert result.height == 100
         updated_count = result.filter(pl.col("counter") == 1).height
         assert updated_count == 50
@@ -171,19 +171,21 @@ def test_table_chain_operations(tmp_path: Path) -> None:
         db = DB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
-    db = Project.db
 
-    with db:
-        (
-            db.t.create_or_replace_from(
+    with Project.db:
+        statuses = (
+            Project.db.t.create_or_replace()
+            .insert_into(
                 pl.DataFrame({"id": [1, 2, 3], "status": ["new", "new", "new"]})
             )
             .insert_or_replace(pl.DataFrame({"id": [2], "status": ["updated"]}))
             .insert_or_ignore(pl.DataFrame({"id": [3], "status": ["ignored"]}))
+            .read()
+            .sort("id")
+            .get_column("status")
+            .to_list()
         )
 
-        result = db.t.read().sort("id")
-        statuses = result.get_column("status").to_list()
         assert statuses[0] == "new"  # id=1 unchanged
         assert statuses[1] == "updated"  # id=2 replaced
         assert statuses[2] == "new"  # id=3 ignored
@@ -204,38 +206,32 @@ def test_table_scan_narwhals_operations(tmp_path: Path) -> None:
         db = DB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
-    db = Project.db
 
-    with db:
-        db.t.create_or_replace_from(
-            pl.DataFrame(
-                {
-                    "category": ["A", "B", "A", "B", "A"],
-                    "amount": [100.0, 200.0, 150.0, 250.0, 175.0],
-                }
-            )
+    with Project.db:
+        df = pl.DataFrame(
+            {
+                "category": ["A", "B", "A", "B", "A"],
+                "amount": [100.0, 200.0, 150.0, 250.0, 175.0],
+            }
         )
 
         # Use scan for lazy narwhals operations
-        import narwhals as nw
 
-        lf = db.t.scan()
+        lf = Project.db.t.create_or_replace().insert_into(df).scan()
         assert isinstance(lf, nw.LazyFrame)
 
         # Aggregate using narwhals
-        result = (
+        totals = (
             lf.group_by("category")
             .agg(fl.col("amount").sum().alias("total"))
             .sort("category")
             .collect()
-        )
-        totals = pc.Dict[str, float](
-            pc.Iter(result.iter_rows())
+            .pipe(lambda df: pc.Iter(df.iter_rows()))
             .map_star(lambda cat, total: (cat, total))
-            .collect()
+            .collect(pc.Dict)
         )
-        assert totals["A"] == 425.0
-        assert totals["B"] == 450.0
+        assert totals.get_item("A").unwrap() == 425.0
+        assert totals.get_item("B").unwrap() == 450.0
 
 
 def test_table_summarize(tmp_path: Path) -> None:
@@ -252,11 +248,17 @@ def test_table_summarize(tmp_path: Path) -> None:
         db = DB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
-    db = Project.db
 
-    with db:
-        db.t.create_or_replace_from(pl.DataFrame({"value": [1.0, 2.0, 3.0, 4.0, 5.0]}))
-        assert db.t.summarize().to_native().pl().height > 0
+    with Project.db:
+        assert (
+            Project.db.t.create_or_replace()
+            .insert_into(pl.DataFrame({"value": [1.0, 2.0, 3.0, 4.0, 5.0]}))
+            .summarize()
+            .to_native()
+            .pl()
+            .height
+            > 0
+        )
 
 
 def test_table_describe_columns(tmp_path: Path) -> None:
@@ -275,14 +277,15 @@ def test_table_describe_columns(tmp_path: Path) -> None:
         db = DB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
-    db = Project.db
 
-    with db:
-        db.t.create_or_replace_from(
-            pl.DataFrame({"id": [1], "name": ["test"], "score": [99.5]})
+    with Project.db:
+        col_names = pc.Set[str](
+            Project.db.t.create_or_replace()
+            .insert_into(pl.DataFrame({"id": [1], "name": ["test"], "score": [99.5]}))
+            .describe_columns()
+            .collect()
+            .get_column("column_name")
         )
-        cols_info = db.t.describe_columns().collect()
-        col_names = pc.Set[str](cols_info.get_column("column_name"))
         assert "id" in col_names
         assert "name" in col_names
         assert "score" in col_names
@@ -303,28 +306,26 @@ def test_table_multiple_primary_key_conflict_handling(tmp_path: Path) -> None:
         db = DB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
-    db = Project.db
 
-    with db:
-        db.t.create_or_replace_from(
-            pl.DataFrame({"pk": [1, 2, 3], "data": ["a", "b", "c"]})
+    with Project.db:
+        result = (
+            Project.db.t.create_or_replace()
+            .insert_into(pl.DataFrame({"pk": [1, 2, 3], "data": ["a", "b", "c"]}))
+            .insert_or_replace(pl.DataFrame({"pk": [1, 4], "data": ["A", "d"]}))
+            .insert_or_ignore(pl.DataFrame({"pk": [2, 5], "data": ["B", "e"]}))
+            .read()
+            .sort("pk")
+            .iter_rows()
         )
 
-        # insert_or_replace: conflict on pk=1, new for pk=4
-        db.t.insert_or_replace(pl.DataFrame({"pk": [1, 4], "data": ["A", "d"]}))
-
-        # insert_or_ignore: conflict on pk=2 (ignored), new for pk=5 should insert
-        db.t.insert_or_ignore(pl.DataFrame({"pk": [2, 5], "data": ["B", "e"]}))
-
-        result = db.t.read().sort("pk")
         data_dict = pc.Dict[int, str](
-            pc.Iter(result.iter_rows()).map_star(lambda pk, data: (pk, data)).collect()
+            pc.Iter(result).map_star(lambda pk, data: (pk, data)).collect()
         )
-        assert data_dict[1] == "A"  # replaced
-        assert data_dict[2] == "b"  # ignored (kept original)
-        assert data_dict[3] == "c"  # unchanged
-        assert data_dict[4] == "d"  # new
-        assert data_dict[5] == "e"  # new
+        assert data_dict.get_item(1).unwrap() == "A"  # replaced
+        assert data_dict.get_item(2).unwrap() == "b"  # ignored (kept original)
+        assert data_dict.get_item(3).unwrap() == "c"  # unchanged
+        assert data_dict.get_item(4).unwrap() == "d"  # new
+        assert data_dict.get_item(5).unwrap() == "e"  # new
 
 
 def test_table_truncate_preserves_schema(tmp_path: Path) -> None:
@@ -342,18 +343,25 @@ def test_table_truncate_preserves_schema(tmp_path: Path) -> None:
         db = DB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
-    db = Project.db
 
-    with db:
-        db.t.create_or_replace_from(
-            pl.DataFrame({"id": [1, 2, 3], "value": ["a", "b", "c"]})
+    with Project.db:
+        assert (
+            Project.db.t.create_or_replace()
+            .insert_into(pl.DataFrame({"id": [1, 2, 3], "value": ["a", "b", "c"]}))
+            .truncate()
+            .read()
+            .height
+            == 0
         )
-        db.t.truncate()
-        assert db.t.read().height == 0
 
         # Can still insert new data
-        db.t.insert_into(pl.DataFrame({"id": [10], "value": ["new"]}))
-        assert db.t.read().height == 1
+
+        assert (
+            Project.db.t.insert_into(pl.DataFrame({"id": [10], "value": ["new"]}))
+            .read()
+            .height
+            == 1
+        )
 
 
 def test_table_create_from_fails_if_exists(tmp_path: Path) -> None:
@@ -371,12 +379,11 @@ def test_table_create_from_fails_if_exists(tmp_path: Path) -> None:
         db = DB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
-    db = Project.db
 
-    with db:
-        db.t.create_from(pl.DataFrame({"v": [1]}))
+    with Project.db:
+        Project.db.t.create().insert_into(pl.DataFrame({"v": [1]}))
         with pytest.raises(_duckdb.CatalogException):
-            db.t.create_from(pl.DataFrame({"v": [2]}))
+            Project.db.t.create().insert_into(pl.DataFrame({"v": [2]}))
 
 
 def test_table_large_dataset_operations(tmp_path: Path) -> None:
@@ -395,11 +402,10 @@ def test_table_large_dataset_operations(tmp_path: Path) -> None:
         db = DB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
-    db = Project.db
 
     n_rows = 10000
 
-    with db:
+    with Project.db:
         df = pl.DataFrame(
             {
                 "id": pc.Iter(range(n_rows)).collect(),
@@ -409,11 +415,10 @@ def test_table_large_dataset_operations(tmp_path: Path) -> None:
                 "value": pc.Iter(range(n_rows)).map(float).collect(),
             }
         )
-        db.t.create_or_replace_from(df)
-        assert db.t.read().height == n_rows
+        assert Project.db.t.create_or_replace().insert_into(df).read().height == n_rows
 
         assert (
-            db.t.scan()
+            Project.db.t.scan()
             .group_by("category")
             .agg(fl.col("value").sum().alias("total"))
             .to_native()
@@ -421,3 +426,44 @@ def test_table_large_dataset_operations(tmp_path: Path) -> None:
             .height
             == 10
         )  # 10 unique categories
+
+
+def test_table_create(tmp_path: Path) -> None:
+    """Test create table if not exists operation."""
+
+    class S(fl.Schema):
+        id = fl.Int64(primary_key=True)
+        name = fl.String()
+
+    class DB(fl.DataBase):
+        t = fl.Table(model=S)
+
+    class Project(fl.Folder):
+        __source__ = Path(tmp_path)
+        db = DB()
+
+    Project.source().mkdir(parents=True, exist_ok=True)
+
+    with Project.db:
+        # First creation
+        result = Project.db.t.create().read()
+        assert result.height == 0  # Table should be empty after creation
+        assert result.width == 2  # Two columns
+
+        # Second creation should fail
+        with pytest.raises(duckdb.CatalogException):
+            Project.db.t.create().read()
+        # Should not raise error
+        assert Project.db.t.create_if_not_exist().read().height == 0
+        # Should recreate table
+        assert Project.db.t.drop().create_if_not_exist().read().height == 0
+
+        # Should replace existing table
+        assert (
+            Project.db.t.insert_into(pl.DataFrame({"id": [1], "name": ["test"]}))
+            .create_if_not_exist()
+            .read()
+            .height
+            == 1
+        )
+        assert Project.db.t.create_or_replace().read().height == 0
