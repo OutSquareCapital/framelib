@@ -462,3 +462,27 @@ def test_table_create(tmp_path: Path) -> None:
             == 1
         )
         assert Project.db.t.create_or_replace().read().height == 0
+
+
+def test_table_drop_and_drop_if_exist(tmp_path: Path) -> None:
+    class S(fl.Schema):
+        id = fl.Int64(primary_key=True)
+        name = fl.String()
+
+    class DB(fl.DataBase):
+        t = fl.Table(model=S)
+
+    class Project(fl.Folder):
+        __source__ = Path(tmp_path)
+        db = DB()
+
+    Project.source().mkdir(parents=True, exist_ok=True)
+
+    with Project.db:
+        # Should not raise error
+        Project.db.t.drop_if_exist().create().drop()
+        # Should raise error
+        with pytest.raises(duckdb.CatalogException):
+            Project.db.t.drop()
+        with pytest.raises(duckdb.CatalogException):
+            Project.db.t.read()
