@@ -237,7 +237,7 @@ class DataBase(
             .pipe(lambda df: pc.Set[str](df.get_column("name")))
             .difference(self.schema().keys())
             .iter()
-            .for_each(lambda q: self.connexion.execute(qry.drop_table(q)))
+            .for_each(lambda q: self.connexion.execute(qry.drop_if_exists(q)))
         )
 
         return self

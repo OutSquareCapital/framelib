@@ -30,7 +30,13 @@ ALL_CONSTRAINTS = """--sql
     """
 
 
-def drop_table(name: str) -> str:
+def drop(name: str) -> str:
+    return f"""--sql
+    DROP TABLE "{name}";
+    """
+
+
+def drop_if_exists(name: str) -> str:
     return f"""--sql
     DROP TABLE IF EXISTS "{name}";
     """
@@ -60,16 +66,6 @@ def insert_into(name: str) -> str:
     """
 
 
-def drop(name: str) -> str:
-    return drop_table(name)
-
-
-def truncate(name: str) -> str:
-    return f"""--sql
-    TRUNCATE TABLE {name};
-    """
-
-
 def insert_or_replace(name: str) -> str:
     return f"""--sql
     INSERT OR REPLACE INTO {name} SELECT * FROM {_DATA};
@@ -82,15 +78,10 @@ def insert_or_ignore(name: str) -> str:
     """
 
 
-def insert_on_conflict_update(
-    name: str,
-    conflict_target: str,
-    update_clause: str,
-) -> str:
+def truncate(name: str) -> str:
     return f"""--sql
-        INSERT INTO {name} SELECT * FROM {_DATA}
-        ON CONFLICT {conflict_target} DO UPDATE SET {update_clause};
-        """
+    TRUNCATE TABLE {name};
+    """
 
 
 def summarize(name: str) -> str:

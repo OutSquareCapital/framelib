@@ -139,10 +139,21 @@ class Table(Entry):
     def drop(self) -> Self:
         """Drops the table from the database.
 
+        Will fail if the table does not exist.
+
         Returns:
             Self: The table instance.
         """
         self.connexion.unwrap().execute(qry.drop(self._name))
+        return self
+
+    def drop_if_exist(self) -> Self:
+        """Drops the table from the database if it exists.
+
+        Returns:
+            Self: The table instance.
+        """
+        self.connexion.unwrap().execute(qry.drop_if_exists(self._name))
         return self
 
     def insert_into(self, df: IntoFrame | IntoLazyFrame) -> Self:
