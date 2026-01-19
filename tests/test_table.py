@@ -57,11 +57,8 @@ def test_table_crud_and_conflicts(tmp_path: Path) -> None:
         assert Project.db.t.truncate().read().height == 0
 
         # recreate then drop
-        Project.db.t.create_or_replace().insert_into(df1).drop()
-        import duckdb as _duckdb
-
-        with pytest.raises(_duckdb.CatalogException):
-            _ = Project.db.t.relation
+        with pytest.raises(duckdb.CatalogException):
+            _ = Project.db.t.create_or_replace().insert_into(df1).drop().relation
 
 
 def test_table_access_outside_connection_raises(tmp_path: Path) -> None:
@@ -152,8 +149,7 @@ def test_table_bulk_insert_or_replace(tmp_path: Path) -> None:
         result = Project.db.t.insert_or_replace(update_df).read()
 
         assert result.height == 100
-        updated_count = result.filter(pl.col("counter") == 1).height
-        assert updated_count == 50
+        assert result.filter(pl.col("counter") == 1).height == 50
 
 
 def test_table_chain_operations(tmp_path: Path) -> None:
@@ -366,7 +362,6 @@ def test_table_truncate_preserves_schema(tmp_path: Path) -> None:
 
 def test_table_create_from_fails_if_exists(tmp_path: Path) -> None:
     """create_from raises error if table already exists."""
-    import duckdb as _duckdb
 
     class S(fl.Schema):
         v = fl.Int64()
@@ -382,7 +377,7 @@ def test_table_create_from_fails_if_exists(tmp_path: Path) -> None:
 
     with Project.db:
         Project.db.t.create().insert_into(pl.DataFrame({"v": [1]}))
-        with pytest.raises(_duckdb.CatalogException):
+        with pytest.raises(duckdb.CatalogException):
             Project.db.t.create().insert_into(pl.DataFrame({"v": [2]}))
 
 
