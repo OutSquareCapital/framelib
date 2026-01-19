@@ -29,7 +29,7 @@ You can do this by running the following commands:
 
 ```bash
 uv run pydoclint src/framelib
-uv run ruff check --fix src/framelib
+uv run ruff check --fix --unsafe-fixes src/framelib
 uv run ruff format src/framelib
 uv run pytest tests/
 ```
