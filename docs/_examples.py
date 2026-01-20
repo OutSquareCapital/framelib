@@ -159,7 +159,7 @@ def _() -> None:
 def _() -> None:
     class Reports(fl.Folder):
         sales = fl.CSV(schema=Sales)
-        sales_formatted = fl.Parquet()
+        sales_formatted = fl.Parquet(schema=Sales)
 
     print("\n📁 File Paths:\n")
     print(Reports.sales.source)
