@@ -10,12 +10,6 @@ if TYPE_CHECKING:
     from ._schema import Schema
 
 
-def _default_schema() -> type[Schema]:
-    from ._schema import Schema
-
-    return Schema
-
-
 class BaseEntry(ABC):
     """A `BaseEntry` represents any class that can be instantiated and used as an attribute in a `Layout`.
 
@@ -55,11 +49,11 @@ class Layout[T: BaseEntry](ABC):
             .flat_map(lambda c: c.__dict__.items())
             .filter_star(lambda _, obj: _is_base_entry(obj))
             .collect(pc.Dict)
-            .inspect(
-                lambda x: x.items()
-                .iter()
-                .for_each_star(lambda name, entry: entry.__set_entry_name__(name))
-            )
+        )
+        cls._entries.inspect(
+            lambda x: x.items()
+            .iter()
+            .for_each_star(lambda name, entry: entry.__set_entry_name__(name))
         )
 
     @classmethod
@@ -77,19 +71,16 @@ class Layout[T: BaseEntry](ABC):
 class Entry(BaseEntry):
     r"""An `Entry` represents any class that can be instantiated and used as an attribute in a `Layout`.
 
-    It has a `source` attribute representing its `Path` location,
-    and a `schema` of `type[T]` attribute representing its schema or data schema.
-
     Args:
-        schema (type[Schema] | None): The schema type associated with the entry. Defaults to object.
+        schema (type[Schema]): The schema type associated with the entry.
     """
 
     _schema: type[Schema]
     __source__: Path
     __slots__ = ("__source__", "_schema")
 
-    def __init__(self, schema: type[Schema] | None = None) -> None:
-        self._schema = _default_schema() if schema is None else schema
+    def __init__(self, schema: type[Schema]) -> None:
+        self._schema = schema
 
     def __set_source__(self, source: Path) -> None:
         self.__source__ = source

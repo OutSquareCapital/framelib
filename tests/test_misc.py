@@ -40,11 +40,11 @@ def test_slots() -> None:
         table1 = fl.Table(MySchema)
 
     class MyFolder(fl.Folder):
-        file1 = fl.NDJson()
-        file2 = fl.Parquet()
-        file3 = fl.CSV()
-        file4 = fl.ParquetPartitioned(partition_by="date")
-        file5 = fl.Json()
+        file1 = fl.NDJson(MySchema)
+        file2 = fl.Parquet(MySchema)
+        file3 = fl.CSV(MySchema)
+        file4 = fl.ParquetPartitioned(partition_by="date", schema=MySchema)
+        file5 = fl.Json(MySchema)
 
     MySchema.entries().values().iter().for_each(_check_dict)
     _check_dict(MyDb.table1)
