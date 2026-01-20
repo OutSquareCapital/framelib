@@ -13,7 +13,7 @@
     name = "framelib"
     readme = "README.md"
     requires-python = ">=3.13"
-    version = "0.1.44"
+    version = "0.1.45"
 
 [tool.ruff]
     lint.ignore = [
@@ -65,4 +65,4 @@
         "pydoclint>=0.8.1",
         "pytest>=9.0.2",
         "ruff>=0.14.5",
-]
+    ]
