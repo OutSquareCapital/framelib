@@ -20,7 +20,7 @@ def test_db_decorator_connects_and_closes(tmp_path: Path) -> None:
         id = fl.Int64(primary_key=True)
 
     class MyDB(fl.DataBase):
-        users = fl.Table(model=UserSchema)
+        users = fl.Table(schema=UserSchema)
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)
@@ -46,10 +46,10 @@ def test_nested_and_multiple_db_decorators(tmp_path: Path) -> None:
         id = fl.Int64(primary_key=True)
 
     class DBA(fl.DataBase):
-        t = fl.Table(model=S)
+        t = fl.Table(schema=S)
 
     class DBB(fl.DataBase):
-        t = fl.Table(model=S)
+        t = fl.Table(schema=S)
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)
@@ -100,7 +100,7 @@ def test_schema_inheritance_and_table_interaction(tmp_path: Path) -> None:
         b = fl.String()
 
     class MyDB(fl.DataBase):
-        t = fl.Table(model=DerivedS)
+        t = fl.Table(schema=DerivedS)
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)
@@ -131,7 +131,7 @@ def test_db_context_manager_reentrant(tmp_path: Path) -> None:
         id = fl.Int64(primary_key=True)
 
     class MyDB(fl.DataBase):
-        t = fl.Table(model=S)
+        t = fl.Table(schema=S)
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)
@@ -161,7 +161,7 @@ def test_db_decorator_chained_calls_same_db(tmp_path: Path) -> None:
         value = fl.String()
 
     class MyDB(fl.DataBase):
-        t = fl.Table(model=S)
+        t = fl.Table(schema=S)
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)
@@ -203,8 +203,8 @@ def test_db_multiple_tables_single_transaction(tmp_path: Path) -> None:
         product = fl.String()
 
     class MyDB(fl.DataBase):
-        users = fl.Table(model=UserSchema)
-        orders = fl.Table(model=OrderSchema)
+        users = fl.Table(schema=UserSchema)
+        orders = fl.Table(schema=OrderSchema)
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)
@@ -240,7 +240,7 @@ def test_db_connection_error_propagation(tmp_path: Path) -> None:
         id = fl.Int64(primary_key=True)
 
     class MyDB(fl.DataBase):
-        t = fl.Table(model=S)
+        t = fl.Table(schema=S)
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)
@@ -269,7 +269,7 @@ def test_db_sql_execution_within_context(tmp_path: Path) -> None:
         y = fl.Float64()
 
     class MyDB(fl.DataBase):
-        data = fl.Table(model=S)
+        data = fl.Table(schema=S)
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)
@@ -296,8 +296,8 @@ def test_db_show_tables_reflects_schema(tmp_path: Path) -> None:
         b = fl.String()
 
     class MyDB(fl.DataBase):
-        table_one = fl.Table(model=S1)
-        table_two = fl.Table(model=S2)
+        table_one = fl.Table(schema=S1)
+        table_two = fl.Table(schema=S2)
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)
@@ -321,10 +321,10 @@ def test_db_concurrent_decorated_functions_different_dbs(tmp_path: Path) -> None
         id = fl.Int64(primary_key=True)
 
     class DBA(fl.DataBase):
-        t = fl.Table(model=S)
+        t = fl.Table(schema=S)
 
     class DBB(fl.DataBase):
-        t = fl.Table(model=S)
+        t = fl.Table(schema=S)
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)
@@ -366,7 +366,7 @@ def test_db_manual_connect_close(tmp_path: Path) -> None:
         v = fl.Int64()
 
     class MyDB(fl.DataBase):
-        t = fl.Table(model=S)
+        t = fl.Table(schema=S)
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)

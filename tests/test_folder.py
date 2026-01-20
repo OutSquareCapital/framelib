@@ -99,8 +99,8 @@ def test_folder_show_tree_and_file_sources(tmp_path: Path) -> None:
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)
-        data = fl.Parquet(model=schema)
-        logs = fl.Json(model=schema)
+        data = fl.Parquet(schema=schema)
+        logs = fl.Json(schema=schema)
 
     tree = Project.show_tree()
     project_path = str(Project.source())
@@ -115,9 +115,9 @@ def test_folder_tree_shows_all_file_extensions(tmp_path: Path) -> None:
 
     class FileFolder(fl.Folder):
         __source__ = Path(tmp_path)
-        csv_file = fl.CSV(model=schema)
-        json_file = fl.Json(model=schema)
-        parquet_file = fl.Parquet(model=schema)
+        csv_file = fl.CSV(schema=schema)
+        json_file = fl.Json(schema=schema)
+        parquet_file = fl.Parquet(schema=schema)
 
     tree = FileFolder.show_tree()
     assert "csv_file.csv" in tree
@@ -134,8 +134,8 @@ def test_folder_tree_output_structure(tmp_path: Path) -> None:
 
     class TreeFolder(fl.Folder):
         __source__ = Path(tmp_path)
-        file1 = fl.CSV(model=schema)
-        file2 = fl.Json(model=schema)
+        file1 = fl.CSV(schema=schema)
+        file2 = fl.Json(schema=schema)
 
     tree = TreeFolder.show_tree()
     # Should contain tree branch characters
@@ -153,11 +153,11 @@ def test_folder_all_files_have_correct_source(tmp_path: Path) -> None:
 
     class FullFolder(fl.Folder):
         __source__ = Path(tmp_path)
-        csv_file = fl.CSV(model=schema)
-        json_file = fl.Json(model=schema)
-        parquet_file = fl.Parquet(model=schema)
+        csv_file = fl.CSV(schema=schema)
+        json_file = fl.Json(schema=schema)
+        parquet_file = fl.Parquet(schema=schema)
 
-    file_schema = FullFolder.schema()
+    file_entries = FullFolder.entries()
     folder_path = FullFolder.source()
 
     pc.Iter(
@@ -167,7 +167,7 @@ def test_folder_all_files_have_correct_source(tmp_path: Path) -> None:
             ("parquet_file", "parquet"),
         ]
     ).map_star(
-        lambda name, ext: (name, ext, file_schema.get_item(name).unwrap())
+        lambda name, ext: (name, ext, file_entries.get_item(name).unwrap())
     ).for_each_star(
         lambda name, ext, file_obj: _assert_file_in_folder(
             file_obj.source, folder_path, name, ext
@@ -183,7 +183,7 @@ def test_folder_all_files_have_correct_source(tmp_path: Path) -> None:
                 ("parquet_file", "parquet"),
             ]
         )
-        .map_star(lambda name, _: str(file_schema.get_item(name).unwrap().source))
+        .map_star(lambda name, _: str(file_entries.get_item(name).unwrap().source))
         .collect(pc.Set)
         .length()
         == 3
@@ -196,9 +196,9 @@ def test_folder_file_source_is_direct_child_path(tmp_path: Path) -> None:
 
     class DirectChildFolder(fl.Folder):
         __source__ = Path(tmp_path)
-        data = fl.CSV(model=schema)
+        data = fl.CSV(schema=schema)
 
-    file_obj = DirectChildFolder.schema().get_item("data").unwrap()
+    file_obj = DirectChildFolder.entries().get_item("data").unwrap()
     folder_path = DirectChildFolder.source()
 
     # File should be directly under folder
@@ -213,10 +213,10 @@ def test_folder_nested_file_sources(tmp_path: Path) -> None:
 
     class DataFolder(fl.Folder):
         __source__ = Path(tmp_path)
-        output = fl.CSV(model=schema)
+        output = fl.CSV(schema=schema)
 
     _assert_file_in_folder(
-        DataFolder.schema().get_item("output").unwrap().source,
+        DataFolder.entries().get_item("output").unwrap().source,
         DataFolder.source(),
         "output",
         "csv",
@@ -234,7 +234,7 @@ def test_folder_inheritance_basic(tmp_path: Path) -> None:
 
     class BaseFolder(fl.Folder):
         __source__ = Path(tmp_path)
-        base_data = fl.CSV(model=schema)
+        base_data = fl.CSV(schema=schema)
 
     class DerivedFolder(BaseFolder):
         pass
@@ -250,16 +250,16 @@ def test_folder_inheritance_with_new_files(tmp_path: Path) -> None:
 
     class ParentFolder(fl.Folder):
         __source__ = Path(tmp_path)
-        parent_file = fl.CSV(model=schema)
+        parent_file = fl.CSV(schema=schema)
 
     class ChildFolder(ParentFolder):
-        child_file = fl.CSV(model=schema)
+        child_file = fl.CSV(schema=schema)
 
     parent_source = ParentFolder.source()
     child_source = ChildFolder.source()
 
-    parent_file = ParentFolder.schema().get_item("parent_file").unwrap()
-    child_file = ChildFolder.schema().get_item("child_file").unwrap()
+    parent_file = ParentFolder.entries().get_item("parent_file").unwrap()
+    child_file = ChildFolder.entries().get_item("child_file").unwrap()
 
     # Verify path hierarchy
     _assert_path_hierarchy(parent_source, child_source, "childfolder")
@@ -278,13 +278,13 @@ def test_folder_multiple_inheritance_paths(tmp_path: Path) -> None:
 
     class Root(fl.Folder):
         __source__ = Path(tmp_path)
-        file1 = fl.CSV(model=schema)
+        file1 = fl.CSV(schema=schema)
 
     class Branch1(Root):
-        file2 = fl.CSV(model=schema)
+        file2 = fl.CSV(schema=schema)
 
     class Branch2(Root):
-        file3 = fl.CSV(model=schema)
+        file3 = fl.CSV(schema=schema)
 
     root_source = Root.source()
     branch1_source = Branch1.source()
@@ -345,10 +345,10 @@ def test_folder_single_file_source(tmp_path: Path) -> None:
 
     class SingleFileFolder(fl.Folder):
         __source__ = Path(tmp_path)
-        only_file = fl.CSV(model=schema)
+        only_file = fl.CSV(schema=schema)
 
     _assert_file_in_folder(
-        SingleFileFolder.schema().get_item("only_file").unwrap().source,
+        SingleFileFolder.entries().get_item("only_file").unwrap().source,
         SingleFileFolder.source(),
         "only_file",
         "csv",
@@ -382,10 +382,10 @@ def test_folder_file_source_matches_filename(tmp_path: Path) -> None:
 
     class NameMatchFolder(fl.Folder):
         __source__ = Path(tmp_path)
-        my_special_data = fl.Json(model=schema)
+        my_special_data = fl.Json(schema=schema)
 
     file_name = (
-        NameMatchFolder.schema().get_item("my_special_data").unwrap().source.stem
+        NameMatchFolder.entries().get_item("my_special_data").unwrap().source.stem
     )
     assert file_name == "my_special_data", (
         f"Expected 'my_special_data', got '{file_name}'"
@@ -403,22 +403,22 @@ def test_folder_diamond_inheritance_paths(tmp_path: Path) -> None:
 
     class Base(fl.Folder):
         __source__ = Path(tmp_path)
-        base_file = fl.Parquet(model=schema)
+        base_file = fl.Parquet(schema=schema)
 
     class LeftBranch(Base):
-        left_file = fl.CSV(model=schema)
+        left_file = fl.CSV(schema=schema)
 
     class RightBranch(Base):
-        right_file = fl.Json(model=schema)
+        right_file = fl.Json(schema=schema)
 
     class Diamond(LeftBranch, RightBranch):
-        diamond_file = fl.NDJson(model=schema)
+        diamond_file = fl.NDJson(schema=schema)
 
     # All files should have correct paths
     _assert_path_hierarchy(Diamond.source().parent, Diamond.source(), "diamond")
 
     # Check that all files from all branches are accessible
-    all_files = Diamond.schema().keys()
+    all_files = Diamond.entries().keys()
     assert "base_file" in all_files
     assert "left_file" in all_files
     assert "right_file" in all_files
@@ -441,10 +441,10 @@ def test_folder_inheritance_overrides_file_handler(tmp_path: Path) -> None:
 
     class ParentFolder(fl.Folder):
         __source__ = Path(tmp_path)
-        data = fl.Parquet(model=ParentSchema)
+        data = fl.Parquet(schema=ParentSchema)
 
     class ChildFolder(ParentFolder):
-        data = fl.CSV(model=ChildSchema)  # pyright: ignore[reportIncompatibleVariableOverride]
+        data = fl.CSV(schema=ChildSchema)  # pyright: ignore[reportIncompatibleVariableOverride]
 
     # Child should use CSV, not Parquet
     assert ChildFolder.data.source.suffix == ".csv"
@@ -457,26 +457,26 @@ def test_folder_nested_subfolder_simulation(tmp_path: Path) -> None:
 
     class Root(fl.Folder):
         __source__ = Path(tmp_path)
-        config = fl.Json(model=schema)
+        config = fl.Json(schema=schema)
 
     class Data(Root):
-        raw = fl.Parquet(model=schema)
+        raw = fl.Parquet(schema=schema)
 
     class Processed(Data):
-        clean = fl.Parquet(model=schema)
+        clean = fl.Parquet(schema=schema)
 
     class Final(Processed):
-        output = fl.CSV(model=schema)
+        output = fl.CSV(schema=schema)
 
     # Path should show full hierarchy
     final_path = str(Final.source())
     assert "final" in final_path.lower()
 
     # All parent files should be accessible
-    assert "config" in Final.schema()
-    assert "raw" in Final.schema()
-    assert "clean" in Final.schema()
-    assert "output" in Final.schema()
+    assert "config" in Final.entries()
+    assert "raw" in Final.entries()
+    assert "clean" in Final.entries()
+    assert "output" in Final.entries()
 
 
 def test_folder_parallel_inheritance_separate_paths(tmp_path: Path) -> None:
@@ -485,13 +485,13 @@ def test_folder_parallel_inheritance_separate_paths(tmp_path: Path) -> None:
 
     class Common(fl.Folder):
         __source__ = Path(tmp_path)
-        shared = fl.Parquet(model=schema)
+        shared = fl.Parquet(schema=schema)
 
     class BranchA(Common):
-        file_a = fl.CSV(model=schema)
+        file_a = fl.CSV(schema=schema)
 
     class BranchB(Common):
-        file_b = fl.Json(model=schema)
+        file_b = fl.Json(schema=schema)
 
     # Each branch should have its own path
     assert "brancha" in str(BranchA.source()).lower()
@@ -499,8 +499,8 @@ def test_folder_parallel_inheritance_separate_paths(tmp_path: Path) -> None:
     assert BranchA.source() != BranchB.source()
 
     # Both have access to shared file (but with different paths)
-    assert "shared" in BranchA.schema()
-    assert "shared" in BranchB.schema()
+    assert "shared" in BranchA.entries()
+    assert "shared" in BranchB.entries()
 
 
 def test_folder_mro_respects_file_collection(tmp_path: Path) -> None:
@@ -509,18 +509,18 @@ def test_folder_mro_respects_file_collection(tmp_path: Path) -> None:
 
     class Level0(fl.Folder):
         __source__ = Path(tmp_path)
-        l0 = fl.Parquet(model=schema)
+        l0 = fl.Parquet(schema=schema)
 
     class Level1A(Level0):
-        l1a = fl.CSV(model=schema)
+        l1a = fl.CSV(schema=schema)
 
     class Level1B(Level0):
-        l1b = fl.Json(model=schema)
+        l1b = fl.Json(schema=schema)
 
     class Level2(Level1A, Level1B):
-        l2 = fl.NDJson(model=schema)
+        l2 = fl.NDJson(schema=schema)
 
-    files = Level2.schema().keys()
+    files = Level2.entries().keys()
     assert "l0" in files
     assert "l1a" in files
     assert "l1b" in files
@@ -534,13 +534,13 @@ def test_folder_tree_shows_inheritance_hierarchy(tmp_path: Path) -> None:
 
     class Base(fl.Folder):
         __source__ = Path(tmp_path)
-        base_data = fl.Parquet(model=schema)
+        base_data = fl.Parquet(schema=schema)
 
     class Middle(Base):
-        middle_data = fl.CSV(model=schema)
+        middle_data = fl.CSV(schema=schema)
 
     class Leaf(Middle):
-        leaf_data = fl.Json(model=schema)
+        leaf_data = fl.Json(schema=schema)
 
     tree = Leaf.show_tree()
     assert "base_data" in tree
@@ -554,7 +554,7 @@ def test_folder_source_immutability_across_instances(tmp_path: Path) -> None:
 
     class MyFolder(fl.Folder):
         __source__ = Path(tmp_path)
-        data = fl.Parquet(model=schema)
+        data = fl.Parquet(schema=schema)
 
     assert MyFolder.source() == MyFolder.source()
 
@@ -569,11 +569,11 @@ def test_folder_with_database_entry(tmp_path: Path) -> None:
         id = fl.Int64(primary_key=True)
 
     class MyDB(fl.DataBase):
-        table = fl.Table(model=DBSchema)
+        table = fl.Table(schema=DBSchema)
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)
-        config = fl.Json(model=schema)
+        config = fl.Json(schema=schema)
         db = MyDB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
@@ -597,23 +597,23 @@ def test_folder_complex_mixed_inheritance(tmp_path: Path) -> None:
         value = fl.Float64()
 
     class DBConfig(fl.DataBase):
-        settings = fl.Table(model=ConfigSchema)
+        settings = fl.Table(schema=ConfigSchema)
 
     class BaseProject(fl.Folder):
         __source__ = Path(tmp_path)
-        config = fl.Json(model=ConfigSchema)
+        config = fl.Json(schema=ConfigSchema)
 
     class DataProject(BaseProject):
-        data = fl.Parquet(model=DataSchema)
+        data = fl.Parquet(schema=DataSchema)
         db = DBConfig()
 
     class FinalProject(DataProject):
-        output = fl.CSV(model=DataSchema)
+        output = fl.CSV(schema=DataSchema)
 
     FinalProject.source().mkdir(parents=True, exist_ok=True)
 
     # All entries should be present
-    entries = FinalProject.schema().keys()
+    entries = FinalProject.entries().keys()
     assert "config" in entries
     assert "data" in entries
     assert "db" in entries
@@ -630,22 +630,22 @@ def test_folder_long_inheritance_chain_paths(tmp_path: Path) -> None:
 
     class L1(fl.Folder):
         __source__ = Path(tmp_path)
-        f1 = fl.Parquet(model=schema)
+        f1 = fl.Parquet(schema=schema)
 
     class L2(L1):
-        f2 = fl.CSV(model=schema)
+        f2 = fl.CSV(schema=schema)
 
     class L3(L2):
-        f3 = fl.Json(model=schema)
+        f3 = fl.Json(schema=schema)
 
     class L4(L3):
-        f4 = fl.NDJson(model=schema)
+        f4 = fl.NDJson(schema=schema)
 
     class L5(L4):
-        f5 = fl.Parquet(model=schema)
+        f5 = fl.Parquet(schema=schema)
 
     # Final class should have all files
-    assert L5.schema().keys().length() == 5
+    assert L5.entries().keys().length() == 5
 
     # Path should reflect deepest level
     assert "l5" in str(L5.source()).lower()

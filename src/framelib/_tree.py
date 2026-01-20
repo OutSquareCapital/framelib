@@ -68,7 +68,7 @@ class TreeBuilder:
 
         return (
             self.folders.iter()
-            .flat_map(lambda f: f.schema().values().iter())
+            .flat_map(lambda f: f.entries().values())
             .flat_map(_add_to_tree)
             .insert(self.root)
             .collect(pc.Set)
@@ -93,7 +93,7 @@ class Structure:
         return (
             all_folders.iter()
             .flat_map(
-                lambda f: f.schema().values().iter().map(lambda file: file.source)
+                lambda f: f.entries().values().iter().map(lambda file: file.source)
             )
             .collect(pc.Set)
             .union(dir_paths)

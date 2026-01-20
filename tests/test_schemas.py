@@ -24,7 +24,7 @@ def test_schema_cast_and_multi_column_pk(tmp_path: Path) -> None:
             val = fl.String()
 
         class DB(fl.DataBase):
-            t = fl.Table(model=S)
+            t = fl.Table(schema=S)
 
         class Project(fl.Folder):  # pyright: ignore[reportUnusedClass] # type: ignore[[unused-ignore]]
             __source__ = Path(tmp_path)
@@ -37,7 +37,7 @@ def test_schema_empty_allowed() -> None:
     class EmptyS(fl.Schema):
         pass
 
-    assert EmptyS.schema().length() == 0
+    assert EmptyS.entries().length() == 0
 
 
 def test_schema_inheritance_column_order_preservation() -> None:
@@ -50,7 +50,7 @@ def test_schema_inheritance_column_order_preservation() -> None:
     class ChildS(ParentS):
         child_col = fl.Float64()
 
-    col_names = ChildS.schema().keys().into(tuple)
+    col_names = ChildS.entries().keys().into(tuple)
     # Parent columns should come first
     assert col_names.index("parent_col1") < col_names.index("child_col")
     assert col_names.index("parent_col2") < col_names.index("child_col")

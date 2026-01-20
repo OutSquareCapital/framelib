@@ -55,7 +55,7 @@
 ### Schema migration strategy
 
 Currently this is both straigthforward and complicated.
-Since a schema is agnostic to it's model handler (File or Table), we can easily change the underlying storage without changing the schema. However, going from a File to a Table is not explicitely managed, even tough it's just a chain of:
+Since a schema is agnostic to it's handler (File or Table), we can easily change the underlying storage without changing the schema. However, going from a File to a Table is not explicitely managed, even tough it's just a chain of:
 
 ```python
 MySchemaFiles.my_file.read().pipe(

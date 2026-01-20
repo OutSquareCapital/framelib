@@ -22,7 +22,7 @@ with app.setup(hide_code=True):
         sales = fl.Table(Sales)
 
     class MyProject(fl.Folder):
-        raw_sales = fl.CSV(model=Sales)
+        raw_sales = fl.CSV(schema=Sales)
         analytics_db = Analytics()
 
 
@@ -52,7 +52,7 @@ def _() -> None:
 
     class MyProject(fl.Folder):
         ## Files are defined as attributes
-        raw_sales = fl.CSV(model=Sales)  # Located at 'myproject/raw_sales.csv'
+        raw_sales = fl.CSV(schema=Sales)  # Located at 'myproject/raw_sales.csv'
 
         ## Instantiate the embedded database
         analytics_db = Analytics()  # Located at 'myproject/analytics_db.ddb'
@@ -158,7 +158,7 @@ def _() -> None:
 @app.cell
 def _() -> None:
     class Reports(fl.Folder):
-        sales = fl.CSV(model=Sales)
+        sales = fl.CSV(schema=Sales)
         sales_formatted = fl.Parquet()
 
     print("\n📁 File Paths:\n")

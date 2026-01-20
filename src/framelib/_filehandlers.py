@@ -30,7 +30,7 @@ class File(Entry, ABC):
         Hence, framelib sole responsibility is to provide the correct file path as the first argument.
 
     Args:
-        model (type[T]): The schema model associated with the file.
+        schema (type[T]): The schema schema associated with the file.
     """
 
     __slots__ = ()
@@ -63,11 +63,11 @@ class Parquet(File):
 
     @property
     def scan(self):  # noqa: ANN202
-        return partial(pl.scan_parquet, self.source, schema=self.model.to_pl())
+        return partial(pl.scan_parquet, self.source, schema=self.schema.to_pl())
 
     @property
     def read(self):  # noqa: ANN202
-        return partial(pl.read_parquet, self.source, schema=self.model.to_pl())
+        return partial(pl.read_parquet, self.source, schema=self.schema.to_pl())
 
     @property
     def write(self):  # noqa: ANN202
@@ -85,17 +85,17 @@ class ParquetPartitioned(Parquet):
 
     Args:
         partition_by (str | Sequence[str]): The column(s) to partition by.
-        model (type[Schema], optional): The schema model associated with the file. Defaults to Schema.
+        schema (type[Schema], optional): The schema schema associated with the file. Defaults to Schema.
     """
 
     _partition_by: str | Sequence[str]
     __slots__ = ("_partition_by",)
 
     def __init__(
-        self, partition_by: str | Sequence[str], model: type[Schema] = Schema
+        self, partition_by: str | Sequence[str], schema: type[Schema] = Schema
     ) -> None:
         self._partition_by = partition_by
-        super().__init__(model)
+        super().__init__(schema)
 
     def __set_source__(self, source: Path | str) -> None:
         self.__source__ = Path(source, self._name)
@@ -119,11 +119,11 @@ class CSV(File):
 
     @property
     def scan(self):  # noqa: ANN202
-        return partial(pl.scan_csv, self.source, schema=self.model.to_pl())
+        return partial(pl.scan_csv, self.source, schema=self.schema.to_pl())
 
     @property
     def read(self):  # noqa: ANN202
-        return partial(pl.read_csv, self.source, schema=self.model.to_pl())
+        return partial(pl.read_csv, self.source, schema=self.schema.to_pl())
 
     @property
     def write(self):  # noqa: ANN202
@@ -140,11 +140,11 @@ class NDJson(File):
 
     @property
     def scan(self):  # noqa: ANN202
-        return partial(pl.scan_ndjson, self.source, schema=self.model.to_pl())
+        return partial(pl.scan_ndjson, self.source, schema=self.schema.to_pl())
 
     @property
     def read(self):  # noqa: ANN202
-        return partial(pl.read_ndjson, self.source, schema=self.model.to_pl())
+        return partial(pl.read_ndjson, self.source, schema=self.schema.to_pl())
 
     @property
     def write(self):  # noqa: ANN202
@@ -253,7 +253,7 @@ class Json(File):
 
     @property
     def read(self):  # noqa: ANN202
-        return partial(pl.read_json, self.source, schema=self.model.to_pl())
+        return partial(pl.read_json, self.source, schema=self.schema.to_pl())
 
     @property
     def write(self):  # noqa: ANN202

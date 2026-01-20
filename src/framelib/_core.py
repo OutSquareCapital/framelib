@@ -42,13 +42,13 @@ class Layout[T: BaseEntry](ABC):
     The layout can be a `Folder` (containing `File` entries) or a `Database` (containing `Table` entries).
     """
 
-    _schema: pc.Dict[str, T]
+    _entries: pc.Dict[str, T]
 
     def __init_subclass__(cls) -> None:
         def _is_base_entry(obj: object) -> TypeIs[T]:
             return isinstance(obj, BaseEntry)
 
-        cls._schema = (
+        cls._entries = (
             pc.Vec.from_ref(cls.mro())
             .rev()
             .filter(lambda c: c is not object and hasattr(c, "__dict__"))
@@ -63,46 +63,44 @@ class Layout[T: BaseEntry](ABC):
         )
 
     @classmethod
-    def schema(cls) -> pc.Dict[str, T]:
-        """Gets the schema dictionary of the layout.
+    def entries(cls) -> pc.Dict[str, T]:
+        """Gets the entries dictionary of the layout.
 
         Each value is an Entry instance corresponding to the attribute in the layout.
 
         Returns:
-            pc.Dict[str, T]: the schema dictionary of the layout as a pyochain.Dict
+            pc.Dict[str, T]: the entries dictionary of the layout as a pyochain.Dict
         """
-        return cls._schema
+        return cls._entries
 
 
 class Entry(BaseEntry):
     r"""An `Entry` represents any class that can be instantiated and used as an attribute in a `Layout`.
 
     It has a `source` attribute representing its `Path` location,
-    and a `model` of `type[T]` attribute representing its schema or data model.
+    and a `schema` of `type[T]` attribute representing its schema or data schema.
 
     Args:
-        model (type[Schema] | None): The model type associated with the entry. Defaults to object.
+        schema (type[Schema] | None): The schema type associated with the entry. Defaults to object.
     """
 
-    _model: type[Schema]
+    _schema: type[Schema]
     __source__: Path
-    __slots__ = ("__source__", "_model")
+    __slots__ = ("__source__", "_schema")
 
-    def __init__(self, model: type[Schema] | None = None) -> None:
-        self._model = _default_schema() if model is None else model
+    def __init__(self, schema: type[Schema] | None = None) -> None:
+        self._schema = _default_schema() if schema is None else schema
 
     def __set_source__(self, source: Path) -> None:
         self.__source__ = source
 
     def __repr__(self) -> str:
-        return (
-            f"{self.__class__.__name__}(\nsource={self.source},\nmodel={self._model}\n)"
-        )
+        return f"{self.__class__.__name__}(\nsource={self.source},\nschema={self._schema}\n)"
 
     @property
-    def model(self) -> type[Schema]:
-        """Get the model type associated with the entry."""
-        return self._model
+    def schema(self) -> type[Schema]:
+        """Get the schema associated with the entry."""
+        return self._schema
 
     @property
     def source(self) -> Path:

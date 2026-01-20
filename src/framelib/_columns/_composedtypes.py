@@ -140,7 +140,7 @@ class Struct(Column):
         unique: bool = False,
     ) -> None:
         if isclass(fields):
-            self._fields = fields.schema()
+            self._fields = fields.entries()
         else:
             self._fields = pc.Dict(fields)
         super().__init__(primary_key=primary_key, unique=unique)

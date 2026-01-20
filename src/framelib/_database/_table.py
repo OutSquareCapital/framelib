@@ -20,7 +20,7 @@ type DuckFrame = nw.LazyFrame[DuckDBPyRelation]
 
 
 def _from_df(
-    model: type[Schema], df: IntoFrameT | IntoLazyFrameT
+    schema: type[Schema], df: IntoFrameT | IntoLazyFrameT
 ) -> IntoFrameT | IntoLazyFrameT:
     """Cast the input frame to the provided `Schema` and return the native frame.
 
@@ -30,17 +30,17 @@ def _from_df(
     See https://duckdb.org/docs/stable/guides/python/sql_on_pandas for details.
 
     Args:
-        model (type[Schema]): The table's schema model.
+        schema (type[Schema]): The table's schema schema.
         df (IntoFrameT | IntoLazyFrameT): The input dataframe.
 
     Returns:
         IntoFrameT | IntoLazyFrameT: The casted native DataFrame.
     """
-    return nw.from_native(df).lazy().pipe(model.cast).to_native()
+    return nw.from_native(df).lazy().pipe(schema.cast).to_native()
 
 
 class Table(Entry):
-    """A `Table` represents a DuckDB table whose logical schema is defined by model (a Schema subclass).
+    """A `Table` represents a DuckDB table whose logical schema is defined by schema (a Schema subclass).
 
     It is an `Entry` in a `DataBase` layout.
 
@@ -102,7 +102,7 @@ class Table(Entry):
         Returns:
             Self: The table instance.
         """
-        q = qry.create(self._name, self.model.to_sql())
+        q = qry.create(self._name, self.schema.to_sql())
         self.connexion.unwrap().execute(q)
         return self
 
@@ -114,7 +114,7 @@ class Table(Entry):
         Returns:
             Self: The table instance.
         """
-        q = qry.create_if_not_exist(self._name, self.model.to_sql())
+        q = qry.create_if_not_exist(self._name, self.schema.to_sql())
         self.connexion.unwrap().execute(q)
         return self
 
@@ -124,7 +124,7 @@ class Table(Entry):
         Returns:
             Self: The table instance.
         """
-        q = qry.create_or_replace(self._name, self.model.to_sql())
+        q = qry.create_or_replace(self._name, self.schema.to_sql())
         self.connexion.unwrap().execute(q)
         return self
 
@@ -168,7 +168,7 @@ class Table(Entry):
         Returns:
             Self: The table instance.
         """
-        _ = _from_df(self.model, df)
+        _ = _from_df(self.schema, df)
         self.connexion.unwrap().execute(qry.insert_into(self._name))
         return self
 
@@ -183,7 +183,7 @@ class Table(Entry):
         Returns:
             Self: The table instance.
         """
-        _ = _from_df(self.model, df)
+        _ = _from_df(self.schema, df)
         self.connexion.unwrap().execute(qry.insert_or_replace(self._name))
         return self
 
@@ -198,7 +198,7 @@ class Table(Entry):
         Returns:
             Self: The table instance.
         """
-        _ = _from_df(self.model, df)
+        _ = _from_df(self.schema, df)
         self.connexion.unwrap().execute(qry.insert_or_ignore(self._name))
         return self
 

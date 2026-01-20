@@ -19,7 +19,7 @@ def test_table_crud_and_conflicts(tmp_path: Path) -> None:
         name = fl.String()
 
     class DB(fl.DataBase):
-        t = fl.Table(model=S)
+        t = fl.Table(schema=S)
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)
@@ -68,7 +68,7 @@ def test_table_access_outside_connection_raises(tmp_path: Path) -> None:
         id = fl.Int64()
 
     class DB(fl.DataBase):
-        t = fl.Table(model=S)
+        t = fl.Table(schema=S)
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)
@@ -93,7 +93,7 @@ def test_table_insert_into_append_behavior(tmp_path: Path) -> None:
         value = fl.String()
 
     class DB(fl.DataBase):
-        t = fl.Table(model=S)
+        t = fl.Table(schema=S)
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)
@@ -120,7 +120,7 @@ def test_table_bulk_insert_or_replace(tmp_path: Path) -> None:
         counter = fl.Int64()
 
     class DB(fl.DataBase):
-        t = fl.Table(model=S)
+        t = fl.Table(schema=S)
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)
@@ -160,7 +160,7 @@ def test_table_chain_operations(tmp_path: Path) -> None:
         status = fl.String()
 
     class DB(fl.DataBase):
-        t = fl.Table(model=S)
+        t = fl.Table(schema=S)
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)
@@ -195,7 +195,7 @@ def test_table_scan_narwhals_operations(tmp_path: Path) -> None:
         amount = fl.Float64()
 
     class DB(fl.DataBase):
-        t = fl.Table(model=S)
+        t = fl.Table(schema=S)
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)
@@ -237,7 +237,7 @@ def test_table_summarize(tmp_path: Path) -> None:
         value = fl.Float64()
 
     class DB(fl.DataBase):
-        t = fl.Table(model=S)
+        t = fl.Table(schema=S)
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)
@@ -266,7 +266,7 @@ def test_table_describe_columns(tmp_path: Path) -> None:
         score = fl.Float64()
 
     class DB(fl.DataBase):
-        t = fl.Table(model=S)
+        t = fl.Table(schema=S)
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)
@@ -295,7 +295,7 @@ def test_table_multiple_primary_key_conflict_handling(tmp_path: Path) -> None:
         data = fl.String()
 
     class DB(fl.DataBase):
-        t = fl.Table(model=S)
+        t = fl.Table(schema=S)
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)
@@ -332,7 +332,7 @@ def test_table_truncate_preserves_schema(tmp_path: Path) -> None:
         value = fl.String()
 
     class DB(fl.DataBase):
-        t = fl.Table(model=S)
+        t = fl.Table(schema=S)
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)
@@ -367,7 +367,7 @@ def test_table_create_from_fails_if_exists(tmp_path: Path) -> None:
         v = fl.Int64()
 
     class DB(fl.DataBase):
-        t = fl.Table(model=S)
+        t = fl.Table(schema=S)
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)
@@ -390,7 +390,7 @@ def test_table_large_dataset_operations(tmp_path: Path) -> None:
         value = fl.Float64()
 
     class DB(fl.DataBase):
-        t = fl.Table(model=S)
+        t = fl.Table(schema=S)
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)
@@ -431,7 +431,7 @@ def test_table_create(tmp_path: Path) -> None:
         name = fl.String()
 
     class DB(fl.DataBase):
-        t = fl.Table(model=S)
+        t = fl.Table(schema=S)
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)
@@ -470,7 +470,7 @@ def test_table_drop_and_drop_if_exist(tmp_path: Path) -> None:
         name = fl.String()
 
     class DB(fl.DataBase):
-        t = fl.Table(model=S)
+        t = fl.Table(schema=S)
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)

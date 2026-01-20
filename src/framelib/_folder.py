@@ -24,7 +24,7 @@ class Folder(Layout[File]):
 
         cls.__source__ = cls.__source__.joinpath(cls.__name__.lower())
         (
-            cls.schema()
+            cls.entries()
             .values()
             .iter()
             .for_each(lambda file: file.__set_source__(cls.source()))

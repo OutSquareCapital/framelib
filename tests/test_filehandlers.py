@@ -16,7 +16,7 @@ def test_parquet_write_and_read(tmp_path: Path) -> None:
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)
-        data = fl.Parquet(model=S)
+        data = fl.Parquet(schema=S)
 
     Project.source().mkdir(parents=True, exist_ok=True)
 
@@ -38,7 +38,7 @@ def test_csv_write_and_read(tmp_path: Path) -> None:
 
     class Project(fl.Folder):
         __source__ = Path(tmp_path)
-        data = fl.CSV(model=S)
+        data = fl.CSV(schema=S)
 
     Project.source().mkdir(parents=True, exist_ok=True)
 

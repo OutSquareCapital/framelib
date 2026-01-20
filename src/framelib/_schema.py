@@ -28,9 +28,9 @@ class Schema(Layout[Column]):
 
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
-        cls._schema = _schema_from_mro(cls)
+        cls._entries = _entries_from_mro(cls)
         cls._constraints = (
-            cls.schema()
+            cls.entries()
             .values()
             .iter()
             .collect(pc.Set)
@@ -50,7 +50,7 @@ class Schema(Layout[Column]):
     @classmethod
     def to_sql(cls) -> str:
         """Get the SQL schema definition."""
-        return cls.schema().values().iter().map(lambda col: col.to_sql()).join(", ")
+        return cls.entries().values().iter().map(lambda col: col.to_sql()).join(", ")
 
     @classmethod
     def to_pl(cls) -> pl.Schema:
@@ -60,7 +60,7 @@ class Schema(Layout[Column]):
             pl.Schema: The Polars schema definition.
         """
         return (
-            cls.schema()
+            cls.entries()
             .items()
             .iter()
             .map_star(lambda name, c: (name, c.pl_dtype))
@@ -133,7 +133,7 @@ class Schema(Layout[Column]):
             nw.from_native(df)
             .lazy()
             .select(
-                cls.schema()
+                cls.entries()
                 .values()
                 .iter()
                 .map(lambda col: col.nw_col.cast(col.nw_dtype))
@@ -154,15 +154,15 @@ class Schema(Layout[Column]):
             pl.LazyFrame: The casted `polars.LazyFrame`.
         """
         return df.lazy().select(
-            cls.schema()
+            cls.entries()
             .values()
             .iter()
             .map(lambda c: c.pl_col.cast(c.pl_dtype, strict=False))
         )
 
 
-def _schema_from_mro(cls: type) -> pc.Dict[str, Column]:
-    """Constructs the schema dictionary from the class MRO.
+def _entries_from_mro(cls: type) -> pc.Dict[str, Column]:
+    """Constructs the entries dictionary from the class MRO.
 
     Steps:
         - Create an Iterator over the MRO
@@ -176,7 +176,7 @@ def _schema_from_mro(cls: type) -> pc.Dict[str, Column]:
         cls (type): The schema class.
 
     Returns:
-        pc.Dict[str, Column]: The final schema as a dictionary.
+        pc.Dict[str, Column]: The final entries as a dictionary.
     """
 
     def _is_subclass_of_schema(c: type) -> TypeIs[type[Schema]]:

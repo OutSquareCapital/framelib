@@ -74,7 +74,7 @@ class DataBase(
     def __set_source__(self, source: Path) -> None:
         self.__source__ = Path(source, self._name).with_suffix(_DDB)
         return (
-            self.schema()
+            self.entries()
             .values()
             .iter()
             .for_each(
@@ -93,7 +93,7 @@ class DataBase(
         if self._entry_count == 0:
             self._connexion = duckdb.connect(self.source)
             (
-                self.schema()
+                self.entries()
                 .values()
                 .iter()
                 .for_each(lambda table: table.__set_connexion__(self._connexion))
@@ -235,7 +235,7 @@ class DataBase(
             self.show_tables()
             .collect()
             .pipe(lambda df: pc.Set[str](df.get_column("name")))
-            .difference(self.schema().keys())
+            .difference(self.entries().keys())
             .iter()
             .for_each(lambda q: self.connexion.execute(qry.drop_if_exists(q)))
         )

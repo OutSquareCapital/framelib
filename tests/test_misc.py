@@ -46,6 +46,6 @@ def test_slots() -> None:
         file4 = fl.ParquetPartitioned(partition_by="date")
         file5 = fl.Json()
 
-    MySchema.schema().values().iter().for_each(_check_dict)
+    MySchema.entries().values().iter().for_each(_check_dict)
     _check_dict(MyDb.table1)
-    MyFolder.schema().values().iter().for_each(_check_dict)
+    MyFolder.entries().values().iter().for_each(_check_dict)

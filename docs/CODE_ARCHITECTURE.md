@@ -14,7 +14,7 @@ The entire library is built upon a few fundamental abstract classes defined in `
 
 - **`BaseEntry`**: The most basic building block. It represents any component that can be used as an attribute in a `Layout`. It has a `name` property representing its position in the layout.
 
-- **`Entry[T]`**: A specialized `BaseEntry` with a `source` path and a `model` (typically a `Schema` subclass). This represents data that lives somewhere (file, database table, etc.) and has a structure.
+- **`Entry[T]`**: A specialized `BaseEntry` with a `source` path and a `schema`. This represents data that lives somewhere (file, database table, etc.) and has a structure.
 
 - **`Layout[T]`**: An abstract container for `Entry` objects of type `T`. It represents a static collection of entries, like a directory of files or a database of tables. `Folder`, `DataBase`, and `Schema` are concrete implementations of `Layout`.
 
@@ -35,31 +35,31 @@ Here is the step-by-step process:
 
 2. **`__init_subclass__` is triggered.** When the `MyData` class object is created by the Python interpreter (basically when you launch your program), the `__init_subclass__` method on its parent class (`Folder`, which inherits it from `Layout`) is called.
 
-3. **Introspection via `pyochain`**. Inside `__init_subclass__`, the schema dictionary is populated using functional iteration. The `Layout` base class uses `pyochain` to introspect the attributes of the newly defined class (`MyData`).
+3. **Introspection via `pyochain`**. Inside `__init_subclass__`, the entries dictionary is populated using functional iteration. The `Layout` base class uses `pyochain` to introspect the attributes of the newly defined class (`MyData`).
 
-    ```python
-    # framelib/_core.py (simplified)
-    def __init_subclass__(cls) -> None:
-        def _is_base_entry(obj: object) -> TypeIs[T]:
-            return isinstance(obj, BaseEntry)
+```python
+# framelib/_core.py (simplified)
+def __init_subclass__(cls) -> None:
+    def _is_base_entry(obj: object) -> TypeIs[T]:
+        return isinstance(obj, BaseEntry)
 
-        cls._schema = (
-            pc.Iter(cls.__dict__.items())
-            .filter_star(lambda _, obj: _is_base_entry(obj))
-            .collect(pc.Dict)
-            .inspect(
-                lambda x: x.items()
-                .iter()
-                .for_each_star(lambda name, entry: entry.__set_entry_name__(name))
-            )
+    cls._entries = (
+        pc.Iter(cls.__dict__.items())
+        .filter_star(lambda _, obj: _is_base_entry(obj))
+        .collect(pc.Dict)
+        .inspect(
+            lambda x: x.items()
+            .iter()
+            .for_each_star(lambda name, entry: entry.__set_entry_name__(name))
         )
-    ```
+    )
+```
 
-    - It finds all attributes that are instances of a `BaseEntry` type (e.g., `File`, `Table`, `Column` instances).
-    - It populates the layout's `_schema` dictionary, mapping the attribute name (`"raw_data"`) to the entry instance (`Parquet()`).
-    - Crucially, it calls `__set_entry_name__` on each entry, injecting the attribute name so the `Parquet` instance now knows its name is `"raw_data"`.
+- It finds all attributes that are instances of a `BaseEntry` type (e.g., `File`, `Table`, `Column` instances).
+- It populates the layout's `_entries` dictionary, mapping the attribute name (`"raw_data"`) to the entry instance (`Parquet()`).
+- Crucially, it calls `__set_entry_name__` on each entry, injecting the attribute name so the `Parquet` instance now knows its name is `"raw_data"`.
 
-4. **MRO-based schema inheritance (for `Schema` only)**. For `Schema` classes, an additional introspection step processes the Method Resolution Order (MRO) to collect columns from all parent schema classes. This allows schema inheritance:
+1. **MRO-based entries inheritance (for `Schema` only)**. For `Schema` classes, an additional introspection step processes the Method Resolution Order (MRO) to collect columns from all parent schema classes. This allows entries inheritance:
 
     ```python
     class BaseSchema(fl.Schema):
@@ -72,7 +72,7 @@ Here is the step-by-step process:
     # UserSchema now contains both 'created_at' and its own columns
     ```
 
-5. **Path Injection (for `Folder` only)**. For `Folder` classes, an additional step computes and injects source paths into each `File` child:
+2. **Path Injection (for `Folder` only)**. For `Folder` classes, an additional step computes and injects source paths into each `File` child:
 
     ```python
     # framelib/_folder.py
@@ -88,7 +88,7 @@ Here is the step-by-step process:
             
             cls.__source__ = cls.__source__.joinpath(cls.__name__.lower())
             return (
-                cls.schema()
+                cls.entries()
                 .values()
                 .iter()
                 .for_each(lambda file: file.__set_source__(cls.source()))
@@ -97,10 +97,11 @@ Here is the step-by-step process:
 
     The `MyData.raw_data` object now automatically knows its full path is `.../mydata/raw_data.parquet` without any explicit path manipulation from the user.
 
-6. **Connection Injection (for `DataBase` only)**. When a `DataBase` instance is used within a context manager or as a decorator, it:
-   - Establishes a connection to the DuckDB database file
-   - Injects this connection into each of its `Table` children via `__set_connexion__`
-   - This allows tables to execute queries without managing connections themselves
+3. **Connection Injection (for `DataBase` only)**. When a `DataBase` instance is used within a context manager or as a decorator, it:
+
+- Establishes a connection to the DuckDB database file
+- Injects this connection into each of its `Table` children via `__set_connexion__`
+- This allows tables to execute queries without managing connections themselves
 
 This "on-definition" configuration makes the API clean and declarative, turning classes themselves into the single source of truth for the data layout.
 
@@ -116,8 +117,8 @@ This diagram shows the fundamental abstract classes that form the building block
 graph TD
     ABC["ABC"]
     BaseEntry["BaseEntry<br/>&lt;&lt;abstract&gt;&gt;<br/>-name: str"]
-    Entry["Entry<br/>&lt;&lt;abstract&gt;&gt;<br/>-source: Path<br/>-model: Schema"]
-    Layout["Layout[T]<br/>&lt;&lt;abstract&gt;&gt;<br/>-_schema: Dict[str, T]"]
+    Entry["Entry<br/>&lt;&lt;abstract&gt;&gt;<br/>-source: Path<br/>-schema: Schema"]
+    Layout["Layout[T]<br/>&lt;&lt;abstract&gt;&gt;<br/>-_entries: Dict[str, T]"]
 
     ABC --> BaseEntry
     ABC --> Layout
@@ -175,8 +176,8 @@ graph TD
 **Key characteristics:**
 
 - Uses `__init_subclass__` for automatic introspection
-- Stores all entries in a `_schema` dictionary
-- Provides a `schema()` class method to access entries
+- Stores all entries in a `_entries` dictionary
+- Provides a `entries()` class method to access entries
 - Uses `pyochain` for functional iteration over entries
 
 All `Layout` subclasses (`Folder`, `DataBase`, `Schema`) inherit this behavior and extend it with their own specializations.
@@ -197,17 +198,17 @@ class UserSchema(fl.Schema):
 
 # The same schema is used for a database table and a file
 class MyDatabase(fl.DataBase):
-    users = fl.Table(model=UserSchema)
+    users = fl.Table(schema=UserSchema)
 
 class Backups(fl.Folder):
-    users_backup = fl.Parquet(model=UserSchema)
+    users_backup = fl.Parquet(schema=UserSchema)
 ```
 
 Schemas also provide utility methods like `to_sql()`, `to_pl()`, and `cast()` for manipulating `Column` attributes in different contexts.
 
 ### `Column`: The Building Block of Schemas
 
-A `Column` is a `BaseEntry` that represents a single field in a schema. Unlike `Entry`, columns don't have a `source` or `model`—they are the leaves of the architecture tree.
+A `Column` is a `BaseEntry` that represents a single field in a schema. Unlike `Entry`, columns don't have a `source` or `schema`—they are the leaves of the architecture tree.
 
 **Key characteristics:**
 
@@ -239,7 +240,7 @@ Both methods return `partial` functions with the file path pre-bound:
 
 ```python
 class MyProject(fl.Folder):
-    data = fl.CSV(model=UserSchema)
+    data = fl.CSV(schema=UserSchema)
 
 # These are equivalent to calling pl.read_csv(MyProject.data.source, ...)
 result = MyProject.data.read()
@@ -255,7 +256,7 @@ Tables provide similar patterns but with a key difference: operations happen on 
 
 ```python
 class MyDatabase(fl.DataBase):
-    users = fl.Table(model=UserSchema)
+    users = fl.Table(schema=UserSchema)
 
 class MyProject(fl.Folder):
     db = MyDatabase()
@@ -280,7 +281,7 @@ def process_users() -> None:
 
 - Each `File` subclass (e.g., `Parquet`, `CSV`, `NDJson`, `Json`) provides `scan()`, `read()`, and `write()` properties
 - These properties return `partial` functions with the file path already bound, so users can call `MyFolder.my_csv.read()` directly
-- All files are associated with an optional `Schema` model for type safety and validation
+- All files are associated with an optional `Schema` schema for type safety and validation
 - The `__set_source__` method automatically computes the file path based on the parent `Folder` and the attribute name, suffixing with the file format's extension
 
 **File formats supported:**
@@ -320,7 +321,7 @@ class MyProject(fl.Folder):
     db = fl.DataBase()  # ← DataBase acts as an Entry here
     
 class MyDatabase(fl.DataBase):
-    users = fl.Table(model=UserSchema)  # ← DataBase acts as a Layout here
+    users = fl.Table(schema=UserSchema)  # ← DataBase acts as a Layout here
 ```
 
 **Multiple inheritance pattern:**
@@ -372,7 +373,7 @@ This lazy connection management ensures resources are only used when needed and 
 In the context of `Layout.__init_subclass__`, `pyochain` is used to perform **MRO-based introspection** to collect `BaseEntry` instances from the entire class hierarchy:
 
 ```python
-cls._schema = (
+cls._entries = (
     pc.Vec.from_ref(cls.mro())  # Convert MRO list to a pyochain Vec for zero-copy conversion
     .rev()  # Get a reversed Iterator to process from base to derived
     .filter(lambda c: c is not object and hasattr(c, "__dict__"))  # Keep only classes with attributes
@@ -387,7 +388,7 @@ cls._schema = (
 )
 ```
 
-**Why MRO-based introspection?** This approach enables schema inheritance. When a class inherits from another class that is also a `Layout`, the child class automatically inherits all entries from its parent.
+**Why MRO-based introspection?** This approach enables entries inheritance. When a class inherits from another class that is also a `Layout`, the child class automatically inherits all entries from its parent.
 
 By processing the entire MRO (reversed from base to derived), entries from parent classes are included in the schema, allowing you to extend schemas hierarchically.
 
@@ -525,7 +526,7 @@ This is syntactic sugar over the context manager pattern, providing two ways to 
 
 To create a new file handler or entry type:
 
-1. **Inherit from `Entry`**: Ensure your class has `source` and `model` attributes
+1. **Inherit from `Entry`**: Ensure your class has `source` and `schema` attributes
 2. **Implement `__set_source__`**: Store the injected path from parent `Layout`
 3. **Provide read/write methods**: Implement the data access interface (e.g., `read()`, `scan()`, `write()`)
 
@@ -543,24 +544,6 @@ class CustomFile(Entry):
     def write(self, data):
         # Implement writing to source
         pass
-```
-
-### Adding a New `Layout` Type
-
-To create a new container type:
-
-1. **Inherit from `Layout[T]`**: where `T` is the type of entries it contains
-2. **Override `__init_subclass__` if needed**: Add custom path/connection logic
-3. **Provide traversal methods**: e.g., `schema()`, `iter_entries()`, etc.
-
-Example:
-
-```python
-class Archive(Layout[File]):
-    def __init_subclass__(cls) -> None:
-        super().__init_subclass__()
-        cls.__archive_path__ = Path("archive") / cls.__name__.lower()
-        # Custom initialization logic
 ```
 
 ## Summary
