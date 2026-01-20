@@ -8,6 +8,12 @@ import pytest
 import framelib as fl
 
 
+def test_instantiate_schema() -> None:
+    """Schema cannot be instantiated directly."""
+    with pytest.raises(TypeError):
+        _ = fl.Schema()
+
+
 def test_schema_cast_and_multi_column_pk(tmp_path: Path) -> None:
     """Verify behavior when a Schema declares multiple primary_key columns."""
     with pytest.raises(pc.ResultUnwrapError):  # noqa: PT012

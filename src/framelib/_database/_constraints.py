@@ -30,9 +30,8 @@ class KeysConstraints(NamedTuple):
     def from_cols(cls, cols: pc.Set[Column]) -> pc.Result[Self, PrimaryKeyError]:
         primaries = cols.iter().filter(lambda c: c.primary_key).collect()
         if primaries.length() > 1:
-            return pc.Err(
-                PrimaryKeyError(f"Multiple primary key columns detected\n: {primaries}")
-            )
+            msg = f"Multiple primary key columns detected\n: {primaries}"
+            return pc.Err(PrimaryKeyError(msg))
         uniques = (
             cols.iter()
             .filter(lambda c: c.unique)

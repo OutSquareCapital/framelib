@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import pyochain as pc
+import pytest
 
 import framelib as fl
 
@@ -42,9 +43,10 @@ def _assert_path_hierarchy(parent: Path, child: Path, child_name: str) -> None:
     assert parent_str != child_str, "Parent and child paths should be different"
 
 
-# ============================================================================
-# Basic Tests: Source Path Creation
-# ============================================================================
+def test_instantiate_folder() -> None:
+    """Folder cannot be instantiated directly."""
+    with pytest.raises(TypeError):
+        _ = fl.Folder()
 
 
 def test_folder_source_path_basic_creation(tmp_path: Path) -> None:

@@ -13,6 +13,10 @@ class Folder(Layout[File]):
     It's a `Schema` of `File` entries.
     """
 
+    def __new__(cls) -> None:
+        msg = "Folder cannot be instantiated directly."
+        raise TypeError(msg)
+
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
         if not hasattr(cls, SOURCE):

@@ -22,6 +22,10 @@ class Schema(Layout[Column]):
 
     _constraints: KeysConstraints
 
+    def __new__(cls) -> None:
+        msg = "Schema cannot be instantiated directly."
+        raise TypeError(msg)
+
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
         cls._schema = _schema_from_mro(cls)
