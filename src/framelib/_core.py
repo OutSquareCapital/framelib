@@ -23,6 +23,7 @@ class BaseEntry(ABC):
     """
 
     _name: str
+    __slots__ = ("_name",)
 
     @property
     def name(self) -> str:
@@ -85,6 +86,7 @@ class Entry(BaseEntry):
 
     _model: type[Schema]
     __source__: Path
+    __slots__ = ("__source__", "_model")
 
     def __init__(self, model: type[Schema] | None = None) -> None:
         self._model = _default_schema() if model is None else model

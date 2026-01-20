@@ -33,6 +33,8 @@ class File(Entry, ABC):
         model (type[T]): The schema model associated with the file.
     """
 
+    __slots__ = ()
+
     def __set_source__(self, source: Path | str) -> None:
         self.__source__ = Path(source, self._name).with_suffix(
             f".{self.__class__.__name__.lower()}"
@@ -56,6 +58,8 @@ class File(Entry, ABC):
 
 class Parquet(File):
     """A Parquet file handler."""
+
+    __slots__ = ()
 
     @property
     def scan(self):  # noqa: ANN202
@@ -84,12 +88,13 @@ class ParquetPartitioned(Parquet):
         model (type[Schema], optional): The schema model associated with the file. Defaults to Schema.
     """
 
+    _partition_by: str | Sequence[str]
+    __slots__ = ("_partition_by",)
+
     def __init__(
-        self,
-        partition_by: str | Sequence[str],
-        model: type[Schema] = Schema,
+        self, partition_by: str | Sequence[str], model: type[Schema] = Schema
     ) -> None:
-        self._partition_by: str | Sequence[str] = partition_by
+        self._partition_by = partition_by
         super().__init__(model)
 
     def __set_source__(self, source: Path | str) -> None:
@@ -110,6 +115,8 @@ class CSV(File):
     Acts as an interface with methods to scan, read, read in batches, and write CSV data using Polars functions.
     """
 
+    __slots__ = ()
+
     @property
     def scan(self):  # noqa: ANN202
         return partial(pl.scan_csv, self.source, schema=self.model.to_pl())
@@ -128,6 +135,8 @@ class NDJson(File):
 
     Provides properties to scan, read, and write NDJSON data using Polars functions.
     """
+
+    __slots__ = ()
 
     @property
     def scan(self):  # noqa: ANN202
@@ -153,6 +162,8 @@ class Json(File):
         It is to be determined whether this approach is truly efficient for large JSON files
         compared to reading the entire file into memory.
     """
+
+    __slots__ = ()
 
     @property
     def scan(self) -> Callable[[], pl.LazyFrame]:

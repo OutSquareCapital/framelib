@@ -20,6 +20,8 @@ class Datetime(Column):
     time_unit: TimeUnit
     time_zone: str | datetime.timezone | None
 
+    __slots__ = ("time_unit", "time_zone")
+
     def __init__(
         self,
         time_unit: TimeUnit = "ns",
@@ -51,6 +53,8 @@ class Decimal(Column):
     precision: int | None
     scale: int
 
+    __slots__ = ("precision", "scale")
+
     def __init__(
         self,
         precision: int | None = None,
@@ -81,6 +85,8 @@ class Decimal(Column):
 class Array(Column):
     _inner: Column
     _shape: int | tuple[int, ...]
+
+    __slots__ = ("_inner", "_shape")
 
     def __init__(
         self,
@@ -123,6 +129,8 @@ class Array(Column):
 
 class Struct(Column):
     _fields: pc.Dict[str, Column]
+
+    __slots__ = ("_fields",)
 
     def __init__(
         self,
@@ -175,6 +183,8 @@ class Struct(Column):
 class List(Column):
     _inner: Column
 
+    __slots__ = ("_inner",)
+
     def __init__(
         self,
         inner: Column,
@@ -204,6 +214,8 @@ class List(Column):
 
 
 class Categorical(Column):
+    __slots__ = ()
+
     @property
     def nw_dtype(self) -> nw.Categorical:
         return nw.Categorical()
@@ -225,6 +237,8 @@ class Categorical(Column):
 
 class Enum(Column):
     _categories: pc.Set[str]
+
+    __slots__ = ("_categories",)
 
     def __init__(
         self,

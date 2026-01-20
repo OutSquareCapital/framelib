@@ -5,6 +5,8 @@ from ._base import Column
 
 
 class Boolean(Column):
+    __slots__ = ()
+
     @property
     def nw_dtype(self) -> nw.Boolean:
         return nw.Boolean()
@@ -19,6 +21,8 @@ class Boolean(Column):
 
 
 class String(Column):
+    __slots__ = ()
+
     @property
     def nw_dtype(self) -> nw.String:
         return nw.String()
@@ -33,6 +37,8 @@ class String(Column):
 
 
 class Date(Column):
+    __slots__ = ()
+
     @property
     def nw_dtype(self) -> nw.Date:
         return nw.Date()
@@ -47,6 +53,8 @@ class Date(Column):
 
 
 class Float32(Column):
+    __slots__ = ()
+
     @property
     def nw_dtype(self) -> nw.Float32:
         return nw.Float32()
@@ -61,6 +69,8 @@ class Float32(Column):
 
 
 class Float64(Column):
+    __slots__ = ()
+
     @property
     def nw_dtype(self) -> nw.Float64:
         return nw.Float64()
@@ -75,6 +85,8 @@ class Float64(Column):
 
 
 class Int8(Column):
+    __slots__ = ()
+
     @property
     def nw_dtype(self) -> nw.Int8:
         return nw.Int8()
@@ -89,6 +101,8 @@ class Int8(Column):
 
 
 class Int16(Column):
+    __slots__ = ()
+
     @property
     def nw_dtype(self) -> nw.Int16:
         return nw.Int16()
@@ -103,6 +117,8 @@ class Int16(Column):
 
 
 class Int32(Column):
+    __slots__ = ()
+
     @property
     def nw_dtype(self) -> nw.Int32:
         return nw.Int32()
@@ -117,6 +133,8 @@ class Int32(Column):
 
 
 class Int64(Column):
+    __slots__ = ()
+
     @property
     def nw_dtype(self) -> nw.Int64:
         return nw.Int64()
@@ -131,6 +149,8 @@ class Int64(Column):
 
 
 class Int128(Column):
+    __slots__ = ()
+
     @property
     def nw_dtype(self) -> nw.Int128:
         return nw.Int128()
@@ -145,6 +165,8 @@ class Int128(Column):
 
 
 class UInt8(Column):
+    __slots__ = ()
+
     @property
     def nw_dtype(self) -> nw.UInt8:
         return nw.UInt8()
@@ -159,6 +181,8 @@ class UInt8(Column):
 
 
 class UInt16(Column):
+    __slots__ = ()
+
     @property
     def nw_dtype(self) -> nw.UInt16:
         return nw.UInt16()
@@ -173,6 +197,8 @@ class UInt16(Column):
 
 
 class UInt32(Column):
+    __slots__ = ()
+
     @property
     def nw_dtype(self) -> nw.UInt32:
         return nw.UInt32()
@@ -187,6 +213,8 @@ class UInt32(Column):
 
 
 class UInt64(Column):
+    __slots__ = ()
+
     @property
     def nw_dtype(self) -> nw.UInt64:
         return nw.UInt64()
@@ -201,6 +229,8 @@ class UInt64(Column):
 
 
 class UInt128(Column):
+    __slots__ = ()
+
     @property
     def nw_dtype(self) -> nw.UInt128:
         return nw.UInt128()

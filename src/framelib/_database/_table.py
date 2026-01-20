@@ -46,6 +46,7 @@ class Table(Entry):
 
     """
 
+    __slots__ = ("_con",)
     _con: DuckDBPyConnection
 
     def __set_connexion__(self, con: DuckDBPyConnection) -> None:

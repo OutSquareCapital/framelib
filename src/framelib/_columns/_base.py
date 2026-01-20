@@ -26,6 +26,8 @@ class Column(BaseEntry, ABC):
         unique (bool): Whether this column has a unique constraint.
     """
 
+    __slots__ = ("_primary_key", "_unique")
+
     def __init__(
         self,
         *,

@@ -22,7 +22,6 @@
 
 ### Improvements
 
-- Use slots everywhere if possible.
 - Improve all __repr__ methods (use tree? what do to with schema vs entries?)
 - Add a "light", pure python Schema/Column/FileHandler version with lazy file reading and reliance on pyochain Iterators for data processing. Probably must continue to improve dictexpr for that. tinyDb could be a good inspiration, also this <https://github.com/jazzband/jsonmodels>.
 - Use Result and Option across the codebase to make errors explicit
