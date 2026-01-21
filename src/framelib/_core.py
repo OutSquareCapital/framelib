@@ -24,7 +24,7 @@ class BaseEntry(ABC):
         """Get the name of the entry."""
         return self._name
 
-    def __set_entry_name__(self, name: str) -> None:
+    def __set_name__(self, owner: type, name: str) -> None:
         self._name = name
 
 
@@ -49,11 +49,6 @@ class Layout[T: BaseEntry](ABC):
             .flat_map(lambda c: c.__dict__.items())
             .filter_star(lambda _, obj: _is_base_entry(obj))
             .collect(pc.Dict)
-        )
-        cls._entries.inspect(
-            lambda x: x.items()
-            .iter()
-            .for_each_star(lambda name, entry: entry.__set_entry_name__(name))
         )
 
     @classmethod

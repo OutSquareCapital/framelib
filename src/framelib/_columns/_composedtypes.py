@@ -29,10 +29,11 @@ class Datetime(Column):
         *,
         primary_key: bool = False,
         unique: bool = False,
+        nullable: bool = True,
     ) -> None:
         self.time_unit = time_unit
         self.time_zone = time_zone
-        super().__init__(primary_key=primary_key, unique=unique)
+        super().__init__(primary_key=primary_key, unique=unique, nullable=nullable)
 
     @property
     def nw_dtype(self) -> nw.Datetime:
@@ -62,10 +63,11 @@ class Decimal(Column):
         *,
         primary_key: bool = False,
         unique: bool = False,
+        nullable: bool = True,
     ) -> None:
         self.precision = precision
         self.scale = scale
-        super().__init__(primary_key=primary_key, unique=unique)
+        super().__init__(primary_key=primary_key, unique=unique, nullable=nullable)
 
     @property
     def nw_dtype(self) -> nw.Decimal:
@@ -93,10 +95,11 @@ class Array(Column):
         *,
         primary_key: bool = False,
         unique: bool = False,
+        nullable: bool = True,
     ) -> None:
         self._inner = inner
         self._shape = shape
-        super().__init__(primary_key=primary_key, unique=unique)
+        super().__init__(primary_key=primary_key, unique=unique, nullable=nullable)
 
     @property
     def nw_dtype(self) -> nw.Array:
@@ -136,12 +139,13 @@ class Struct(Column):
         *,
         primary_key: bool = False,
         unique: bool = False,
+        nullable: bool = True,
     ) -> None:
         if isclass(fields):
             self._fields = fields.entries()
         else:
             self._fields = pc.Dict(fields)
-        super().__init__(primary_key=primary_key, unique=unique)
+        super().__init__(primary_key=primary_key, unique=unique, nullable=nullable)
 
     @property
     def pl_dtype(self) -> pl.Struct:
@@ -189,9 +193,10 @@ class List(Column):
         *,
         primary_key: bool = False,
         unique: bool = False,
+        nullable: bool = True,
     ) -> None:
         self._inner = inner
-        super().__init__(primary_key=primary_key, unique=unique)
+        super().__init__(primary_key=primary_key, unique=unique, nullable=nullable)
 
     @property
     def nw_dtype(self) -> nw.List:
@@ -244,11 +249,12 @@ class Enum(Column):
         *,
         primary_key: bool = False,
         unique: bool = False,
+        nullable: bool = True,
     ) -> None:
         if isclass(categories):
             categories = (item.value for item in categories)
         self._categories = pc.Set(categories)
-        super().__init__(primary_key=primary_key, unique=unique)
+        super().__init__(primary_key=primary_key, unique=unique, nullable=nullable)
 
     @property
     def nw_dtype(self) -> nw.Enum:

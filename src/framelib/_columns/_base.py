@@ -1,17 +1,10 @@
 from abc import ABC, abstractmethod
-from enum import StrEnum
 from typing import Literal
 
 import narwhals as nw
 import polars as pl
 
 from .._core import BaseEntry
-
-
-class _KWord(StrEnum):
-    PRIMARY_KEY = "PRIMARY KEY"
-    UNIQUE = "UNIQUE"
-
 
 TimeUnit = Literal["ns", "us", "ms"]
 
@@ -24,18 +17,21 @@ class Column(BaseEntry, ABC):
     Args:
         primary_key (bool): Whether this column is part of the primary key.
         unique (bool): Whether this column has a unique constraint.
+        nullable (bool): Whether this column can contain null values.
     """
 
-    __slots__ = ("_primary_key", "_unique")
+    __slots__ = ("_nullable", "_primary_key", "_unique")
 
     def __init__(
         self,
         *,
         primary_key: bool = False,
         unique: bool = False,
+        nullable: bool = True,
     ) -> None:
         self._primary_key: bool = primary_key
         self._unique: bool = unique
+        self._nullable: bool = nullable
 
     @property
     def nw_col(self) -> nw.Expr:
@@ -56,6 +52,15 @@ class Column(BaseEntry, ABC):
         return pl.col(self._name)
 
     @property
+    def sql_col(self) -> str:
+        """Get the SQL column with name and type.
+
+        Returns:
+            str: The SQL column definition.
+        """
+        return f'"{self._name}" {self.sql_type}'
+
+    @property
     @abstractmethod
     def nw_dtype(self) -> nw.dtypes.DType:
         """Get the Narwhals dtype corresponding to this column."""
@@ -72,20 +77,6 @@ class Column(BaseEntry, ABC):
     def sql_type(self) -> str:
         """Get the SQL type corresponding to this column."""
         raise NotImplementedError
-
-    def to_sql(self) -> str:
-        """Generates the SQL representation of the column.
-
-        Additional constraints such as PRIMARY KEY and UNIQUE are included.
-        """
-        definition: str = f'"{self.name}" {self.sql_type}'
-        if self.primary_key:
-            definition += " "
-            definition += _KWord.PRIMARY_KEY
-        if self.unique:
-            definition += " "
-            definition += _KWord.UNIQUE
-        return definition
 
     @property
     def primary_key(self) -> bool:
@@ -104,3 +95,12 @@ class Column(BaseEntry, ABC):
             bool: True if this column has a unique constraint, False otherwise.
         """
         return self._unique
+
+    @property
+    def nullable(self) -> bool:
+        """Check if this column can contain NULL values.
+
+        Returns:
+            bool: True if this column is nullable, False otherwise.
+        """
+        return self._nullable

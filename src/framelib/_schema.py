@@ -8,7 +8,7 @@ import pyochain as pc
 
 from ._columns import Column
 from ._core import Layout
-from ._database._constraints import KeysConstraints
+from ._database._constraints import KeysConstraints, KWord
 
 if TYPE_CHECKING:
     from narwhals.typing import IntoLazyFrameT, LazyFrameT
@@ -35,7 +35,6 @@ class Schema(Layout[Column]):
             .iter()
             .collect(pc.Set)
             .into(KeysConstraints.from_cols)
-            .expect("No duplicate primary keys should be defined in the schema")
         )
 
     @classmethod
@@ -50,7 +49,32 @@ class Schema(Layout[Column]):
     @classmethod
     def to_sql(cls) -> str:
         """Get the SQL schema definition."""
-        return cls.entries().values().iter().map(lambda col: col.to_sql()).join(", ")
+        composite_pk = cls._constraints.primary.filter(lambda pk: pk.is_composite())
+        composite_unique = cls._constraints.uniques.filter(lambda u: u.is_composite())
+
+        def _col_sql(col: Column) -> str:
+            parts = pc.Vec([col.sql_col])
+            if col.primary_key and composite_pk.is_none():
+                parts.append(KWord.PRIMARY_KEY)
+            if col.unique and composite_unique.is_none():
+                parts.append(KWord.UNIQUE)
+            if not col.nullable:
+                parts.append(KWord.NOT_NULL)
+            return parts.join(" ")
+
+        table_constraints = (
+            pc.Iter((composite_pk, composite_unique))
+            .filter(lambda constr: constr.is_some())
+            .map(lambda constr: constr.unwrap().to_sql())
+        )
+        return (
+            cls.entries()
+            .values()
+            .iter()
+            .map(_col_sql)
+            .chain(table_constraints)
+            .join(", ")
+        )
 
     @classmethod
     def to_pl(cls) -> pl.Schema:
