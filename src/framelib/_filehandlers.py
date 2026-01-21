@@ -23,7 +23,7 @@ class File(Entry, ABC):
         - `write`: A callable that writes a `pl.DataFrame` to the file.
 
     Note:
-        The read/write/scan are implemented as properties who return partials as a way to keep original documentation and full compatibility with polars functions.
+        The read/write/scan are implemented as properties who return partials as a way to keep original documentation, autocompletion and full compatibility with polars functions.
 
         But they concretely act just like methods (i.e., you call them with parentheses and arguments).
 

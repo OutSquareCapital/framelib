@@ -16,6 +16,8 @@
 - Check dataframely for features to implement on Schemas (validations, collections, etc...).
 - Check all duckdb python API methods/function, see if some are missing, potentially replace raw SQL queries with API calls, add missing features.
 - Foreign keys
+- Check constraint duckdb
+- default duckdb
 - Views
 - Transactions
 - Conditional inserts/updates
