@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+import duckdb
 import polars as pl
 import pyochain as pc
 import pytest
@@ -381,3 +382,117 @@ def test_db_manual_connect_close(tmp_path: Path) -> None:
     ).read().get_column("v").to_list() == [42]
 
     assert not Project.db.close().is_connected
+
+
+def test_schema_composite_pk_duckdb_integration(tmp_path: Path) -> None:
+    """Composite PK should work correctly with DuckDB insert_or_replace."""
+
+    class S(fl.Schema):
+        a = fl.Int64(primary_key=True)
+        b = fl.Int64(primary_key=True)
+        val = fl.String()
+
+    class DB(fl.DataBase):
+        t = fl.Table(schema=S)
+
+    class Project(fl.Folder):
+        __source__ = tmp_path
+        db = DB()
+
+    Project.source().mkdir(parents=True, exist_ok=True)
+
+    df1 = pl.DataFrame({"a": [1, 1, 2], "b": [1, 2, 1], "val": ["x", "y", "z"]})
+
+    with Project.db:
+        Project.db.t.create_or_replace().insert_into(df1)
+
+        # Update (1, 2) -> should only update that specific composite key
+        df2 = pl.DataFrame({"a": [1], "b": [2], "val": ["updated"]})
+        Project.db.t.insert_or_replace(df2)
+
+        result = Project.db.t.read().sort("a", "b")
+        assert result.shape == (3, 3)
+        # (1,1) unchanged, (1,2) updated, (2,1) unchanged
+        vals = result.get_column("val").to_list()
+        assert vals == ["x", "updated", "z"]
+
+
+def test_unique_constraint_duckdb_integration(tmp_path: Path) -> None:
+    """UNIQUE constraint should be enforced by DuckDB."""
+
+    class S(fl.Schema):
+        id = fl.Int64(primary_key=True)
+        email = fl.String(unique=True)
+
+    class DB(fl.DataBase):
+        t = fl.Table(schema=S)
+
+    class Project(fl.Folder):
+        __source__ = tmp_path
+        db = DB()
+
+    Project.source().mkdir(parents=True, exist_ok=True)
+
+    df1 = pl.DataFrame({"id": [1, 2], "email": ["a@x.com", "b@x.com"]})
+
+    with Project.db:
+        Project.db.t.create_or_replace().insert_into(df1)
+
+        # Try to insert duplicate email (different id) - should fail
+        df2 = pl.DataFrame({"id": [3], "email": ["a@x.com"]})
+        with pytest.raises(duckdb.ConstraintException):
+            Project.db.t.insert_into(df2)
+
+
+def test_not_null_constraint_duckdb_integration(tmp_path: Path) -> None:
+    """NOT NULL constraint should be enforced by DuckDB."""
+
+    class S(fl.Schema):
+        id = fl.Int64(primary_key=True)
+        name = fl.String(nullable=False)
+
+    class DB(fl.DataBase):
+        t = fl.Table(schema=S)
+
+    class Project(fl.Folder):
+        __source__ = tmp_path
+        db = DB()
+
+    Project.source().mkdir(parents=True, exist_ok=True)
+
+    with Project.db:
+        Project.db.t.create_or_replace()
+
+        # Try to insert NULL in non-nullable column - should fail
+        df = pl.DataFrame({"id": [1], "name": [None]})
+        with pytest.raises(duckdb.ConstraintException):
+            Project.db.t.insert_into(df)
+
+
+def test_composite_unique_duckdb_integration(tmp_path: Path) -> None:
+    """Composite UNIQUE constraint should be enforced by DuckDB."""
+
+    class S(fl.Schema):
+        id = fl.Int64(primary_key=True)
+        a = fl.Int64(unique=True)
+        b = fl.Int64(unique=True)
+
+    class DB(fl.DataBase):
+        t = fl.Table(schema=S)
+
+    class Project(fl.Folder):
+        __source__ = tmp_path
+        db = DB()
+
+    Project.source().mkdir(parents=True, exist_ok=True)
+
+    # Insert (a=1, b=1) and (a=1, b=2) - should work (different composite key)
+    df1 = pl.DataFrame({"id": [1, 2], "a": [1, 1], "b": [1, 2]})
+
+    with Project.db:
+        Project.db.t.create_or_replace().insert_into(df1)
+
+        # Try to insert duplicate (a=1, b=1) - should fail
+        df2 = pl.DataFrame({"id": [3], "a": [1], "b": [1]})
+        with pytest.raises(duckdb.ConstraintException):
+            Project.db.t.insert_into(df2)

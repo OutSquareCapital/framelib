@@ -41,10 +41,6 @@
 - Should we keep the current implicit path creation from class names? How should we handle config?
 - Should we handle data migration more explicitly?
 
-### Tests
-
-- Refactor tests to cover all cases.
-
 ### Documentation
 
 - Deploy documentation site (see pyochain docs deployment).
