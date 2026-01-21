@@ -91,9 +91,7 @@ class ParquetPartitioned(Parquet):
     _partition_by: str | Sequence[str]
     __slots__ = ("_partition_by",)
 
-    def __init__(
-        self, partition_by: str | Sequence[str], schema: type[Schema] = Schema
-    ) -> None:
+    def __init__(self, partition_by: str | Sequence[str], schema: type[Schema]) -> None:
         self._partition_by = partition_by
         super().__init__(schema)
 

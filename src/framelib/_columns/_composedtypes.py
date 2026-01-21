@@ -57,14 +57,12 @@ class Decimal(Column):
 
     def __init__(
         self,
-        precision: int | None = None,
+        precision: int = 18,
         scale: int = 0,
         *,
         primary_key: bool = False,
         unique: bool = False,
     ) -> None:
-        if precision is None:
-            precision = 18
         self.precision = precision
         self.scale = scale
         super().__init__(primary_key=primary_key, unique=unique)

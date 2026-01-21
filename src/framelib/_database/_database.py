@@ -1,7 +1,7 @@
 import contextlib
-import functools
 from abc import ABC
 from collections.abc import Callable
+from functools import wraps
 from pathlib import Path
 from types import TracebackType
 from typing import Self
@@ -64,7 +64,7 @@ class DataBase(
         ```
         """
 
-        @functools.wraps(fn)
+        @wraps(fn)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             with self:
                 return fn(*args, **kwargs)
@@ -234,7 +234,7 @@ class DataBase(
         (
             self.show_tables()
             .collect()
-            .pipe(lambda df: pc.Set[str](df.get_column("name")))
+            .pipe(lambda df: pc.Set(df.get_column("name")))
             .difference(self.entries().keys())
             .iter()
             .for_each(lambda q: self.connexion.execute(qry.drop_if_exists(q)))
