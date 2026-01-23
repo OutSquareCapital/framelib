@@ -60,3 +60,47 @@ MySchemaFiles.my_file.read().pipe(
     lambda df: MySchemaFiles.my_db.create_or_replace().insert_into(df)
 )
 ```
+
+## Planned Query Compilation Layer (Polars-like SQL for DuckDB)
+
+This section summarizes the current design direction for query execution discussed during development.
+
+### Goal
+
+Provide a __Polars-like__ user experience while keeping evaluation lazy for as long as possible, without
+forcing an early conversion such as calling an equivalent of `.to_native().pl(lazy=True)` to circumvent narwhals limitations.
+
+### Problem
+
+Currently narwhals does not support all duckdb possibilities, and the user experience is often met with limitations and runtime surprises.
+Narwhals is:
+
+- Primarily for library creators, not script end-users.
+- Limited by design to a common denominator of multiple backends, missing duckdb-specific optimizations and features.
+
+This force the user to call `to_native().pl(lazy=True)` to split the query in two parts, or to reimplement the logic in a less polars-idiomatic way,  when incompatible operations are used.
+
+Even assuming an efficient `duckdb.PyRelation.pl(lazy=True)` situation for the caller, this would still separate the query in two, missing optimizations opportunities.
+
+Assuming an incompatible conversion (slow path), this is catastrophic for performance.
+
+### Solution
+
+The core idea is to introduce a dedicated, explicit polars-like DSL for SQL targeting Duckdb.
+
+This design consists of three main layers (current ideas):
+
+1. __Front-end (Polars-like DSL)__
+    - Expose a Polars-like expression and frame API (similar to Polars Expr/Frame).
+    - Mirror the latest up-to-date Polars API as closely as possible.
+
+2. __Middle layer (IR as the source of truth)__
+     - Build an internal IR using Sqlglot.
+
+3. __Backend (DuckDB SQL)__
+    - Pass the generated SQL to DuckDB for execution.
+
+### Relationship with Narwhals and Polars SQL
+
+- __Narwhals__: useful as a compatibility layer (multi-backend surface) but not a good foundation
+    for "Polars-like -> SQL" compilation. Due to it's multi-support design, it cannot cover the full polars API for duckdb, and impose artificial constraints.
