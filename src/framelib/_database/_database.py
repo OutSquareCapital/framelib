@@ -180,22 +180,6 @@ class DataBase(
         """
         return self.sql(qry.SHOW_TABLES)
 
-    def show_views(self) -> DuckFrame:
-        """Shows all views in the database.
-
-        Returns:
-            DuckFrame: The views as a Narwhals LazyFrame.
-        """
-        return self.sql(qry.SHOW_VIEWS)
-
-    def show_types(self) -> DuckFrame:
-        """Shows all data types, including user-defined ENUMs.
-
-        Returns:
-            DuckFrame: The data types as a Narwhals LazyFrame.
-        """
-        return self.sql(qry.SHOW_TYPES)
-
     def show_schemas(self) -> DuckFrame:
         """Shows all schemas in the database.
 
@@ -203,22 +187,6 @@ class DataBase(
             DuckFrame: The schemas as a Narwhals LazyFrame.
         """
         return self.sql(qry.SHOW_SCHEMAS)
-
-    def show_settings(self) -> DuckFrame:
-        """Shows all settings in the current database session.
-
-        Returns:
-            DuckFrame: The settings as a Narwhals LazyFrame.
-        """
-        return self.sql(qry.SHOW_SETTINGS)
-
-    def show_extensions(self) -> DuckFrame:
-        """Shows all installed and loaded extensions.
-
-        Returns:
-            DuckFrame: The extensions as a Narwhals LazyFrame.
-        """
-        return self.sql(qry.SHOW_EXTENSIONS)
 
     def show_all_constraints(self) -> DuckFrame:
         """Shows all constraints across all tables in the database.
