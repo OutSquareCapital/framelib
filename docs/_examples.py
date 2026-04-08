@@ -1,5 +1,5 @@
 # noqa: INP001
-
+# pyright: reportUnusedCallResult=false
 # noqa: ALL
 
 import marimo
@@ -117,7 +117,7 @@ def _() -> None:
     @MyProject.analytics_db
     def get_report() -> pl.DataFrame:
         return (
-            MyProject.raw_sales
+            MyProject.raw_sales  # pyright: ignore[reportUnknownMemberType]
             .scan()
             .group_by("customer_id")
             .agg(
@@ -159,8 +159,8 @@ def _() -> None:
 @app.cell
 def _() -> None:
     class Reports(fl.Folder):
-        sales = fl.CSV(schema=Sales)
-        sales_formatted = fl.Parquet(schema=Sales)
+        sales: fl.CSV = fl.CSV(schema=Sales)
+        sales_formatted: fl.Parquet = fl.Parquet(schema=Sales)
 
     print("\n📁 File Paths:\n")
     print(Reports.sales.source)
