@@ -29,7 +29,8 @@ class Constraint(NamedTuple):
         cls, cols: pc.Set[Column], predicate: Callable[[Column], bool], k_word: KWord
     ) -> pc.Option[Self]:
         return (
-            cols.iter()
+            cols
+            .iter()
             .filter(predicate)
             .collect(pc.Set)
             .then_some()

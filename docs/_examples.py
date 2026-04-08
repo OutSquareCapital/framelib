@@ -14,16 +14,16 @@ with app.setup(hide_code=True):
     import framelib as fl
 
     class Sales(fl.Schema):
-        transaction_id = fl.UInt32(primary_key=True)
-        customer_id = fl.UInt16()
-        amount = fl.Float32()
+        transaction_id: fl.UInt32 = fl.UInt32(primary_key=True)
+        customer_id: fl.UInt16 = fl.UInt16()
+        amount: fl.Float32 = fl.Float32()
 
     class Analytics(fl.DataBase):
-        sales = fl.Table(Sales)
+        sales: fl.Table = fl.Table(Sales)
 
     class MyProject(fl.Folder):
-        raw_sales = fl.CSV(schema=Sales)
-        analytics_db = Analytics()
+        raw_sales: fl.CSV = fl.CSV(schema=Sales)
+        analytics_db: Analytics = Analytics()
 
 
 @app.cell(hide_code=True)
@@ -117,7 +117,8 @@ def _() -> None:
     @MyProject.analytics_db
     def get_report() -> pl.DataFrame:
         return (
-            MyProject.raw_sales.scan()
+            MyProject.raw_sales
+            .scan()
             .group_by("customer_id")
             .agg(
                 total_spent=pl.col("amount").sum(),
@@ -195,7 +196,7 @@ def _() -> None:
         print(dba.sales.scan().to_native())
         print("\n📦 Sales Data in DB after insert_into:")
         print(dba.sales.insert_into(new_sales).scan().to_native())
-        ## Intelligently insert rows, skipping duplicates based on the primary key
+        # Intelligently insert rows, skipping duplicates based on the primary key
         print("\n📦 Sales Data in DB after insert_or_ignore (no duplicates):")
         print(dba.sales.insert_or_ignore(new_sales).scan().to_native())
         print("\n📦 Sales Data in DB after truncate:")

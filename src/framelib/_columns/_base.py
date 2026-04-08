@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
 from typing import Literal
 
 import narwhals as nw
@@ -9,29 +10,19 @@ from .._core import BaseEntry
 TimeUnit = Literal["ns", "us", "ms"]
 
 
+@dataclass(slots=True, unsafe_hash=True)
 class Column(BaseEntry, ABC):
     """A Column represents a single column in a schema.
 
     This is the most basic building block of framelib.
-
-    Args:
-        primary_key (bool): Whether this column is part of the primary key.
-        unique (bool): Whether this column has a unique constraint.
-        nullable (bool): Whether this column can contain null values.
     """
 
-    __slots__ = ("_nullable", "_primary_key", "_unique")
-
-    def __init__(
-        self,
-        *,
-        primary_key: bool = False,
-        unique: bool = False,
-        nullable: bool = True,
-    ) -> None:
-        self._primary_key: bool = primary_key
-        self._unique: bool = unique
-        self._nullable: bool = nullable
+    primary_key: bool = field(default=False, kw_only=True)
+    """Whether this column is part of the primary key.."""
+    unique: bool = field(default=False, kw_only=True)
+    """Whether this column has a unique constraint."""
+    nullable: bool = field(default=True, kw_only=True)
+    """Whether this column can contain null values."""
 
     @property
     def nw_col(self) -> nw.Expr:
@@ -77,30 +68,3 @@ class Column(BaseEntry, ABC):
     def sql_type(self) -> str:
         """Get the SQL type corresponding to this column."""
         raise NotImplementedError
-
-    @property
-    def primary_key(self) -> bool:
-        """Check if this column is part of the primary key.
-
-        Returns:
-            bool: True if this column is part of the primary key, False otherwise.
-        """
-        return self._primary_key
-
-    @property
-    def unique(self) -> bool:
-        """Check if this column has a unique constraint.
-
-        Returns:
-            bool: True if this column has a unique constraint, False otherwise.
-        """
-        return self._unique
-
-    @property
-    def nullable(self) -> bool:
-        """Check if this column can contain NULL values.
-
-        Returns:
-            bool: True if this column is nullable, False otherwise.
-        """
-        return self._nullable

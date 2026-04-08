@@ -15,9 +15,9 @@ def test_schema_composite_primary_key() -> None:
     """Verify that a Schema can declare multiple primary_key columns (composite PK)."""
 
     class S(fl.Schema):
-        a = fl.Int64(primary_key=True)
-        b = fl.Int64(primary_key=True)
-        val = fl.String()
+        a: fl.Int64 = fl.Int64(primary_key=True)
+        b: fl.Int64 = fl.Int64(primary_key=True)
+        val: fl.String = fl.String()
 
     constraints = S.constraints()
     assert constraints.primary.is_some()
@@ -32,9 +32,9 @@ def test_schema_composite_pk_sql_generation() -> None:
     """Composite PK should generate table-level PRIMARY KEY constraint in SQL."""
 
     class S(fl.Schema):
-        a = fl.Int64(primary_key=True)
-        b = fl.Int64(primary_key=True)
-        val = fl.String()
+        a: fl.Int64 = fl.Int64(primary_key=True)
+        b: fl.Int64 = fl.Int64(primary_key=True)
+        val: fl.String = fl.String()
 
     sql = S.to_sql()
     # Columns should NOT have PRIMARY KEY individually
@@ -47,8 +47,8 @@ def test_schema_single_pk_sql_generation() -> None:
     """Single PK should generate column-level PRIMARY KEY constraint in SQL."""
 
     class S(fl.Schema):
-        id = fl.Int64(primary_key=True)
-        name = fl.String()
+        id: fl.Int64 = fl.Int64(primary_key=True)
+        name: fl.String = fl.String()
 
     sql = S.to_sql()
     # Should have column-level PRIMARY KEY
@@ -70,11 +70,11 @@ def test_schema_inheritance_column_order_preservation() -> None:
     """Inherited schema preserves parent columns before child columns."""
 
     class ParentS(fl.Schema):
-        parent_col1 = fl.Int64()
-        parent_col2 = fl.String()
+        parent_col1: fl.Int64 = fl.Int64()
+        parent_col2: fl.String = fl.String()
 
     class ChildS(ParentS):
-        child_col = fl.Float64()
+        child_col: fl.Float64 = fl.Float64()
 
     col_names = ChildS.entries().keys().into(tuple)
     # Parent columns should come first
@@ -86,8 +86,8 @@ def test_schema_to_sql_simple() -> None:
     """Schema generates valid SQL for simple structure."""
 
     class SimpleS(fl.Schema):
-        id = fl.Int64()
-        name = fl.String()
+        id: fl.Int64 = fl.Int64()
+        name: fl.String = fl.String()
 
     sql = SimpleS.to_sql()
     assert '"id"' in sql
@@ -98,9 +98,9 @@ def test_schema_unique_constraint_sql_generation() -> None:
     """Unique constraint should generate UNIQUE in column SQL."""
 
     class S(fl.Schema):
-        id = fl.Int64(primary_key=True)
-        email = fl.String(unique=True)
-        name = fl.String()
+        id: fl.Int64 = fl.Int64(primary_key=True)
+        email: fl.String = fl.String(unique=True)
+        name: fl.String = fl.String()
 
     sql = S.to_sql()
     assert '"email" VARCHAR UNIQUE' in sql
@@ -114,8 +114,8 @@ def test_schema_unique_and_pk_combined() -> None:
     """Column can have both primary_key and unique (though redundant)."""
 
     class S(fl.Schema):
-        id = fl.Int64(primary_key=True, unique=True)
-        name = fl.String()
+        id: fl.Int64 = fl.Int64(primary_key=True, unique=True)
+        name: fl.String = fl.String()
 
     sql = S.to_sql()
     assert "PRIMARY KEY" in sql
@@ -126,9 +126,9 @@ def test_schema_not_null_constraint_sql_generation() -> None:
     """NOT NULL constraint should generate NOT NULL in column SQL."""
 
     class S(fl.Schema):
-        id = fl.Int64(primary_key=True)
-        name = fl.String(nullable=False)
-        description = fl.String()  # nullable by default
+        id: fl.Int64 = fl.Int64(primary_key=True)
+        name: fl.String = fl.String(nullable=False)
+        description: fl.String = fl.String()  # nullable by default
 
     sql = S.to_sql()
     assert '"name" VARCHAR NOT NULL' in sql
@@ -144,9 +144,9 @@ def test_schema_composite_unique_sql_generation() -> None:
     """Multiple unique columns should generate table-level UNIQUE constraint."""
 
     class S(fl.Schema):
-        a = fl.Int64(unique=True)
-        b = fl.Int64(unique=True)
-        val = fl.String()
+        a: fl.Int64 = fl.Int64(unique=True)
+        b: fl.Int64 = fl.Int64(unique=True)
+        val: fl.String = fl.String()
 
     sql = S.to_sql()
     # Should NOT have column-level UNIQUE

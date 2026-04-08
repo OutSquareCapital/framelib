@@ -15,15 +15,15 @@ def test_table_crud_and_conflicts(tmp_path: Path) -> None:
     """Test CRUD operations and primary-key conflict behaviors on a Table."""
 
     class S(fl.Schema):
-        id = fl.Int64(primary_key=True)
-        name = fl.String()
+        id: fl.Int64 = fl.Int64(primary_key=True)
+        name: fl.String = fl.String()
 
     class DB(fl.DataBase):
-        t = fl.Table(schema=S)
+        t: fl.Table = fl.Table(schema=S)
 
     class Project(fl.Folder):
-        __source__ = Path(tmp_path)
-        db = DB()
+        __source__: Path = Path(tmp_path)
+        db: DB = DB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
 
@@ -38,10 +38,10 @@ def test_table_crud_and_conflicts(tmp_path: Path) -> None:
 
         # insert_or_replace: update id=2 and add id=3
         df2 = pl.DataFrame({"id": [2, 3], "name": ["bb", "c"]})
-        res2 = Project.db.t.insert_or_replace(df2).read().sort("id")
+        res2 = Project.db.t.insert_or_replace(df2).read().sort("id")  # pyright: ignore[reportUnknownMemberType]
         updated_id = 2
         assert res2.get_column("id").to_list() == [1, 2, 3]
-        assert res2.filter(pl.col("id") == updated_id).get_column("name").to_list() == [
+        assert res2.filter(pl.col("id") == updated_id).get_column("name").to_list() == [  # pyright: ignore[reportUnknownMemberType]
             "bb"
         ]
 
@@ -49,7 +49,7 @@ def test_table_crud_and_conflicts(tmp_path: Path) -> None:
         df3 = pl.DataFrame({"id": [3], "name": ["ccc"]})
 
         ignored_id = 3
-        assert Project.db.t.insert_or_ignore(df3).read().sort("id").filter(
+        assert Project.db.t.insert_or_ignore(df3).read().sort("id").filter(  # pyright: ignore[reportUnknownMemberType]
             pl.col("id") == ignored_id
         ).get_column("name").to_list() == ["c"]
 
@@ -65,14 +65,14 @@ def test_table_access_outside_connection_raises(tmp_path: Path) -> None:
     """Accessing table relation outside an active connection raises unwrap error."""
 
     class S(fl.Schema):
-        id = fl.Int64()
+        id: fl.Int64 = fl.Int64()
 
     class DB(fl.DataBase):
-        t = fl.Table(schema=S)
+        t: fl.Table = fl.Table(schema=S)
 
     class Project(fl.Folder):
-        __source__ = Path(tmp_path)
-        db = DB()
+        __source__: Path = Path(tmp_path)
+        db: DB = DB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
 
@@ -89,25 +89,25 @@ def test_table_insert_into_append_behavior(tmp_path: Path) -> None:
     """insert_into appends rows without checking conflicts."""
 
     class S(fl.Schema):
-        id = fl.Int64()
-        value = fl.String()
+        id: fl.Int64 = fl.Int64()
+        value: fl.String = fl.String()
 
     class DB(fl.DataBase):
-        t = fl.Table(schema=S)
+        t: fl.Table = fl.Table(schema=S)
 
     class Project(fl.Folder):
-        __source__ = Path(tmp_path)
-        db = DB()
+        __source__: Path = Path(tmp_path)
+        db: DB = DB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
 
     with Project.db:
-        Project.db.t.create_or_replace().insert_into(
+        _ = Project.db.t.create_or_replace().insert_into(
             pl.DataFrame({"id": [1], "value": ["a"]})
         )
         # Insert more rows
-        Project.db.t.insert_into(pl.DataFrame({"id": [2, 3], "value": ["b", "c"]}))
-        result = Project.db.t.read().sort("id")
+        _ = Project.db.t.insert_into(pl.DataFrame({"id": [2, 3], "value": ["b", "c"]}))
+        result = Project.db.t.read().sort("id")  # pyright: ignore[reportUnknownMemberType]
         assert result.height == 3
         assert result.get_column("value").to_list() == ["a", "b", "c"]
 
@@ -116,61 +116,58 @@ def test_table_bulk_insert_or_replace(tmp_path: Path) -> None:
     """insert_or_replace handles bulk updates efficiently."""
 
     class S(fl.Schema):
-        id = fl.Int64(primary_key=True)
-        counter = fl.Int64()
+        id: fl.Int64 = fl.Int64(primary_key=True)
+        counter: fl.Int64 = fl.Int64()
 
     class DB(fl.DataBase):
-        t = fl.Table(schema=S)
+        t: fl.Table = fl.Table(schema=S)
 
     class Project(fl.Folder):
-        __source__ = Path(tmp_path)
-        db = DB()
+        __source__: Path = Path(tmp_path)
+        db: DB = DB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
 
     with Project.db:
         # Initial bulk insert
-        initial_df = pl.DataFrame(
-            {
-                "id": pc.Iter(range(100)).collect(),
-                "counter": pc.Iter(range(100)).map(lambda _: 0).collect(),
-            }
-        )
-        Project.db.t.create_or_replace().insert_into(initial_df)
+        initial_df = pl.DataFrame({
+            "id": pc.Iter(range(100)).collect(),
+            "counter": pc.Iter(range(100)).map(lambda _: 0).collect(),
+        })
+        _ = Project.db.t.create_or_replace().insert_into(initial_df)
 
         # Update half of them
-        update_df = pl.DataFrame(
-            {
-                "id": pc.Iter(range(0, 100, 2)).collect(),
-                "counter": pc.Iter(range(50)).map(lambda _: 1).collect(),
-            }
-        )
+        update_df = pl.DataFrame({
+            "id": pc.Iter(range(0, 100, 2)).collect(),
+            "counter": pc.Iter(range(50)).map(lambda _: 1).collect(),
+        })
 
         result = Project.db.t.insert_or_replace(update_df).read()
 
         assert result.height == 100
-        assert result.filter(pl.col("counter") == 1).height == 50
+        assert result.filter(pl.col("counter") == 1).height == 50  # pyright: ignore[reportUnknownMemberType]
 
 
 def test_table_chain_operations(tmp_path: Path) -> None:
     """Multiple table operations can be chained fluently."""
 
     class S(fl.Schema):
-        id = fl.Int64(primary_key=True)
-        status = fl.String()
+        id: fl.Int64 = fl.Int64(primary_key=True)
+        status: fl.String = fl.String()
 
     class DB(fl.DataBase):
-        t = fl.Table(schema=S)
+        t: fl.Table = fl.Table(schema=S)
 
     class Project(fl.Folder):
-        __source__ = Path(tmp_path)
-        db = DB()
+        __source__: Path = Path(tmp_path)
+        db: DB = DB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
 
     with Project.db:
         statuses = (
-            Project.db.t.create_or_replace()
+            Project.db.t  # pyright: ignore[reportUnknownMemberType]
+            .create_or_replace()
             .insert_into(
                 pl.DataFrame({"id": [1, 2, 3], "status": ["new", "new", "new"]})
             )
@@ -191,25 +188,23 @@ def test_table_scan_narwhals_operations(tmp_path: Path) -> None:
     """Table scan returns DuckFrame supporting narwhals operations."""
 
     class S(fl.Schema):
-        category = fl.String()
-        amount = fl.Float64()
+        category: fl.String = fl.String()
+        amount: fl.Float64 = fl.Float64()
 
     class DB(fl.DataBase):
-        t = fl.Table(schema=S)
+        t: fl.Table = fl.Table(schema=S)
 
     class Project(fl.Folder):
-        __source__ = Path(tmp_path)
-        db = DB()
+        __source__: Path = Path(tmp_path)
+        db: DB = DB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
 
     with Project.db:
-        df = pl.DataFrame(
-            {
-                "category": ["A", "B", "A", "B", "A"],
-                "amount": [100.0, 200.0, 150.0, 250.0, 175.0],
-            }
-        )
+        df = pl.DataFrame({
+            "category": ["A", "B", "A", "B", "A"],
+            "amount": [100.0, 200.0, 150.0, 250.0, 175.0],
+        })
 
         # Use scan for lazy narwhals operations
 
@@ -218,36 +213,38 @@ def test_table_scan_narwhals_operations(tmp_path: Path) -> None:
 
         # Aggregate using narwhals
         totals = (
-            lf.group_by("category")
+            lf  # pyright: ignore[reportUnknownMemberType]
+            .group_by("category")
             .agg(fl.col("amount").sum().alias("total"))
             .sort("category")
             .collect()
             .pipe(lambda df: pc.Iter(df.iter_rows()))
-            .map_star(lambda cat, total: (cat, total))
+            .map_star(lambda cat, total: (cat, total))  # pyright: ignore[reportAny]
             .collect(pc.Dict)
         )
-        assert totals.get_item("A").unwrap() == 425.0
-        assert totals.get_item("B").unwrap() == 450.0
+        assert totals.get_item("A").map(int).unwrap() == 425
+        assert totals.get_item("B").map(int).unwrap() == 450
 
 
 def test_table_summarize(tmp_path: Path) -> None:
     """Table summarize provides column statistics."""
 
     class S(fl.Schema):
-        value = fl.Float64()
+        value: fl.Float64 = fl.Float64()
 
     class DB(fl.DataBase):
-        t = fl.Table(schema=S)
+        t: fl.Table = fl.Table(schema=S)
 
     class Project(fl.Folder):
-        __source__ = Path(tmp_path)
-        db = DB()
+        __source__: Path = Path(tmp_path)
+        db: DB = DB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
 
     with Project.db:
         assert (
-            Project.db.t.create_or_replace()
+            Project.db.t
+            .create_or_replace()
             .insert_into(pl.DataFrame({"value": [1.0, 2.0, 3.0, 4.0, 5.0]}))
             .summarize()
             .to_native()
@@ -261,22 +258,23 @@ def test_table_describe_columns(tmp_path: Path) -> None:
     """Table describe_columns provides schema information."""
 
     class S(fl.Schema):
-        id = fl.Int64(primary_key=True)
-        name = fl.String()
-        score = fl.Float64()
+        id: fl.Int64 = fl.Int64(primary_key=True)
+        name: fl.String = fl.String()
+        score: fl.Float64 = fl.Float64()
 
     class DB(fl.DataBase):
-        t = fl.Table(schema=S)
+        t: fl.Table = fl.Table(schema=S)
 
     class Project(fl.Folder):
-        __source__ = Path(tmp_path)
-        db = DB()
+        __source__: Path = Path(tmp_path)
+        db: DB = DB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
 
     with Project.db:
         col_names = pc.Set[str](
-            Project.db.t.create_or_replace()
+            Project.db.t
+            .create_or_replace()
             .insert_into(pl.DataFrame({"id": [1], "name": ["test"], "score": [99.5]}))
             .describe_columns()
             .collect()
@@ -291,21 +289,22 @@ def test_table_multiple_primary_key_conflict_handling(tmp_path: Path) -> None:
     """Primary key conflicts are handled correctly across operations."""
 
     class S(fl.Schema):
-        pk = fl.Int64(primary_key=True)
-        data = fl.String()
+        pk: fl.Int64 = fl.Int64(primary_key=True)
+        data: fl.String = fl.String()
 
     class DB(fl.DataBase):
-        t = fl.Table(schema=S)
+        t: fl.Table = fl.Table(schema=S)
 
     class Project(fl.Folder):
-        __source__ = Path(tmp_path)
-        db = DB()
+        __source__: Path = Path(tmp_path)
+        db: DB = DB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
 
     with Project.db:
         result = (
-            Project.db.t.create_or_replace()
+            Project.db.t  # pyright: ignore[reportUnknownMemberType]
+            .create_or_replace()
             .insert_into(pl.DataFrame({"pk": [1, 2, 3], "data": ["a", "b", "c"]}))
             .insert_or_replace(pl.DataFrame({"pk": [1, 4], "data": ["A", "d"]}))
             .insert_or_ignore(pl.DataFrame({"pk": [2, 5], "data": ["B", "e"]}))
@@ -315,7 +314,7 @@ def test_table_multiple_primary_key_conflict_handling(tmp_path: Path) -> None:
         )
 
         data_dict = pc.Dict[int, str](
-            pc.Iter(result).map_star(lambda pk, data: (pk, data)).collect()
+            pc.Iter(result).map_star(lambda pk, data: (pk, data)).collect()  # pyright: ignore[reportAny]
         )
         assert data_dict.get_item(1).unwrap() == "A"  # replaced
         assert data_dict.get_item(2).unwrap() == "b"  # ignored (kept original)
@@ -328,21 +327,22 @@ def test_table_truncate_preserves_schema(tmp_path: Path) -> None:
     """Truncate removes all rows but preserves table schema."""
 
     class S(fl.Schema):
-        id = fl.Int64(primary_key=True)
-        value = fl.String()
+        id: fl.Int64 = fl.Int64(primary_key=True)
+        value: fl.String = fl.String()
 
     class DB(fl.DataBase):
-        t = fl.Table(schema=S)
+        t: fl.Table = fl.Table(schema=S)
 
     class Project(fl.Folder):
-        __source__ = Path(tmp_path)
-        db = DB()
+        __source__: Path = Path(tmp_path)
+        db: DB = DB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
 
     with Project.db:
         assert (
-            Project.db.t.create_or_replace()
+            Project.db.t
+            .create_or_replace()
             .insert_into(pl.DataFrame({"id": [1, 2, 3], "value": ["a", "b", "c"]}))
             .truncate()
             .read()
@@ -353,7 +353,8 @@ def test_table_truncate_preserves_schema(tmp_path: Path) -> None:
         # Can still insert new data
 
         assert (
-            Project.db.t.insert_into(pl.DataFrame({"id": [10], "value": ["new"]}))
+            Project.db.t
+            .insert_into(pl.DataFrame({"id": [10], "value": ["new"]}))
             .read()
             .height
             == 1
@@ -364,56 +365,53 @@ def test_table_create_from_fails_if_exists(tmp_path: Path) -> None:
     """create_from raises error if table already exists."""
 
     class S(fl.Schema):
-        v = fl.Int64()
+        v: fl.Int64 = fl.Int64()
 
     class DB(fl.DataBase):
-        t = fl.Table(schema=S)
+        t: fl.Table = fl.Table(schema=S)
 
     class Project(fl.Folder):
-        __source__ = Path(tmp_path)
-        db = DB()
+        __source__: Path = Path(tmp_path)
+        db: DB = DB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
 
     with Project.db:
-        Project.db.t.create().insert_into(pl.DataFrame({"v": [1]}))
+        _ = Project.db.t.create().insert_into(pl.DataFrame({"v": [1]}))
         with pytest.raises(duckdb.CatalogException):
-            Project.db.t.create().insert_into(pl.DataFrame({"v": [2]}))
+            _ = Project.db.t.create().insert_into(pl.DataFrame({"v": [2]}))
 
 
 def test_table_large_dataset_operations(tmp_path: Path) -> None:
     """Table handles large datasets efficiently."""
 
     class S(fl.Schema):
-        id = fl.Int64(primary_key=True)
-        category = fl.String()
-        value = fl.Float64()
+        id: fl.Int64 = fl.Int64(primary_key=True)
+        category: fl.String = fl.String()
+        value: fl.Float64 = fl.Float64()
 
     class DB(fl.DataBase):
-        t = fl.Table(schema=S)
+        t: fl.Table = fl.Table(schema=S)
 
     class Project(fl.Folder):
-        __source__ = Path(tmp_path)
-        db = DB()
+        __source__: Path = Path(tmp_path)
+        db: DB = DB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
 
     n_rows = 10000
 
     with Project.db:
-        df = pl.DataFrame(
-            {
-                "id": pc.Iter(range(n_rows)).collect(),
-                "category": pc.Iter(range(n_rows))
-                .map(lambda i: f"cat_{i % 10}")
-                .collect(),
-                "value": pc.Iter(range(n_rows)).map(float).collect(),
-            }
-        )
+        df = pl.DataFrame({
+            "id": pc.Iter(range(n_rows)).collect(),
+            "category": pc.Iter(range(n_rows)).map(lambda i: f"cat_{i % 10}").collect(),
+            "value": pc.Iter(range(n_rows)).map(float).collect(),
+        })
         assert Project.db.t.create_or_replace().insert_into(df).read().height == n_rows
 
         assert (
-            Project.db.t.scan()
+            Project.db.t  # pyright: ignore[reportUnknownMemberType]
+            .scan()
             .group_by("category")
             .agg(fl.col("value").sum().alias("total"))
             .to_native()
@@ -427,15 +425,15 @@ def test_table_create(tmp_path: Path) -> None:
     """Test create table if not exists operation."""
 
     class S(fl.Schema):
-        id = fl.Int64(primary_key=True)
-        name = fl.String()
+        id: fl.Int64 = fl.Int64(primary_key=True)
+        name: fl.String = fl.String()
 
     class DB(fl.DataBase):
-        t = fl.Table(schema=S)
+        t: fl.Table = fl.Table(schema=S)
 
     class Project(fl.Folder):
-        __source__ = Path(tmp_path)
-        db = DB()
+        __source__: Path = Path(tmp_path)
+        db: DB = DB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
 
@@ -447,7 +445,7 @@ def test_table_create(tmp_path: Path) -> None:
 
         # Second creation should fail
         with pytest.raises(duckdb.CatalogException):
-            Project.db.t.create().read()
+            _ = Project.db.t.create().read()
         # Should not raise error
         assert Project.db.t.create_if_not_exist().read().height == 0
         # Should recreate table
@@ -455,7 +453,8 @@ def test_table_create(tmp_path: Path) -> None:
 
         # Should replace existing table
         assert (
-            Project.db.t.insert_into(pl.DataFrame({"id": [1], "name": ["test"]}))
+            Project.db.t
+            .insert_into(pl.DataFrame({"id": [1], "name": ["test"]}))
             .create_if_not_exist()
             .read()
             .height
@@ -466,23 +465,23 @@ def test_table_create(tmp_path: Path) -> None:
 
 def test_table_drop_and_drop_if_exist(tmp_path: Path) -> None:
     class S(fl.Schema):
-        id = fl.Int64(primary_key=True)
-        name = fl.String()
+        id: fl.Int64 = fl.Int64(primary_key=True)
+        name: fl.String = fl.String()
 
     class DB(fl.DataBase):
-        t = fl.Table(schema=S)
+        t: fl.Table = fl.Table(schema=S)
 
     class Project(fl.Folder):
-        __source__ = Path(tmp_path)
-        db = DB()
+        __source__: Path = Path(tmp_path)
+        db: DB = DB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
 
     with Project.db:
         # Should not raise error
-        Project.db.t.drop_if_exist().create().drop()
+        _ = Project.db.t.drop_if_exist().create().drop()
         # Should raise error
         with pytest.raises(duckdb.CatalogException):
-            Project.db.t.drop()
+            _ = Project.db.t.drop()
         with pytest.raises(duckdb.CatalogException):
-            Project.db.t.read()
+            _ = Project.db.t.read()

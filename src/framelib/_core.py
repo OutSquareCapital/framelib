@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC
 from pathlib import Path
-from typing import TYPE_CHECKING, TypeIs
+from typing import TYPE_CHECKING, TypeIs, override
 
 import pyochain as pc
 
@@ -17,7 +17,7 @@ class BaseEntry(ABC):
     """
 
     _name: str
-    __slots__ = ("_name",)
+    __slots__ = ("_name",)  # pyright: ignore[reportUnannotatedClassAttribute, reportIncompatibleUnannotatedOverride]
 
     @property
     def name(self) -> str:
@@ -43,11 +43,12 @@ class Layout[T: BaseEntry](ABC):
             return isinstance(obj, BaseEntry)
 
         cls._entries = (
-            pc.Vec.from_ref(cls.mro())
+            pc.Vec
+            .from_ref(cls.mro())
             .rev()
             .filter(lambda c: c is not object and hasattr(c, "__dict__"))
             .flat_map(lambda c: c.__dict__.items())
-            .filter_star(lambda _, obj: _is_base_entry(obj))
+            .filter_star(lambda _, obj: _is_base_entry(obj))  # pyright: ignore[reportAny]
             .collect(pc.Dict)
         )
 
@@ -72,14 +73,15 @@ class Entry(BaseEntry):
 
     _schema: type[Schema]
     __source__: Path
-    __slots__ = ("__source__", "_schema")
+    __slots__ = ("__source__", "_schema")  # pyright: ignore[reportUnannotatedClassAttribute, reportIncompatibleUnannotatedOverride]
 
     def __init__(self, schema: type[Schema]) -> None:
         self._schema = schema
 
-    def __set_source__(self, source: Path) -> None:
+    def __set_source__(self, source: Path) -> None:  # noqa: PLW3201
         self.__source__ = source
 
+    @override
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(\nsource={self.source},\nschema={self._schema}\n)"
 

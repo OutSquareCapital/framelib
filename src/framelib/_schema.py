@@ -28,9 +28,10 @@ class Schema(Layout[Column]):
 
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
-        cls._entries = _entries_from_mro(cls)
+        cls._entries: pc.Dict[str, Column] = _entries_from_mro(cls)
         cls._constraints = (
-            cls.entries()
+            cls
+            .entries()
             .values()
             .iter()
             .collect(pc.Set)
@@ -48,7 +49,11 @@ class Schema(Layout[Column]):
 
     @classmethod
     def to_sql(cls) -> str:
-        """Get the SQL schema definition."""
+        """Get the SQL schema definition.
+
+        Returns:
+            str: The SQL schema definition.
+        """
         composite_pk = cls._constraints.primary.filter(lambda pk: pk.is_composite())
         composite_unique = cls._constraints.uniques.filter(lambda u: u.is_composite())
 
@@ -63,12 +68,14 @@ class Schema(Layout[Column]):
             return parts.join(" ")
 
         table_constraints = (
-            pc.Iter((composite_pk, composite_unique))
+            pc
+            .Iter((composite_pk, composite_unique))
             .filter(lambda constr: constr.is_some())
             .map(lambda constr: constr.unwrap().to_sql())
         )
         return (
-            cls.entries()
+            cls
+            .entries()
             .values()
             .iter()
             .map(_col_sql)
@@ -84,7 +91,8 @@ class Schema(Layout[Column]):
             pl.Schema: The Polars schema definition.
         """
         return (
-            cls.entries()
+            cls
+            .entries()
             .items()
             .iter()
             .map_star(lambda name, c: (name, c.pl_dtype))
@@ -154,10 +162,12 @@ class Schema(Layout[Column]):
 
         """
         return (
-            nw.from_native(df)
+            nw
+            .from_native(df)  # pyright: ignore[reportUnknownMemberType]
             .lazy()
             .select(
-                cls.entries()
+                cls
+                .entries()
                 .values()
                 .iter()
                 .map(lambda col: col.nw_col.cast(col.nw_dtype))
@@ -177,8 +187,9 @@ class Schema(Layout[Column]):
         Returns:
             pl.LazyFrame: The casted `polars.LazyFrame`.
         """
-        return df.lazy().select(
-            cls.entries()
+        return df.lazy().select(  # pyright: ignore[reportUnknownMemberType]
+            cls
+            .entries()
             .values()
             .iter()
             .map(lambda c: c.pl_col.cast(c.pl_dtype, strict=False))
@@ -210,11 +221,12 @@ def _entries_from_mro(cls: type) -> pc.Dict[str, Column]:
         return isinstance(v, Column)
 
     return (
-        pc.Iter(cls.mro())
+        pc
+        .Iter(cls.mro())
         .filter(_is_subclass_of_schema)
         .collect()
         .rev()
         .flat_map(lambda base: base.__dict__.items())
-        .filter_star(lambda _, v: _is_column(v))
+        .filter_star(lambda _, v: _is_column(v))  # pyright: ignore[reportAny]
         .collect(pc.Dict)
     )

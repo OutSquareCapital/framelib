@@ -46,11 +46,15 @@ class Table(Entry):
 
     """
 
-    __slots__ = ("_con",)
+    __slots__ = ("_con",)  # pyright: ignore[reportUnannotatedClassAttribute, reportIncompatibleUnannotatedOverride]
     _con: DuckDBPyConnection
 
-    def __set_connexion__(self, con: DuckDBPyConnection) -> None:
-        self._con: DuckDBPyConnection = con
+    def __set_connexion__(self, con: DuckDBPyConnection) -> None:  # noqa: PLW3201
+        self._con = con
+
+    def _execute(self, q: str) -> Self:
+        _ = self.connexion.unwrap().execute(q)
+        return self
 
     @property
     def connexion(self) -> pc.Result[DuckDBPyConnection, RuntimeError]:
@@ -103,8 +107,7 @@ class Table(Entry):
             Self: The table instance.
         """
         q = qry.create(self._name, self.schema.to_sql())
-        self.connexion.unwrap().execute(q)
-        return self
+        return self._execute(q)
 
     def create_if_not_exist(self) -> Self:
         """Creates the table in the database if it does not already exist.
@@ -115,8 +118,7 @@ class Table(Entry):
             Self: The table instance.
         """
         q = qry.create_if_not_exist(self._name, self.schema.to_sql())
-        self.connexion.unwrap().execute(q)
-        return self
+        return self._execute(q)
 
     def create_or_replace(self) -> Self:
         """Creates or replaces the table in the database if it already exists.
@@ -125,8 +127,7 @@ class Table(Entry):
             Self: The table instance.
         """
         q = qry.create_or_replace(self._name, self.schema.to_sql())
-        self.connexion.unwrap().execute(q)
-        return self
+        return self._execute(q)
 
     def truncate(self) -> Self:
         """Removes all rows from the table.
@@ -134,8 +135,7 @@ class Table(Entry):
         Returns:
             Self: The table instance.
         """
-        self.connexion.unwrap().execute(qry.truncate(self._name))
-        return self
+        return self._execute(qry.truncate(self._name))
 
     def drop(self) -> Self:
         """Drops the table from the database.
@@ -145,8 +145,7 @@ class Table(Entry):
         Returns:
             Self: The table instance.
         """
-        self.connexion.unwrap().execute(qry.drop(self._name))
-        return self
+        return self._execute(qry.drop(self._name))
 
     def drop_if_exist(self) -> Self:
         """Drops the table from the database if it exists.
@@ -154,8 +153,7 @@ class Table(Entry):
         Returns:
             Self: The table instance.
         """
-        self.connexion.unwrap().execute(qry.drop_if_exists(self._name))
-        return self
+        return self._execute(qry.drop_if_exists(self._name))
 
     def insert_into(self, df: IntoFrame | IntoLazyFrame) -> Self:
         """Appends rows to the table.
@@ -169,8 +167,7 @@ class Table(Entry):
             Self: The table instance.
         """
         _ = _from_df(self.schema, df)
-        self.connexion.unwrap().execute(qry.insert_into(self._name))
-        return self
+        return self._execute(qry.insert_into(self._name))
 
     def insert_or_replace(self, df: IntoFrame | IntoLazyFrame) -> Self:
         """Inserts rows from the dataframe.
@@ -184,8 +181,7 @@ class Table(Entry):
             Self: The table instance.
         """
         _ = _from_df(self.schema, df)
-        self.connexion.unwrap().execute(qry.insert_or_replace(self._name))
-        return self
+        return self._execute(qry.insert_or_replace(self._name))
 
     def insert_or_ignore(self, df: IntoFrame | IntoLazyFrame) -> Self:
         """Inserts rows from the dataframe.
@@ -199,8 +195,7 @@ class Table(Entry):
             Self: The table instance.
         """
         _ = _from_df(self.schema, df)
-        self.connexion.unwrap().execute(qry.insert_or_ignore(self._name))
-        return self
+        return self._execute(qry.insert_or_ignore(self._name))
 
     def summarize(self) -> DuckFrame:
         """Summarizes the table, returning statistics about its columns.
@@ -217,7 +212,7 @@ class Table(Entry):
             DuckFrame: The columns information as a Narwhals LazyFrame.
         """
         q = self.connexion.unwrap().sql(qry.columns_schema(self._name))
-        return nw.from_native(q).select(
+        return nw.from_native(q).select(  # pyright: ignore[reportUnknownMemberType]
             "column_name",
             "data_type",
             "is_nullable",

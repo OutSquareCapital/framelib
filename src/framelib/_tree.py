@@ -9,7 +9,8 @@ from typing import TYPE_CHECKING, Self, TypeIs
 import pyochain as pc
 
 if TYPE_CHECKING:
-    from ._folder import File, Folder
+    from ._filehandlers import File
+    from ._folder import Folder
 
 
 class Leaf(StrEnum):
@@ -44,7 +45,8 @@ class TreeBuilder:
             return issubclass(cls, parent) and cls is not parent
 
         return (
-            pc.Iter(mro)
+            pc
+            .Iter(mro)
             .filter(lambda cls: _is_subclass(cls, Folder))
             .collect()
             .into(lambda folders: cls(folders, folders.last().source()))
@@ -59,15 +61,17 @@ class TreeBuilder:
 
             try:
                 return (
-                    pc.Some(folder.source.relative_to(self.root).parent)
+                    pc
+                    .Some(folder.source.relative_to(self.root).parent)
                     .into(pc.Iter.successors, succ=_is_addable)
-                    .map(lambda p: self.root.joinpath(p))
+                    .map(self.root.joinpath)
                 )
             except ValueError:
                 return pc.Iter[Path].new()
 
         return (
-            self.folders.iter()
+            self.folders
+            .iter()
             .flat_map(lambda f: f.entries().values())
             .flat_map(_add_to_tree)
             .insert(self.root)
@@ -91,7 +95,8 @@ class Structure:
         cls, dir_paths: pc.Set[Path], all_folders: pc.Seq[type[Folder]]
     ) -> Self:
         return (
-            all_folders.iter()
+            all_folders
+            .iter()
             .flat_map(
                 lambda f: f.entries().values().iter().map(lambda file: file.source)
             )

@@ -11,12 +11,12 @@ def test_parquet_write_and_read(tmp_path: Path) -> None:
     """Write and read a Parquet file via the `Parquet` File handler."""
 
     class S(fl.Schema):
-        id = fl.Int64()
-        name = fl.String()
+        id: fl.Int64 = fl.Int64()
+        name: fl.String = fl.String()
 
     class Project(fl.Folder):
-        __source__ = Path(tmp_path)
-        data = fl.Parquet(schema=S)
+        __source__: Path = Path(tmp_path)
+        data: fl.Parquet = fl.Parquet(schema=S)
 
     Project.source().mkdir(parents=True, exist_ok=True)
 
@@ -33,12 +33,12 @@ def test_csv_write_and_read(tmp_path: Path) -> None:
     """Write and read a CSV file via the `CSV` File handler."""
 
     class S(fl.Schema):
-        id = fl.Int64()
-        val = fl.String()
+        id: fl.Int64 = fl.Int64()
+        val: fl.String = fl.String()
 
     class Project(fl.Folder):
-        __source__ = Path(tmp_path)
-        data = fl.CSV(schema=S)
+        __source__: Path = Path(tmp_path)
+        data: fl.CSV = fl.CSV(schema=S)
 
     Project.source().mkdir(parents=True, exist_ok=True)
 

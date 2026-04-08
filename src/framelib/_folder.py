@@ -20,11 +20,12 @@ class Folder(Layout[File]):
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
         if not hasattr(cls, SOURCE):
-            cls.__source__ = Path()
+            cls.__source__: Path = Path()
 
         cls.__source__ = cls.__source__.joinpath(cls.__name__.lower())
         (
-            cls.entries()
+            cls
+            .entries()
             .values()
             .iter()
             .for_each(lambda file: file.__set_source__(cls.source()))

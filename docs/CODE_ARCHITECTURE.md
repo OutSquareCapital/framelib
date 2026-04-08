@@ -44,13 +44,17 @@ def __init_subclass__(cls) -> None:
         return isinstance(obj, BaseEntry)
 
     cls._entries = (
-        pc.Iter(cls.__dict__.items())
+        pc
+        .Iter(cls.__dict__.items())
         .filter_star(lambda _, obj: _is_base_entry(obj))
         .collect(pc.Dict)
         .inspect(
-            lambda x: x.items()
-            .iter()
-            .for_each_star(lambda name, entry: entry.__set_entry_name__(name))
+            lambda x: (
+                x
+                .items()
+                .iter()
+                .for_each_star(lambda name, entry: entry.__set_entry_name__(name))
+            )
         )
     )
 ```
@@ -65,10 +69,12 @@ def __init_subclass__(cls) -> None:
     class BaseSchema(fl.Schema):
         created_at = fl.Timestamp()
 
+
     class UserSchema(BaseSchema):
         id = fl.Int64(primary_key=True)
         name = fl.String()
-    
+
+
     # UserSchema now contains both 'created_at' and its own columns
     ```
 
@@ -80,15 +86,16 @@ def __init_subclass__(cls) -> None:
         def __init_subclass__(cls) -> None:
             super().__init_subclass__()
             cls._set_files_source()
-    
+
         @classmethod
         def _set_files_source(cls) -> None:
-            if not hasattr(cls, '__source__'):
+            if not hasattr(cls, "__source__"):
                 cls.__source__ = Path()
-            
+
             cls.__source__ = cls.__source__.joinpath(cls.__name__.lower())
             return (
-                cls.entries()
+                cls
+                .entries()
                 .values()
                 .iter()
                 .for_each(lambda file: file.__set_source__(cls.source()))
@@ -196,9 +203,11 @@ class UserSchema(fl.Schema):
     id = fl.Int64(primary_key=True)
     name = fl.String()
 
+
 # The same schema is used for a database table and a file
 class MyDatabase(fl.DataBase):
     users = fl.Table(schema=UserSchema)
+
 
 class Backups(fl.Folder):
     users_backup = fl.Parquet(schema=UserSchema)
@@ -242,6 +251,7 @@ Both methods return `partial` functions with the file path pre-bound:
 class MyProject(fl.Folder):
     data = fl.CSV(schema=UserSchema)
 
+
 # These are equivalent to calling pl.read_csv(MyProject.data.source, ...)
 result = MyProject.data.read()
 lazy_result = MyProject.data.scan()
@@ -258,17 +268,19 @@ Tables provide similar patterns but with a key difference: operations happen on 
 class MyDatabase(fl.DataBase):
     users = fl.Table(schema=UserSchema)
 
+
 class MyProject(fl.Folder):
     db = MyDatabase()
+
 
 @MyProject.db
 def process_users() -> None:
     # Lazy operations on the database
     filtered = MyProject.db.users.scan().filter(fl.col("age") > 18)
-    
+
     # Materialize to Polars DataFrame
     result = MyProject.db.users.read()
-    
+
     # Raw SQL access
     sql_result = MyProject.db.sql("SELECT * FROM users WHERE age > 18")
 ```
@@ -303,8 +315,8 @@ A `Folder` is a `Layout[File]` that represents a directory containing file entri
 
 ```python
 class ProjectData(fl.Folder):
-    raw_logs = fl.NDJson()      # → projectdata/raw_logs.ndjson
-    users_backup = fl.Parquet() # → projectdata/users_backup.parquet
+    raw_logs = fl.NDJson()  # → projectdata/raw_logs.ndjson
+    users_backup = fl.Parquet()  # → projectdata/users_backup.parquet
 ```
 
 **Important:** A `Folder` can contain not just `File` entries, but also `DataBase` entries. This is possible because `DataBase` inherits from `BaseEntry`, making it compatible with `Folder`'s introspection mechanism. This allows for hierarchical data structures where databases are nested within folder hierarchies.
@@ -319,7 +331,8 @@ class ProjectData(fl.Folder):
 ```python
 class MyProject(fl.Folder):
     db = fl.DataBase()  # ← DataBase acts as an Entry here
-    
+
+
 class MyDatabase(fl.DataBase):
     users = fl.Table(schema=UserSchema)  # ← DataBase acts as a Layout here
 ```
@@ -327,8 +340,7 @@ class MyDatabase(fl.DataBase):
 **Multiple inheritance pattern:**
 
 ```python
-class DataBase(Layout[Table], BaseEntry, ABC, contextlib.ContextDecorator):
-    ...
+class DataBase(Layout[Table], BaseEntry, ABC, contextlib.ContextDecorator): ...
 ```
 
 This dual inheritance allows `DataBase` to:
@@ -350,6 +362,7 @@ Unlike `Folder`, which manages paths statically at class definition time, `DataB
 ```python
 class MyProject(fl.Folder):
     db = MyDatabase()  # Instance created once at class definition
+
 
 # The connection is opened and closed automatically
 with MyProject.db as db:
@@ -374,16 +387,22 @@ In the context of `Layout.__init_subclass__`, `pyochain` is used to perform **MR
 
 ```python
 cls._entries = (
-    pc.Vec.from_ref(cls.mro())  # Convert MRO list to a pyochain Vec for zero-copy conversion
+    pc.Vec
+    .from_ref(cls.mro())  # Convert MRO list to a pyochain Vec for zero-copy conversion
     .rev()  # Get a reversed Iterator to process from base to derived
-    .filter(lambda c: c is not object and hasattr(c, "__dict__"))  # Keep only classes with attributes
+    .filter(
+        lambda c: c is not object and hasattr(c, "__dict__")
+    )  # Keep only classes with attributes
     .flat_map(lambda c: c.__dict__.items())  # Flatten all attributes from all classes
     .filter_star(lambda _, obj: _is_base_entry(obj))  # Keep only BaseEntry instances
     .collect(pc.Dict)  # Convert to a pyochain Dict
     .inspect(  # Side effect: register names in entries
-        lambda x: x.items()
-        .iter()
-        .for_each_star(lambda name, entry: entry.__set_entry_name__(name))
+        lambda x: (
+            x
+            .items()
+            .iter()
+            .for_each_star(lambda name, entry: entry.__set_entry_name__(name))
+        )
     )
 )
 ```
@@ -407,6 +426,7 @@ The relationship is straightforward but elegant:
 class Data(fl.Folder):
     raw = fl.CSV()
     db = fl.MyDatabase()
+
 
 # At this point, Data.raw.__source__ is already set to Path("data/raw.csv")
 # Data.db.__source__ is set to Path("data/mydatabase.ddb")
@@ -432,7 +452,9 @@ The relationship is more dynamic than `Folder` and `File`:
 
 ```python
 class MyProject(fl.Folder):
-    db = MyDatabase() # Created once, but no connection yet
+    db = MyDatabase()  # Created once, but no connection yet
+
+
 with MyProject.db as db:
     db.users.read()  # Now the table can execute queries
 # Connection automatically closed
@@ -457,6 +479,7 @@ class MyProject(fl.Folder):
     raw_data = fl.CSV()
     processed = fl.Parquet()
     db = MyDatabase()
+
 
 print(MyProject.show_tree())
 # Output:
@@ -491,6 +514,7 @@ The `DataBase` class implements Python's context manager protocol (`__enter__` a
 class MyProject(fl.Folder):
     db = MyDatabase()  # Instance created once
 
+
 with MyProject.db as db:
     result = db.users.read()
     db.logs.insert_into(new_logs)
@@ -505,10 +529,12 @@ The `DataBase` class also inherits from `contextlib.ContextDecorator`, which all
 class MyProject(fl.Folder):
     db = MyDatabase()
 
+
 @MyProject.db
 def load_and_process(df: pl.DataFrame) -> None:
     MyProject.db.users.insert_into(df)
     # Process...
+
 
 # Connection opens before load_and_process() is called
 # Connection closes after load_and_process() completes

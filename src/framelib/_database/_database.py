@@ -4,7 +4,7 @@ from collections.abc import Callable
 from functools import wraps
 from pathlib import Path
 from types import TracebackType
-from typing import Self
+from typing import Self, override
 
 import duckdb
 import narwhals as nw
@@ -35,6 +35,7 @@ class DataBase(
     _entry_count: int = 0
     _connexion: duckdb.DuckDBPyConnection
 
+    @override
     def __call__[**P, R](self, fn: Callable[P, R]) -> Callable[P, R]:
         """Decorator to ensure database connection context for a method.
 
@@ -71,10 +72,11 @@ class DataBase(
 
         return wrapper
 
-    def __set_source__(self, source: Path) -> None:
-        self.__source__ = Path(source, self._name).with_suffix(_DDB)
+    def __set_source__(self, source: Path) -> None:  # noqa: PLW3201
+        self.__source__: Path = Path(source, self._name).with_suffix(_DDB)
         return (
-            self.entries()
+            self
+            .entries()
             .values()
             .iter()
             .for_each(
@@ -93,7 +95,8 @@ class DataBase(
         if self._entry_count == 0:
             self._connexion = duckdb.connect(self.source)
             (
-                self.entries()
+                self
+                .entries()
                 .values()
                 .iter()
                 .for_each(lambda table: table.__set_connexion__(self._connexion))
@@ -232,12 +235,13 @@ class DataBase(
             Self: The database instance.
         """
         (
-            self.show_tables()
+            self
+            .show_tables()
             .collect()
             .pipe(lambda df: pc.Set(df.get_column("name")))
             .difference(self.entries().keys())
             .iter()
-            .for_each(lambda q: self.connexion.execute(qry.drop_if_exists(q)))
+            .for_each(lambda q: self.connexion.execute(qry.drop_if_exists(q)))  # pyright: ignore[reportAny]
         )
 
         return self
