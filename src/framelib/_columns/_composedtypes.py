@@ -102,7 +102,9 @@ class Struct(Column):
             self.fields = fields.entries()
         else:
             self.fields = pc.Dict(fields)
-        super().__init__(primary_key=primary_key, unique=unique, nullable=nullable)
+        super(Struct, self).__init__(
+            primary_key=primary_key, unique=unique, nullable=nullable
+        )
 
     @property
     @override
@@ -199,7 +201,9 @@ class Enum(Column):
         if isclass(categories):
             categories = (item.value for item in categories)  # pyright: ignore[reportAny]
         self.categories = pc.Set(categories)
-        super().__init__(primary_key=primary_key, unique=unique, nullable=nullable)
+        super(Enum, self).__init__(
+            primary_key=primary_key, unique=unique, nullable=nullable
+        )
 
     @property
     @override
