@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import override
 
 import narwhals as nw
@@ -6,6 +7,7 @@ import polars as pl
 from ._base import Column
 
 
+@dataclass(slots=True, eq=False)
 class Boolean(Column):
     @property
     @override
@@ -23,6 +25,7 @@ class Boolean(Column):
         return "BOOLEAN"
 
 
+@dataclass(slots=True, eq=False)
 class String(Column):
     @property
     @override
@@ -40,6 +43,7 @@ class String(Column):
         return "VARCHAR"
 
 
+@dataclass(slots=True, eq=False)
 class Date(Column):
     @property
     @override
@@ -57,6 +61,7 @@ class Date(Column):
         return "DATE"
 
 
+@dataclass(slots=True, eq=False)
 class Float32(Column):
     @property
     @override
@@ -74,6 +79,7 @@ class Float32(Column):
         return "FLOAT"
 
 
+@dataclass(slots=True, eq=False)
 class Float64(Column):
     @property
     @override
@@ -91,6 +97,7 @@ class Float64(Column):
         return "DOUBLE"
 
 
+@dataclass(slots=True, eq=False)
 class Int8(Column):
     @property
     @override
@@ -108,6 +115,7 @@ class Int8(Column):
         return "TINYINT"
 
 
+@dataclass(slots=True, eq=False)
 class Int16(Column):
     @property
     @override
@@ -125,6 +133,7 @@ class Int16(Column):
         return "SMALLINT"
 
 
+@dataclass(slots=True, eq=False)
 class Int32(Column):
     @property
     @override
@@ -142,6 +151,7 @@ class Int32(Column):
         return "INTEGER"
 
 
+@dataclass(slots=True, eq=False)
 class Int64(Column):
     @property
     @override
@@ -159,6 +169,7 @@ class Int64(Column):
         return "BIGINT"
 
 
+@dataclass(slots=True, eq=False)
 class Int128(Column):
     @property
     @override
@@ -176,6 +187,7 @@ class Int128(Column):
         return "HUGEINT"
 
 
+@dataclass(slots=True, eq=False)
 class UInt8(Column):
     @property
     @override
@@ -193,6 +205,7 @@ class UInt8(Column):
         return "UTINYINT"
 
 
+@dataclass(slots=True, eq=False)
 class UInt16(Column):
     @property
     @override
@@ -210,6 +223,7 @@ class UInt16(Column):
         return "USMALLINT"
 
 
+@dataclass(slots=True, eq=False)
 class UInt32(Column):
     @property
     @override
@@ -227,6 +241,7 @@ class UInt32(Column):
         return "UINTEGER"
 
 
+@dataclass(slots=True, eq=False)
 class UInt64(Column):
     @property
     @override
@@ -244,6 +259,7 @@ class UInt64(Column):
         return "UBIGINT"
 
 
+@dataclass(slots=True, eq=False)
 class UInt128(Column):
     @property
     @override

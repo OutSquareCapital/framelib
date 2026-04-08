@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from .._core import Layout
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, eq=False)
 class Datetime(Column):
     time_unit: TimeUnit = "ns"
     time_zone: str | datetime.timezone | None = None
@@ -40,7 +40,7 @@ class Datetime(Column):
         return "TIMESTAMP WITH TIME ZONE"
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, eq=False)
 class Decimal(Column):
     precision: int | None = 18
     scale: int = 0
@@ -61,7 +61,7 @@ class Decimal(Column):
         return f"DECIMAL({self.precision}, {self.scale})"
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, eq=False)
 class Array(Column):
     inner: Column
     shape: int | tuple[int, ...]
@@ -86,7 +86,7 @@ class Array(Column):
         return f"{base}{dims}"
 
 
-@dataclass(slots=True, init=False)
+@dataclass(slots=True, init=False, eq=False)
 class Struct(Column):
     fields: pc.Dict[str, Column]
 
@@ -142,7 +142,7 @@ class Struct(Column):
         )
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, eq=False)
 class List(Column):
     inner: Column
 
@@ -162,7 +162,7 @@ class List(Column):
         return f"{self.inner.sql_type}[]"
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, eq=False)
 class Categorical(Column):
     @property
     @override
@@ -186,7 +186,7 @@ class Categorical(Column):
         return "VARCHAR"
 
 
-@dataclass(slots=True, init=False)
+@dataclass(slots=True, init=False, eq=False)
 class Enum(Column):
     categories: pc.Set[str]
 

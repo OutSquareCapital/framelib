@@ -10,7 +10,7 @@ from .._core import BaseEntry
 TimeUnit = Literal["ns", "us", "ms"]
 
 
-@dataclass(slots=True, unsafe_hash=True)
+@dataclass(slots=True, eq=False)
 class Column(BaseEntry, ABC):
     """A Column represents a single column in a schema.
 
