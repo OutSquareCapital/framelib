@@ -167,7 +167,8 @@ class Table(Entry):
             Self: The table instance.
         """
         _ = _from_df(self.schema, df)
-        return self._execute(qry.insert_into(self._name))
+        _executed = self.connexion.unwrap().execute(qry.insert_into(self._name))
+        return self
 
     def insert_or_replace(self, df: IntoFrame | IntoLazyFrame) -> Self:
         """Inserts rows from the dataframe.
@@ -181,7 +182,8 @@ class Table(Entry):
             Self: The table instance.
         """
         _ = _from_df(self.schema, df)
-        return self._execute(qry.insert_or_replace(self._name))
+        _executed = self.connexion.unwrap().execute(qry.insert_or_replace(self._name))
+        return self
 
     def insert_or_ignore(self, df: IntoFrame | IntoLazyFrame) -> Self:
         """Inserts rows from the dataframe.
@@ -195,7 +197,8 @@ class Table(Entry):
             Self: The table instance.
         """
         _ = _from_df(self.schema, df)
-        return self._execute(qry.insert_or_ignore(self._name))
+        _executed = self.connexion.unwrap().execute(qry.insert_or_ignore(self._name))
+        return self
 
     def summarize(self) -> DuckFrame:
         """Summarizes the table, returning statistics about its columns.
