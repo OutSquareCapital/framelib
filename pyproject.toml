@@ -36,11 +36,13 @@
         "TID252",
     ]
     lint.select = ["ALL"]
+    preview = true
     [tool.ruff.format]
         docstring-code-format = true
     [tool.ruff.lint.pydocstyle]
         convention = "google"
-
+    [tool.ruff.lint.isort]
+        combine-as-imports = true
 [tool.pydoclint]
     arg-type-hints-in-docstring                   = true
     arg-type-hints-in-signature                   = true
@@ -61,8 +63,13 @@
 
 [dependency-groups]
     dev = [
+        "basedpyright>=1.39.0",
         "marimo>=0.16.5",
         "pydoclint>=0.8.1",
         "pytest>=9.0.2",
         "ruff>=0.14.5",
     ]
+[tool.basedpyright]
+    reportImportCycles     = false
+    reportMissingSuperCall = false
+    typeCheckingMode       = "all"
