@@ -3,7 +3,7 @@
         { name = "OutSquareCapital", email = "166045166+OutSquareCapital@users.noreply.github.com" },
     ]
     dependencies = [
-        "duckdb==1.5.2.dev40",
+        "duckdb>=1.5.2",
         "narwhals>=2.5.0",
         "polars>=1.34.0",
         "pyarrow>=14.0.0",
