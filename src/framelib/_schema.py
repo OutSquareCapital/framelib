@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, TypeIs, overload
 
 import narwhals as nw
 import polars as pl
-import pyochain as pc
+from pyochain import Dict, Iter, Set, Vec
 
 from ._columns import Column
 from ._core import Layout
@@ -28,14 +28,9 @@ class Schema(Layout[Column]):
 
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
-        cls._entries: pc.Dict[str, Column] = _entries_from_mro(cls)
+        cls._entries: Dict[str, Column] = _entries_from_mro(cls)
         cls._constraints = (
-            cls
-            .entries()
-            .values()
-            .iter()
-            .collect(pc.Set)
-            .into(KeysConstraints.from_cols)
+            cls.entries().values().iter().collect(Set).into(KeysConstraints.from_cols)
         )
 
     @classmethod
@@ -58,7 +53,7 @@ class Schema(Layout[Column]):
         composite_unique = cls._constraints.uniques.filter(lambda u: u.is_composite())
 
         def _col_sql(col: Column) -> str:
-            parts = pc.Vec([col.sql_col])
+            parts = Vec([col.sql_col])
             if col.primary_key and composite_pk.is_none():
                 parts.append(KWord.PRIMARY_KEY)
             if col.unique and composite_unique.is_none():
@@ -68,8 +63,7 @@ class Schema(Layout[Column]):
             return parts.join(" ")
 
         table_constraints = (
-            pc
-            .Iter((composite_pk, composite_unique))
+            Iter((composite_pk, composite_unique))
             .filter(lambda constr: constr.is_some())
             .map(lambda constr: constr.unwrap().to_sql())
         )
@@ -187,7 +181,7 @@ class Schema(Layout[Column]):
         Returns:
             pl.LazyFrame: The casted `polars.LazyFrame`.
         """
-        return df.lazy().select(  # pyright: ignore[reportUnknownMemberType]
+        return df.lazy().select(
             cls
             .entries()
             .values()
@@ -196,7 +190,7 @@ class Schema(Layout[Column]):
         )
 
 
-def _entries_from_mro(cls: type) -> pc.Dict[str, Column]:
+def _entries_from_mro(cls: type) -> Dict[str, Column]:
     """Constructs the entries dictionary from the class MRO.
 
     Steps:
@@ -211,7 +205,7 @@ def _entries_from_mro(cls: type) -> pc.Dict[str, Column]:
         cls (type): The schema class.
 
     Returns:
-        pc.Dict[str, Column]: The final entries as a dictionary.
+        Dict[str, Column]: The final entries as a dictionary.
     """
 
     def _is_subclass_of_schema(c: type) -> TypeIs[type[Schema]]:
@@ -221,12 +215,11 @@ def _entries_from_mro(cls: type) -> pc.Dict[str, Column]:
         return isinstance(v, Column)
 
     return (
-        pc
-        .Iter(cls.mro())
+        Iter(cls.mro())
         .filter(_is_subclass_of_schema)
         .collect()
         .rev()
         .flat_map(lambda base: base.__dict__.items())
         .filter_star(lambda _, v: _is_column(v))  # pyright: ignore[reportAny]
-        .collect(pc.Dict)
+        .collect(Dict)
     )

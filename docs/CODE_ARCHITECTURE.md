@@ -47,7 +47,7 @@ def __init_subclass__(cls) -> None:
         pc
         .Iter(cls.__dict__.items())
         .filter_star(lambda _, obj: _is_base_entry(obj))
-        .collect(pc.Dict)
+        .collect(Dict)
         .inspect(
             lambda x: (
                 x
@@ -379,15 +379,15 @@ This lazy connection management ensures resources are only used when needed and 
 
 `pyochain` is the functional programming library that powers framelib's introspection and transformation capabilities. It provides:
 
-- **`pc.Vec`**: A mutable sequence with functional transformations (map, filter, flat_map, etc.)
-- **`pc.Dict`**: A superset of `dict` with conversion methods to/from other collections
-- **`pc.Option` and `pc.Result`**: Type-safe handling of optional values/fallible computations
+- **`Vec`**: A mutable sequence with functional transformations (map, filter, flat_map, etc.)
+- **`Dict`**: A superset of `dict` with conversion methods to/from other collections
+- **`Option` and `Result`**: Type-safe handling of optional values/fallible computations
 
 In the context of `Layout.__init_subclass__`, `pyochain` is used to perform **MRO-based introspection** to collect `BaseEntry` instances from the entire class hierarchy:
 
 ```python
 cls._entries = (
-    pc.Vec
+    Vec
     .from_ref(cls.mro())  # Convert MRO list to a pyochain Vec for zero-copy conversion
     .rev()  # Get a reversed Iterator to process from base to derived
     .filter(
@@ -395,7 +395,7 @@ cls._entries = (
     )  # Keep only classes with attributes
     .flat_map(lambda c: c.__dict__.items())  # Flatten all attributes from all classes
     .filter_star(lambda _, obj: _is_base_entry(obj))  # Keep only BaseEntry instances
-    .collect(pc.Dict)  # Convert to a pyochain Dict
+    .collect(Dict)  # Convert to a pyochain Dict
     .inspect(  # Side effect: register names in entries
         lambda x: (
             x

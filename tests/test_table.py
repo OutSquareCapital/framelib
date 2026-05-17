@@ -5,8 +5,8 @@ from pathlib import Path
 import duckdb
 import narwhals as nw
 import polars as pl
-import pyochain as pc
 import pytest
+from pyochain import Dict, Iter, Range, ResultUnwrapError, Set
 
 import framelib as fl
 
@@ -38,7 +38,7 @@ def test_table_crud_and_conflicts(tmp_path: Path) -> None:
 
         # insert_or_replace: update id=2 and add id=3
         df2 = pl.DataFrame({"id": [2, 3], "name": ["bb", "c"]})
-        res2 = Project.db.t.insert_or_replace(df2).read().sort("id")  # pyright: ignore[reportUnknownMemberType]
+        res2 = Project.db.t.insert_or_replace(df2).read().sort("id")
         updated_id = 2
         assert res2.get_column("id").to_list() == [1, 2, 3]
         assert res2.filter(pl.col("id") == updated_id).get_column("name").to_list() == [  # pyright: ignore[reportUnknownMemberType]
@@ -76,7 +76,7 @@ def test_table_access_outside_connection_raises(tmp_path: Path) -> None:
 
     Project.source().mkdir(parents=True, exist_ok=True)
 
-    with pytest.raises(pc.ResultUnwrapError):
+    with pytest.raises(ResultUnwrapError):
         _ = Project.db.t.relation.unwrap()
 
 
@@ -107,7 +107,7 @@ def test_table_insert_into_append_behavior(tmp_path: Path) -> None:
         )
         # Insert more rows
         _ = Project.db.t.insert_into(pl.DataFrame({"id": [2, 3], "value": ["b", "c"]}))
-        result = Project.db.t.read().sort("id")  # pyright: ignore[reportUnknownMemberType]
+        result = Project.db.t.read().sort("id")
         assert result.height == 3
         assert result.get_column("value").to_list() == ["a", "b", "c"]
 
@@ -131,15 +131,15 @@ def test_table_bulk_insert_or_replace(tmp_path: Path) -> None:
     with Project.db:
         # Initial bulk insert
         initial_df = pl.DataFrame({
-            "id": pc.Iter(range(100)).collect(),
-            "counter": pc.Iter(range(100)).map(lambda _: 0).collect(),
+            "id": Range(0, 100).iter().collect(),
+            "counter": Range(0, 100).iter().map(lambda _: 0).collect(),
         })
         _ = Project.db.t.create_or_replace().insert_into(initial_df)
 
         # Update half of them
         update_df = pl.DataFrame({
-            "id": pc.Iter(range(0, 100, 2)).collect(),
-            "counter": pc.Iter(range(50)).map(lambda _: 1).collect(),
+            "id": Range(0, 100, 2).iter().collect(),
+            "counter": Range(0, 50).iter().map(lambda _: 1).collect(),
         })
 
         result = Project.db.t.insert_or_replace(update_df).read()
@@ -166,7 +166,7 @@ def test_table_chain_operations(tmp_path: Path) -> None:
 
     with Project.db:
         statuses = (
-            Project.db.t  # pyright: ignore[reportUnknownMemberType]
+            Project.db.t
             .create_or_replace()
             .insert_into(
                 pl.DataFrame({"id": [1, 2, 3], "status": ["new", "new", "new"]})
@@ -218,9 +218,9 @@ def test_table_scan_narwhals_operations(tmp_path: Path) -> None:
             .agg(fl.col("amount").sum().alias("total"))
             .sort("category")
             .collect()
-            .pipe(lambda df: pc.Iter(df.iter_rows()))
+            .pipe(lambda df: Iter(df.iter_rows()))
             .map_star(lambda cat, total: (cat, total))  # pyright: ignore[reportAny]
-            .collect(pc.Dict)
+            .collect(Dict)
         )
         assert totals.get_item("A").map(int).unwrap() == 425
         assert totals.get_item("B").map(int).unwrap() == 450
@@ -272,7 +272,7 @@ def test_table_describe_columns(tmp_path: Path) -> None:
     Project.source().mkdir(parents=True, exist_ok=True)
 
     with Project.db:
-        col_names = pc.Set[str](
+        col_names = Set[str](
             Project.db.t
             .create_or_replace()
             .insert_into(pl.DataFrame({"id": [1], "name": ["test"], "score": [99.5]}))
@@ -303,7 +303,7 @@ def test_table_multiple_primary_key_conflict_handling(tmp_path: Path) -> None:
 
     with Project.db:
         result = (
-            Project.db.t  # pyright: ignore[reportUnknownMemberType]
+            Project.db.t
             .create_or_replace()
             .insert_into(pl.DataFrame({"pk": [1, 2, 3], "data": ["a", "b", "c"]}))
             .insert_or_replace(pl.DataFrame({"pk": [1, 4], "data": ["A", "d"]}))
@@ -313,8 +313,8 @@ def test_table_multiple_primary_key_conflict_handling(tmp_path: Path) -> None:
             .iter_rows()
         )
 
-        data_dict = pc.Dict[int, str](
-            pc.Iter(result).map_star(lambda pk, data: (pk, data)).collect()  # pyright: ignore[reportAny]
+        data_dict = Dict[int, str](
+            Iter(result).map_star(lambda pk, data: (pk, data)).collect()  # pyright: ignore[reportAny]
         )
         assert data_dict.get_item(1).unwrap() == "A"  # replaced
         assert data_dict.get_item(2).unwrap() == "b"  # ignored (kept original)
@@ -402,10 +402,11 @@ def test_table_large_dataset_operations(tmp_path: Path) -> None:
     n_rows = 10000
 
     with Project.db:
+        rows_nb = Range(0, n_rows)
         df = pl.DataFrame({
-            "id": pc.Iter(range(n_rows)).collect(),
-            "category": pc.Iter(range(n_rows)).map(lambda i: f"cat_{i % 10}").collect(),
-            "value": pc.Iter(range(n_rows)).map(float).collect(),
+            "id": rows_nb.iter().collect(),
+            "category": rows_nb.iter().map(lambda i: f"cat_{i % 10}").collect(),
+            "value": rows_nb.iter().map(float).collect(),
         })
         assert Project.db.t.create_or_replace().insert_into(df).read().height == n_rows
 

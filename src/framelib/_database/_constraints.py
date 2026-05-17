@@ -4,7 +4,7 @@ from collections.abc import Callable
 from enum import StrEnum
 from typing import TYPE_CHECKING, NamedTuple, Self
 
-import pyochain as pc
+from pyochain import Option, Set
 
 if TYPE_CHECKING:
     from .._columns import Column
@@ -21,20 +21,15 @@ class KWord(StrEnum):
 class Constraint(NamedTuple):
     """Represents a constraint on a set of columns."""
 
-    cols: pc.Set[Column]
+    cols: Set[Column]
     k_word: KWord
 
     @classmethod
     def new(
-        cls, cols: pc.Set[Column], predicate: Callable[[Column], bool], k_word: KWord
-    ) -> pc.Option[Self]:
+        cls, cols: Set[Column], predicate: Callable[[Column], bool], k_word: KWord
+    ) -> Option[Self]:
         return (
-            cols
-            .iter()
-            .filter(predicate)
-            .collect(pc.Set)
-            .then_some()
-            .map(lambda cs: cls(cs, k_word))
+            cols.iter().filter(predicate).collect(Set).then(lambda cs: cls(cs, k_word))
         )
 
     def is_composite(self) -> bool:
@@ -52,19 +47,19 @@ class KeysConstraints(NamedTuple):
     Consult `pyochain.Option` documentation for more information about handling Option types.
     """
 
-    primary: pc.Option[Constraint]
+    primary: Option[Constraint]
     """The primary key column(s), if any. Can be composite (multiple columns)."""
-    uniques: pc.Option[Constraint]
+    uniques: Option[Constraint]
     """The unique key columns, if any. Can be composite (multiple columns)."""
-    not_nulls: pc.Option[Constraint]
+    not_nulls: Option[Constraint]
     """The NOT NULL columns, if any."""
 
     @classmethod
-    def from_cols(cls, cols: pc.Set[Column]) -> Self:
+    def from_cols(cls, cols: Set[Column]) -> Self:
         """Build constraints from a set of columns.
 
         Args:
-            cols (pc.Set[Column]): The columns to extract constraints from.
+            cols (Set[Column]): The columns to extract constraints from.
 
         Returns:
             Self: The constructed KeysConstraints.

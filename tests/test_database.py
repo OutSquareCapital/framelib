@@ -4,8 +4,8 @@ from pathlib import Path
 
 import duckdb
 import polars as pl
-import pyochain as pc
 import pytest
+from pyochain import Dict, Set
 
 import framelib as fl
 
@@ -312,7 +312,7 @@ def test_db_show_tables_reflects_schema(tmp_path: Path) -> None:
             pl.DataFrame({"b": ["x"]})
         )
         tables = Project.db.show_tables().collect()
-        table_names = pc.Set[str](tables.get_column("name"))
+        table_names = Set[str](tables.get_column("name"))
         assert "table_one" in table_names
         assert "table_two" in table_names
 
@@ -335,7 +335,7 @@ def test_db_concurrent_decorated_functions_different_dbs(tmp_path: Path) -> None
         beta: DBB = DBB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
-    results = pc.Dict[str, int].new()
+    results = Dict[str, int].new()
 
     @Project.alpha
     def work_alpha() -> None:
@@ -412,7 +412,7 @@ def test_schema_composite_pk_duckdb_integration(tmp_path: Path) -> None:
         df2 = pl.DataFrame({"a": [1], "b": [2], "val": ["updated"]})
         _ = Project.db.t.insert_or_replace(df2)
 
-        result = Project.db.t.read().sort("a", "b")  # pyright: ignore[reportUnknownMemberType]
+        result = Project.db.t.read().sort("a", "b")
         assert result.shape == (3, 3)
         # (1,1) unchanged, (1,2) updated, (2,1) unchanged
         vals = result.get_column("val").to_list()

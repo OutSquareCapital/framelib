@@ -8,7 +8,8 @@ from typing import Self, override
 
 import duckdb
 import narwhals as nw
-import pyochain as pc
+from pyochain import Set
+from pyochain.traits import Pipeable
 
 from .._core import BaseEntry, Layout
 from . import qry
@@ -17,9 +18,7 @@ from ._table import DuckFrame, Table
 _DDB = ".ddb"
 
 
-class DataBase(
-    Layout[Table], BaseEntry, ABC, contextlib.ContextDecorator, pc.traits.Pipeable
-):
+class DataBase(Layout[Table], BaseEntry, ABC, contextlib.ContextDecorator, Pipeable):
     """A DataBase represents a DuckDB database.
 
     It's a `Schema` of `Table` entries.
@@ -206,7 +205,7 @@ class DataBase(
             self
             .show_tables()
             .collect()
-            .pipe(lambda df: pc.Set(df.get_column("name")))
+            .pipe(lambda df: Set(df.get_column("name")))
             .difference(self.entries().keys())
             .iter()
             .for_each(lambda q: self.connexion.execute(qry.drop_if_exists(q)))  # pyright: ignore[reportAny]

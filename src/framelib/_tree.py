@@ -6,7 +6,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import TYPE_CHECKING, Self, TypeIs
 
-import pyochain as pc
+from pyochain import Iter, Option, Seq, Set, Some, Vec, then_if_true
 
 if TYPE_CHECKING:
     from ._filehandlers import File
@@ -33,7 +33,7 @@ class Tree(StrEnum):
 
 @dataclass(slots=True)
 class TreeBuilder:
-    folders: pc.Seq[type[Folder]]
+    folders: Seq[type[Folder]]
     root: Path
     structure: Structure = field(init=False)
 
@@ -45,29 +45,27 @@ class TreeBuilder:
             return issubclass(cls, parent) and cls is not parent
 
         return (
-            pc
-            .Iter(mro)
+            Iter(mro)
             .filter(lambda cls: _is_subclass(cls, Folder))
             .collect()
             .into(lambda folders: cls(folders, folders.last().source()))
         )
 
     def build(self) -> str:
-        def _add_to_tree(folder: File) -> pc.Iter[Path]:
-            def _is_addable(path: Path) -> pc.Option[Path]:
-                return pc.Option.if_true(
+        def _add_to_tree(folder: File) -> Iter[Path]:
+            def _is_addable(path: Path) -> Option[Path]:
+                return then_if_true(
                     path.parent, predicate=lambda p: p.as_posix() != "."
                 )
 
             try:
                 return (
-                    pc
-                    .Some(folder.source.relative_to(self.root).parent)
-                    .into(pc.Iter.successors, succ=_is_addable)
+                    Some(folder.source.relative_to(self.root).parent)
+                    .into(Iter.successors, succ=_is_addable)
                     .map(self.root.joinpath)
                 )
             except ValueError:
-                return pc.Iter[Path].new()
+                return Iter[Path].new()
 
         return (
             self.folders
@@ -75,55 +73,52 @@ class TreeBuilder:
             .flat_map(lambda f: f.entries().values())
             .flat_map(_add_to_tree)
             .insert(self.root)
-            .collect(pc.Set)
+            .collect(Set)
             .into(Structure.from_folders, self.folders)
             .recurse(self.root)
             .collect()
-            .then_some()
-            .map(lambda lines: f"{self.root}\n{lines.join('\n')}")
+            .then(lambda lines: f"{self.root}\n{lines.join('\n')}")
             .unwrap_or(f"{self.root}\n")
         )
 
 
 @dataclass(slots=True)
 class Structure:
-    all_paths: pc.Set[Path]
-    dir_paths: pc.Set[Path]
+    all_paths: Set[Path]
+    dir_paths: Set[Path]
 
     @classmethod
-    def from_folders(
-        cls, dir_paths: pc.Set[Path], all_folders: pc.Seq[type[Folder]]
-    ) -> Self:
+    def from_folders(cls, dir_paths: Set[Path], all_folders: Seq[type[Folder]]) -> Self:
         return (
             all_folders
             .iter()
             .flat_map(
                 lambda f: f.entries().values().iter().map(lambda file: file.source)
             )
-            .collect(pc.Set)
+            .collect(Set)
             .union(dir_paths)
             .into(cls, dir_paths)
         )
 
-    def _childrens(self, current: Path) -> pc.Vec[Path]:
+    def _childrens(self, current: Path) -> Vec[Path]:
         return self.all_paths.iter().filter(lambda path: path.parent == current).sort()
 
-    def recurse(self, current: Path, prefix: str = "") -> pc.Iter[str]:
+    def recurse(self, current: Path, prefix: str = "") -> Iter[str]:
         childrens = self._childrens(current)
         children_len: int = childrens.length()
 
-        def _entries(idx: int, node: Path) -> pc.Iter[str]:
+        def _entries(idx: int, node: Path) -> Iter[str]:
             is_last = idx == children_len - 1
             line = f"{prefix}{Leaf.line(is_last=is_last)}{node.name}"
             match node in self.dir_paths:
                 case True:  # Directory: print and recurse into it
-                    return pc.Iter.once(line).chain(
+                    return Iter.once(line).chain(
                         self.recurse(
                             node,
                             f"{prefix}{Tree.line(is_last=is_last)}",
                         )
                     )
                 case False:  # File: just print
-                    return pc.Iter.once(line)
+                    return Iter.once(line)
 
         return childrens.iter().enumerate().map_star(_entries).flatten()

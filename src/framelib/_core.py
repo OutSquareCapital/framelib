@@ -4,7 +4,7 @@ from abc import ABC
 from pathlib import Path
 from typing import TYPE_CHECKING, TypeIs, override
 
-import pyochain as pc
+from pyochain import Dict, Vec
 
 if TYPE_CHECKING:
     from ._schema import Schema
@@ -36,30 +36,30 @@ class Layout[T: BaseEntry](ABC):
     The layout can be a `Folder` (containing `File` entries) or a `Database` (containing `Table` entries).
     """
 
-    _entries: pc.Dict[str, T]
+    _entries: Dict[str, T]
 
     def __init_subclass__(cls) -> None:
         def _is_base_entry(obj: object) -> TypeIs[T]:
             return isinstance(obj, BaseEntry)
 
         cls._entries = (
-            pc.Vec
+            Vec
             .from_ref(cls.mro())
             .rev()
             .filter(lambda c: c is not object and hasattr(c, "__dict__"))
             .flat_map(lambda c: c.__dict__.items())
             .filter_star(lambda _, obj: _is_base_entry(obj))  # pyright: ignore[reportAny]
-            .collect(pc.Dict)
+            .collect(Dict)
         )
 
     @classmethod
-    def entries(cls) -> pc.Dict[str, T]:
+    def entries(cls) -> Dict[str, T]:
         """Gets the entries dictionary of the layout.
 
         Each value is an Entry instance corresponding to the attribute in the layout.
 
         Returns:
-            pc.Dict[str, T]: the entries dictionary of the layout as a pyochain.Dict
+            Dict[str, T]: the entries dictionary of the layout as a pyochain.Dict
         """
         return cls._entries
 

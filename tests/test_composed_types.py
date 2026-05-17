@@ -3,7 +3,7 @@
 from enum import Enum as StdEnum
 
 import polars as pl
-import pyochain as pc
+from pyochain import Dict, Iter, Range
 
 import framelib as fl
 
@@ -69,16 +69,20 @@ def test_struct_pl_dtype_field_mapping() -> None:
     """Polars struct dtype correctly maps all field types."""
     struct = fl.Struct({"count": fl.Int32(), "label": fl.String()})
     pl_dtype = struct.pl_dtype
-    field_names = pc.Iter(pl_dtype.fields).map(lambda f: f.name).collect()
+    field_names = Iter(pl_dtype.fields).map(lambda f: f.name).collect()
     assert "count" in field_names
     assert "label" in field_names
 
 
 def test_list_deeply_nested_sql() -> None:
     """Nested lists generate correct SQL with array brackets."""
-    lst = pc.Iter(range(3)).fold(
-        fl.List(fl.Int32()),
-        lambda acc, _: fl.List(acc),
+    lst = (
+        Range(0, 3)
+        .iter()
+        .fold(
+            fl.List(fl.Int32()),
+            lambda acc, _: fl.List(acc),
+        )
     )
     sql = lst.sql_type
     assert sql.endswith("[][]")
@@ -144,7 +148,7 @@ def test_datetime_pl_dtype_preserves_timezone() -> None:
 def test_struct_with_enum_sql() -> None:
     """Struct with enum generates correct SQL."""
     cats = fl.Enum(["active", "inactive"])
-    sql = pc.Dict.from_kwargs(status=cats, id=fl.Int64()).into(fl.Struct).sql_type
+    sql = Dict.from_kwargs(status=cats, id=fl.Int64()).into(fl.Struct).sql_type
     assert "STRUCT" in sql
     assert "status" in sql
 
@@ -152,7 +156,7 @@ def test_struct_with_enum_sql() -> None:
 def test_struct_with_datetime_sql() -> None:
     """Struct with datetime generates correct SQL."""
     sql = (
-        pc.Dict
+        Dict
         .from_kwargs(created=fl.Datetime(time_zone="UTC"), name=fl.String())
         .into(fl.Struct)
         .sql_type
@@ -164,9 +168,13 @@ def test_struct_with_datetime_sql() -> None:
 def test_list_of_lists_of_struct_sql() -> None:
     """Deeply nested structures generate correct SQL."""
     struct = fl.Struct({"value": fl.Float64()})
-    lst_2d = pc.Iter(range(2)).fold(
-        fl.List(struct),
-        lambda acc, _: fl.List(acc),
+    lst_2d = (
+        Range(0, 2)
+        .iter()
+        .fold(
+            fl.List(struct),
+            lambda acc, _: fl.List(acc),
+        )
     )
     sql = lst_2d.sql_type
     assert "STRUCT" in sql

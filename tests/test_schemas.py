@@ -76,7 +76,7 @@ def test_schema_inheritance_column_order_preservation() -> None:
     class ChildS(ParentS):
         child_col: fl.Float64 = fl.Float64()
 
-    col_names = ChildS.entries().keys().into(tuple)
+    col_names = ChildS.entries().iter().collect(tuple)
     # Parent columns should come first
     assert col_names.index("parent_col1") < col_names.index("child_col")
     assert col_names.index("parent_col2") < col_names.index("child_col")

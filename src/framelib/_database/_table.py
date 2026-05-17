@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Self
 
 import narwhals as nw
-import pyochain as pc
 from duckdb import DuckDBPyConnection, DuckDBPyRelation
+from pyochain import Err, Ok, Result
 
 from .._core import Entry
 from . import qry
@@ -57,26 +57,26 @@ class Table(Entry):
         return self
 
     @property
-    def connexion(self) -> pc.Result[DuckDBPyConnection, RuntimeError]:
+    def connexion(self) -> Result[DuckDBPyConnection, RuntimeError]:
         """Get the `DuckDBPyConnection` of the table.
 
         `Ok(connection)` if the table is connected to a database, `Err(RuntimeError)` otherwise.
 
         Returns:
-            pc.Result[DuckDBPyConnection, RuntimeError]: The connection result.
+            Result[DuckDBPyConnection, RuntimeError]: The connection result.
         """
         try:
-            return pc.Ok(self._con)
+            return Ok(self._con)
         except AttributeError:
             msg = "The table is not connected to any database."
-            return pc.Err(RuntimeError(msg))
+            return Err(RuntimeError(msg))
 
     @property
-    def relation(self) -> pc.Result[DuckDBPyRelation, RuntimeError]:
+    def relation(self) -> Result[DuckDBPyRelation, RuntimeError]:
         """Get the `DuckDBPyRelation` of the table.
 
         Returns:
-            pc.Result[DuckDBPyRelation, RuntimeError]: `Ok(relation)` if the table is connected to a database, `Err(RuntimeError)` otherwise.
+            Result[DuckDBPyRelation, RuntimeError]: `Ok(relation)` if the table is connected to a database, `Err(RuntimeError)` otherwise.
         """
         return self.connexion.map(lambda c: c.table(self._name))
 

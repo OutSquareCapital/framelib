@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, override
 
 import narwhals as nw
 import polars as pl
-import pyochain as pc
+from pyochain import Dict, Iter, Set
 
 from ._base import Column, TimeUnit
 
@@ -82,13 +82,13 @@ class Array(Column):
         base: str = self.inner.sql_type
         if isinstance(self.shape, int):
             return f"{base}[{self.shape}]"
-        dims = pc.Iter(self.shape).map(lambda d: f"[{d}]").join("")
+        dims = Iter(self.shape).map(lambda d: f"[{d}]").join("")
         return f"{base}{dims}"
 
 
 @dataclass(slots=True, init=False, eq=False)
 class Struct(Column):
-    fields: pc.Dict[str, Column]
+    fields: Dict[str, Column]
 
     def __init__(
         self,
@@ -101,7 +101,7 @@ class Struct(Column):
         if isclass(fields):
             self.fields = fields.entries()
         else:
-            self.fields = pc.Dict(fields)
+            self.fields = Dict(fields)
         super(Struct, self).__init__(
             primary_key=primary_key, unique=unique, nullable=nullable
         )
@@ -188,7 +188,7 @@ class Categorical(Column):
 
 @dataclass(slots=True, init=False, eq=False)
 class Enum(Column):
-    categories: pc.Set[str]
+    categories: Set[str]
 
     def __init__(
         self,
@@ -200,7 +200,7 @@ class Enum(Column):
     ) -> None:
         if isclass(categories):
             categories = (item.value for item in categories)  # pyright: ignore[reportAny]
-        self.categories = pc.Set(categories)
+        self.categories = Set(categories)
         super(Enum, self).__init__(
             primary_key=primary_key, unique=unique, nullable=nullable
         )

@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-import pyochain as pc
 import pytest
+from pyochain import Iter
 
 import framelib as fl
 
@@ -160,7 +160,7 @@ def test_folder_all_files_have_correct_source(tmp_path: Path) -> None:
     file_entries = FullFolder.entries()
     folder_path = FullFolder.source()
 
-    pc.Iter([
+    Iter([
         ("csv_file", "csv"),
         ("json_file", "json"),
         ("parquet_file", "parquet"),
@@ -174,14 +174,13 @@ def test_folder_all_files_have_correct_source(tmp_path: Path) -> None:
 
     # All sources must be different
     assert (
-        pc
-        .Iter([
+        Iter([
             ("csv_file", "csv"),
             ("json_file", "json"),
             ("parquet_file", "parquet"),
         ])
         .map_star(lambda name, _: str(file_entries.get_item(name).unwrap().source))
-        .collect(pc.Set)
+        .unique()
         .length()
         == 3
     )
@@ -415,7 +414,7 @@ def test_folder_diamond_inheritance_paths(tmp_path: Path) -> None:
     _assert_path_hierarchy(Diamond.source().parent, Diamond.source(), "diamond")
 
     # Check that all files from all branches are accessible
-    all_files = Diamond.entries().keys()
+    all_files = Diamond.entries()
     assert "base_file" in all_files
     assert "left_file" in all_files
     assert "right_file" in all_files
@@ -517,7 +516,7 @@ def test_folder_mro_respects_file_collection(tmp_path: Path) -> None:
     class Level2(Level1A, Level1B):
         l2: fl.NDJson = fl.NDJson(schema=schema)
 
-    files = Level2.entries().keys()
+    files = Level2.entries()
     assert "l0" in files
     assert "l1a" in files
     assert "l1b" in files
@@ -610,7 +609,7 @@ def test_folder_complex_mixed_inheritance(tmp_path: Path) -> None:
     FinalProject.source().mkdir(parents=True, exist_ok=True)
 
     # All entries should be present
-    entries = FinalProject.entries().keys()
+    entries = FinalProject.entries()
     assert "config" in entries
     assert "data" in entries
     assert "db" in entries
@@ -642,7 +641,7 @@ def test_folder_long_inheritance_chain_paths(tmp_path: Path) -> None:
         f5: fl.Parquet = fl.Parquet(schema=schema)
 
     # Final class should have all files
-    assert L5.entries().keys().length() == 5
+    assert L5.entries().length() == 5
 
     # Path should reflect deepest level
     assert "l5" in str(L5.source()).lower()
