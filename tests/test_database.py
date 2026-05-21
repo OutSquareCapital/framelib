@@ -335,7 +335,7 @@ def test_db_concurrent_decorated_functions_different_dbs(tmp_path: Path) -> None
         beta: DBB = DBB()
 
     Project.source().mkdir(parents=True, exist_ok=True)
-    results = Dict[str, int].new()
+    results = Dict[str, int](())
 
     @Project.alpha
     def work_alpha() -> None:

@@ -9,7 +9,7 @@ from typing import Self, override
 import duckdb
 import narwhals as nw
 from pyochain import Set
-from pyochain.traits import Pipeable
+from pyochain.abc import Pipeable
 
 from .._core import BaseEntry, Layout
 from . import qry

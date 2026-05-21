@@ -65,7 +65,7 @@ class TreeBuilder:
                     .map(self.root.joinpath)
                 )
             except ValueError:
-                return Iter[Path].new()
+                return Iter(())
 
         return (
             self.folders
