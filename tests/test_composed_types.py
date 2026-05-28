@@ -1,5 +1,7 @@
 """Tests for composed column types - focus on conversions and complex behaviors."""
 
+from __future__ import annotations
+
 from enum import Enum as StdEnum
 
 import polars as pl

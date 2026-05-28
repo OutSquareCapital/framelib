@@ -1,5 +1,7 @@
 """Tests for Folder tree rendering, source attribute construction & distribution, inheritance."""
 
+from __future__ import annotations
+
 from pathlib import Path
 
 import pytest

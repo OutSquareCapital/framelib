@@ -1,5 +1,7 @@
 """Tests for File handlers: Parquet and CSV read/write through `Folder` entries."""
 
+from __future__ import annotations
+
 from pathlib import Path
 
 import polars as pl

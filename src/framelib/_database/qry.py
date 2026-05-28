@@ -1,5 +1,7 @@
 """SQL queries for duckdb database operations."""
 
+from __future__ import annotations
+
 _DATA = "_"
 """Placeholder table name for duckdb scope."""
 

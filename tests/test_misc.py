@@ -1,5 +1,7 @@
 """Tests for internals in framelib."""
 
+from __future__ import annotations
+
 from enum import StrEnum, auto
 
 import pytest

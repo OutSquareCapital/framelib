@@ -1,5 +1,7 @@
 """Casts, compatibility, composed types creations."""
 
+from __future__ import annotations
+
 import pytest
 
 import framelib as fl
