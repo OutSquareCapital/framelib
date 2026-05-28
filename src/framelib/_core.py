@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from abc import ABC
-from pathlib import Path
 from typing import TYPE_CHECKING, TypeIs, override
 
 from pyochain import Dict, Vec
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from ._schema import Schema
 
 

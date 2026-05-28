@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from collections.abc import Callable
 from enum import StrEnum
 from typing import TYPE_CHECKING, NamedTuple, Self
 
 from pyochain import Option, Set
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from .._columns import Column
 
 

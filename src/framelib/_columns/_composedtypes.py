@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-import datetime
-import enum
-from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from inspect import isclass
 from typing import TYPE_CHECKING, override
@@ -14,6 +11,10 @@ from pyochain import Dict, Iter, Set
 from ._base import Column, TimeUnit
 
 if TYPE_CHECKING:
+    import datetime
+    import enum
+    from collections.abc import Iterable, Mapping
+
     from .._core import Layout
 
 

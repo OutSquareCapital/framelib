@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
-from pathlib import Path
 from typing import TYPE_CHECKING, Self, TypeIs
 
 from pyochain import Iter, Option, Seq, Set, Some, Vec, then_if_true
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from pathlib import Path
+
     from ._filehandlers import File
     from ._folder import Folder
 
