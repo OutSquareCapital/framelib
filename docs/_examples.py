@@ -117,7 +117,7 @@ def _() -> None:
     @MyProject.analytics_db
     def get_report() -> pl.DataFrame:
         return (
-            MyProject.raw_sales
+            MyProject.raw_sales  # pyright: ignore[reportUnknownMemberType]
             .scan()
             .group_by("customer_id")
             .agg(

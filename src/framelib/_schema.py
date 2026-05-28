@@ -60,7 +60,7 @@ class Schema(Layout[Column]):
                 parts.append(KWord.UNIQUE)
             if not col.nullable:
                 parts.append(KWord.NOT_NULL)
-            return parts.join(" ")
+            return parts.iter().join(" ")
 
         table_constraints = (
             Iter((composite_pk, composite_unique))
@@ -181,7 +181,7 @@ class Schema(Layout[Column]):
         Returns:
             pl.LazyFrame: The casted `polars.LazyFrame`.
         """
-        return df.lazy().select(
+        return df.lazy().select(  # pyright: ignore[reportUnknownMemberType]
             cls
             .entries()
             .values()

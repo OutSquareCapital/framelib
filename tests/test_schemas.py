@@ -22,7 +22,7 @@ def test_schema_composite_primary_key() -> None:
     constraints = S.constraints()
     assert constraints.primary.is_some()
     pk_cols = constraints.primary.unwrap().cols
-    assert pk_cols.length() == 2
+    assert pk_cols.len() == 2
     sql_col = constraints.primary.unwrap().to_sql()
     assert "a" in sql_col
     assert "b" in sql_col
@@ -63,7 +63,7 @@ def test_schema_empty_allowed() -> None:
     class EmptyS(fl.Schema):
         pass
 
-    assert EmptyS.entries().length() == 0
+    assert EmptyS.entries().len() == 0
 
 
 def test_schema_inheritance_column_order_preservation() -> None:

@@ -77,7 +77,7 @@ class TreeBuilder:
             .into(Structure.from_folders, self.folders)
             .recurse(self.root)
             .collect()
-            .then(lambda lines: f"{self.root}\n{lines.join('\n')}")
+            .then(lambda lines: f"{self.root}\n{lines.iter().join('\n')}")
             .unwrap_or(f"{self.root}\n")
         )
 
@@ -105,7 +105,7 @@ class Structure:
 
     def recurse(self, current: Path, prefix: str = "") -> Iter[str]:
         childrens = self._childrens(current)
-        children_len: int = childrens.length()
+        children_len: int = childrens.len()
 
         def _entries(idx: int, node: Path) -> Iter[str]:
             is_last = idx == children_len - 1

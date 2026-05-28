@@ -181,7 +181,7 @@ def test_folder_all_files_have_correct_source(tmp_path: Path) -> None:
         ])
         .map_star(lambda name, _: str(file_entries.get_item(name).unwrap().source))
         .unique()
-        .length()
+        .count()
         == 3
     )
 
@@ -521,7 +521,7 @@ def test_folder_mro_respects_file_collection(tmp_path: Path) -> None:
     assert "l1a" in files
     assert "l1b" in files
     assert "l2" in files
-    assert files.length() == 4
+    assert files.len() == 4
 
 
 def test_folder_tree_shows_inheritance_hierarchy(tmp_path: Path) -> None:
@@ -641,7 +641,7 @@ def test_folder_long_inheritance_chain_paths(tmp_path: Path) -> None:
         f5: fl.Parquet = fl.Parquet(schema=schema)
 
     # Final class should have all files
-    assert L5.entries().length() == 5
+    assert L5.entries().len() == 5
 
     # Path should reflect deepest level
     assert "l5" in str(L5.source()).lower()

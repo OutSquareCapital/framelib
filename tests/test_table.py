@@ -38,7 +38,7 @@ def test_table_crud_and_conflicts(tmp_path: Path) -> None:
 
         # insert_or_replace: update id=2 and add id=3
         df2 = pl.DataFrame({"id": [2, 3], "name": ["bb", "c"]})
-        res2 = Project.db.t.insert_or_replace(df2).read().sort("id")
+        res2 = Project.db.t.insert_or_replace(df2).read().sort("id")  # pyright: ignore[reportUnknownMemberType]
         updated_id = 2
         assert res2.get_column("id").to_list() == [1, 2, 3]
         assert res2.filter(pl.col("id") == updated_id).get_column("name").to_list() == [  # pyright: ignore[reportUnknownMemberType]
@@ -107,7 +107,7 @@ def test_table_insert_into_append_behavior(tmp_path: Path) -> None:
         )
         # Insert more rows
         _ = Project.db.t.insert_into(pl.DataFrame({"id": [2, 3], "value": ["b", "c"]}))
-        result = Project.db.t.read().sort("id")
+        result = Project.db.t.read().sort("id")  # pyright: ignore[reportUnknownMemberType]
         assert result.height == 3
         assert result.get_column("value").to_list() == ["a", "b", "c"]
 
@@ -174,7 +174,7 @@ def test_table_chain_operations(tmp_path: Path) -> None:
             .insert_or_replace(pl.DataFrame({"id": [2], "status": ["updated"]}))
             .insert_or_ignore(pl.DataFrame({"id": [3], "status": ["ignored"]}))
             .read()
-            .sort("id")
+            .sort("id")  # pyright: ignore[reportUnknownMemberType]
             .get_column("status")
             .to_list()
         )
@@ -309,7 +309,7 @@ def test_table_multiple_primary_key_conflict_handling(tmp_path: Path) -> None:
             .insert_or_replace(pl.DataFrame({"pk": [1, 4], "data": ["A", "d"]}))
             .insert_or_ignore(pl.DataFrame({"pk": [2, 5], "data": ["B", "e"]}))
             .read()
-            .sort("pk")
+            .sort("pk")  # pyright: ignore[reportUnknownMemberType]
             .iter_rows()
         )
 

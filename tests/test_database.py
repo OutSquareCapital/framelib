@@ -412,7 +412,7 @@ def test_schema_composite_pk_duckdb_integration(tmp_path: Path) -> None:
         df2 = pl.DataFrame({"a": [1], "b": [2], "val": ["updated"]})
         _ = Project.db.t.insert_or_replace(df2)
 
-        result = Project.db.t.read().sort("a", "b")
+        result = Project.db.t.read().sort("a", "b")  # pyright: ignore[reportUnknownMemberType]
         assert result.shape == (3, 3)
         # (1,1) unchanged, (1,2) updated, (2,1) unchanged
         vals = result.get_column("val").to_list()

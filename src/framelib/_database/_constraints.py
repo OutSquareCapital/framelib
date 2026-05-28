@@ -33,7 +33,7 @@ class Constraint(NamedTuple):
         )
 
     def is_composite(self) -> bool:
-        return self.cols.length() > 1
+        return self.cols.len() > 1
 
     def to_sql(self) -> str:
         return f"{self.k_word} ({self.cols.iter().map(lambda c: f'"{c.name}"').join(', ')})"

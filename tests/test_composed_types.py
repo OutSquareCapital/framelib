@@ -126,7 +126,7 @@ def test_enum_from_python_enum_extracts_values() -> None:
 def test_enum_duplicate_categories_deduplicated() -> None:
     """Enum deduplicates via Set."""
     data = ["a", "b", "a", "c", "b"]
-    assert fl.Enum(data).categories.length() == 3
+    assert fl.Enum(data).categories.len() == 3
 
 
 def test_datetime_with_timezone_sql() -> None:
