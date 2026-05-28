@@ -2,11 +2,9 @@ from __future__ import annotations
 
 import contextlib
 from abc import ABC
-from collections.abc import Callable
 from functools import wraps
 from pathlib import Path
-from types import TracebackType
-from typing import Self, override
+from typing import TYPE_CHECKING, Self, override
 
 import duckdb
 import narwhals as nw
@@ -16,6 +14,10 @@ from pyochain.abc import Pipeable
 from .._core import BaseEntry, Layout
 from . import qry
 from ._table import DuckFrame, Table
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from types import TracebackType
 
 _DDB = ".ddb"
 

@@ -1,15 +1,18 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Sequence
 from functools import partial
 from pathlib import Path
-from typing import override
+from typing import TYPE_CHECKING, override
 
 import polars as pl
 
 from ._core import Entry
-from ._schema import Schema
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
+
+    from ._schema import Schema
 
 
 class File(Entry, ABC):
