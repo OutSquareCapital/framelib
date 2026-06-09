@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, override
 
 import narwhals as nw
 import polars as pl
-from pyochain import Dict, Iter, Set
+from pyochain import Dict, Iter, Seq, Set
 
 from ._base import Column, TimeUnit
 
@@ -115,7 +115,7 @@ class Struct(Column):
             .items()
             .iter()
             .map_star(lambda name, col: pl.Field(name, col.pl_dtype))
-            .collect()
+            .collect(Seq)
             .into(pl.Struct)
         )
 
@@ -127,7 +127,7 @@ class Struct(Column):
             .items()
             .iter()
             .map_star(lambda name, col: nw.Field(name, col.nw_dtype))
-            .collect()
+            .collect(Seq)
             .into(nw.Struct)
         )
 

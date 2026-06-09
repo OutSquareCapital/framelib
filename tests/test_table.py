@@ -8,7 +8,7 @@ import duckdb
 import narwhals as nw
 import polars as pl
 import pytest
-from pyochain import Dict, Iter, Range, ResultUnwrapError, Set
+from pyochain import Dict, Iter, Range, ResultUnwrapError, Seq, Set
 
 import framelib as fl
 
@@ -133,15 +133,15 @@ def test_table_bulk_insert_or_replace(tmp_path: Path) -> None:
     with Project.db:
         # Initial bulk insert
         initial_df = pl.DataFrame({
-            "id": Range(0, 100).iter().collect(),
-            "counter": Range(0, 100).iter().map(lambda _: 0).collect(),
+            "id": Range(0, 100).iter().collect(Seq),
+            "counter": Range(0, 100).iter().map(lambda _: 0).collect(Seq),
         })
         _ = Project.db.t.create_or_replace().insert_into(initial_df)
 
         # Update half of them
         update_df = pl.DataFrame({
-            "id": Range(0, 100, 2).iter().collect(),
-            "counter": Range(0, 50).iter().map(lambda _: 1).collect(),
+            "id": Range(0, 100, 2).iter().collect(Seq),
+            "counter": Range(0, 50).iter().map(lambda _: 1).collect(Seq),
         })
 
         result = Project.db.t.insert_or_replace(update_df).read()
@@ -316,7 +316,7 @@ def test_table_multiple_primary_key_conflict_handling(tmp_path: Path) -> None:
         )
 
         data_dict = Dict[int, str](
-            Iter(result).map_star(lambda pk, data: (pk, data)).collect()  # pyright: ignore[reportAny]
+            Iter(result).map_star(lambda pk, data: (pk, data)).collect(Seq)  # pyright: ignore[reportAny]
         )
         assert data_dict.get_item(1).unwrap() == "A"  # replaced
         assert data_dict.get_item(2).unwrap() == "b"  # ignored (kept original)
@@ -406,9 +406,9 @@ def test_table_large_dataset_operations(tmp_path: Path) -> None:
     with Project.db:
         rows_nb = Range(0, n_rows)
         df = pl.DataFrame({
-            "id": rows_nb.iter().collect(),
-            "category": rows_nb.iter().map(lambda i: f"cat_{i % 10}").collect(),
-            "value": rows_nb.iter().map(float).collect(),
+            "id": rows_nb.iter().collect(Seq),
+            "category": rows_nb.iter().map(lambda i: f"cat_{i % 10}").collect(Seq),
+            "value": rows_nb.iter().map(float).collect(Seq),
         })
         assert Project.db.t.create_or_replace().insert_into(df).read().height == n_rows
 

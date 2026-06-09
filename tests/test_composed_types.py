@@ -5,7 +5,7 @@ from __future__ import annotations
 from enum import Enum as StdEnum
 
 import polars as pl
-from pyochain import Dict, Iter, Range
+from pyochain import Dict, Iter, Range, Set
 
 import framelib as fl
 
@@ -71,7 +71,7 @@ def test_struct_pl_dtype_field_mapping() -> None:
     """Polars struct dtype correctly maps all field types."""
     struct = fl.Struct({"count": fl.Int32(), "label": fl.String()})
     pl_dtype = struct.pl_dtype
-    field_names = Iter(pl_dtype.fields).map(lambda f: f.name).collect()
+    field_names = Iter(pl_dtype.fields).map(lambda f: f.name).collect(Set)
     assert "count" in field_names
     assert "label" in field_names
 

@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, TypeIs, overload
 
 import narwhals as nw
 import polars as pl
-from pyochain import Dict, Iter, Set, Vec
+from pyochain import Dict, Iter, Seq, Set, Vec
 
 from ._columns import Column
 from ._core import Layout
@@ -217,7 +217,7 @@ def _entries_from_mro(cls: type) -> Dict[str, Column]:
     return (
         Iter(cls.mro())
         .filter(_is_subclass_of_schema)
-        .collect()
+        .collect(Seq)
         .rev()
         .flat_map(lambda base: base.__dict__.items())
         .filter_star(lambda _, v: _is_column(v))  # pyright: ignore[reportAny]

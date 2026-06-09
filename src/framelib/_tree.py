@@ -10,6 +10,8 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from pathlib import Path
 
+    from pyochain.abc import PyoIterator
+
     from ._filehandlers import File
     from ._folder import Folder
 
@@ -48,12 +50,12 @@ class TreeBuilder:
         return (
             Iter(mro)
             .filter(lambda cls: _is_subclass(cls, Folder))
-            .collect()
+            .collect(Seq)
             .into(lambda folders: cls(folders, folders.last().source()))
         )
 
     def build(self) -> str:
-        def _add_to_tree(folder: File) -> Iter[Path]:
+        def _add_to_tree(folder: File) -> PyoIterator[Path]:
             def _is_addable(path: Path) -> Option[Path]:
                 return then_if_true(
                     path.parent, predicate=lambda p: p.as_posix() != "."
@@ -77,7 +79,7 @@ class TreeBuilder:
             .collect(Set)
             .into(Structure.from_folders, self.folders)
             .recurse(self.root)
-            .collect()
+            .collect(Seq)
             .then(lambda lines: f"{self.root}\n{lines.iter().join('\n')}")
             .unwrap_or(f"{self.root}\n")
         )
@@ -104,11 +106,11 @@ class Structure:
     def _childrens(self, current: Path) -> Vec[Path]:
         return self.all_paths.iter().filter(lambda path: path.parent == current).sort()
 
-    def recurse(self, current: Path, prefix: str = "") -> Iter[str]:
+    def recurse(self, current: Path, prefix: str = "") -> PyoIterator[str]:
         childrens = self._childrens(current)
         children_len: int = childrens.len()
 
-        def _entries(idx: int, node: Path) -> Iter[str]:
+        def _entries(idx: int, node: Path) -> PyoIterator[str]:
             is_last = idx == children_len - 1
             line = f"{prefix}{Leaf.line(is_last=is_last)}{node.name}"
             match node in self.dir_paths:
